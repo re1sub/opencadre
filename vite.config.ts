@@ -1,14 +1,16 @@
+import { vanillaExtractPlugin } from "@vanilla-extract/vite-plugin";
+import devtools from "solid-devtools/vite";
 import { defineConfig } from "vite";
 import solidPlugin from "vite-plugin-solid";
-import devtools from "solid-devtools/vite";
-import { vanillaExtractPlugin } from "@vanilla-extract/vite-plugin";
+import { qrcode } from "vite-plugin-qrcode";
 
 export default defineConfig({
-  plugins: [devtools(), solidPlugin(), vanillaExtractPlugin()],
-  server: {
-    port: 3000,
-  },
-  build: {
-    target: "esnext",
-  },
+	plugins: [devtools(), solidPlugin(), vanillaExtractPlugin(), qrcode()],
+	server: {
+		port: 3000,
+		host: "0.0.0.0",
+	},
+	build: {
+		target: "esnext",
+	},
 });
