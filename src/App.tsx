@@ -1,28 +1,36 @@
-import { createResource, For } from "solid-js";
-import { supabase } from "./utils/supabase";
+import { Route, Router } from "@solidjs/router";
+import { Home } from "./pages/Home";
 
-async function getTodos() {
-  const { data: todos } = await supabase.from("todos").select();
-  return todos;
+function Auth() {
+	return (
+		<main style={{ padding: "2rem", "font-family": "sans-serif" }}>
+			<h1>Auth</h1>
+			<p>Sign in / sign up coming soon.</p>
+			<br />
+			<wa-button href="/" variant="brand">
+				{" < "} Back
+			</wa-button>
+		</main>
+	);
+}
+
+function Dashboard() {
+	return (
+		<main style={{ padding: "2rem", "font-family": "sans-serif" }}>
+			<h1>Dashboard</h1>
+			<p>Boards coming soon.</p>
+		</main>
+	);
 }
 
 function App() {
-  const [todos] = createResource(getTodos);
-
-  return (
-    <main>
-      <h1>Hello world!!!!</h1>
-      <ul>
-        <For each={todos()}>
-          {(todo) => (
-            <li>
-              {`${todo.content} - ${new Date(todo.created_at).toLocaleString("fr-FR")}`}
-            </li>
-          )}
-        </For>
-      </ul>
-    </main>
-  );
+	return (
+		<Router>
+			<Route path="/" component={Home} />
+			<Route path="/auth" component={Auth} />
+			<Route path="/dashboard" component={Dashboard} />
+		</Router>
+	);
 }
 
 export default App;
