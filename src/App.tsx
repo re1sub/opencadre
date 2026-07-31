@@ -1,5 +1,5 @@
 import { Route, Router } from "@solidjs/router";
-import { Home } from "./pages/Home";
+import { Home } from "#/pages/Home";
 
 function Auth() {
 	return (

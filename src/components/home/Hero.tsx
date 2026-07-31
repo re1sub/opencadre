@@ -1,4 +1,4 @@
-import { useTheme } from "../../theme/ThemeProvider";
+import { useTheme } from "#theme/ThemeProvider";
 import { hero, screenshot, screenshotImage, title } from "./hero.css";
 import { Motion } from "solid-motionone";
 

@@ -1,9 +1,9 @@
 /* @refresh reload */
 import { render } from "solid-js/web";
 import "solid-devtools";
-import "./webawesome.imports";
-import "./styles/webawesome.css";
-import "./styles/global.css";
+import "#/webawesome.imports";
+import "#styles/webawesome.css";
+import "#styles/global.css";
 
 import App from "./App";
 import { ThemeProvider } from "./theme/ThemeProvider";

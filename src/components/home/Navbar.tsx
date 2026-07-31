@@ -1,5 +1,5 @@
+import { useTheme } from "#theme/ThemeProvider";
 import { auth, drawerContent, logo, menuButton, navbar } from "./navbar.css";
-import { useTheme } from "../../theme/ThemeProvider";
 
 export function Navbar() {
 	const { theme, toggleTheme } = useTheme();
