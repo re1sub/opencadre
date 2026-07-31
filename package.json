@@ -1,28 +1,36 @@
 {
-  "name": "vite-template-solid",
-  "version": "0.0.0",
-  "description": "",
-  "type": "module",
-  "scripts": {
-    "start": "vite",
-    "dev": "vite",
-    "build": "vite build",
-    "serve": "vite preview"
-  },
-  "license": "MIT",
-  "devDependencies": {
-    "@biomejs/biome": "^2.5.5",
-    "@vanilla-extract/vite-plugin": "^5.2.5",
-    "solid-devtools": "^0.34.3",
-    "typescript": "^5.7.2",
-    "vite": "^7.1.4",
-    "vite-plugin-solid": "^2.11.8"
-  },
-  "dependencies": {
-    "@solidjs/router": "^0.16.2",
-    "@supabase/supabase-js": "^2.110.8",
-    "@tanstack/solid-query": "^5.101.4",
-    "@vanilla-extract/css": "^1.21.1",
-    "solid-js": "^1.9.5"
-  }
+	"name": "vite-template-solid",
+	"version": "0.0.0",
+	"description": "",
+	"type": "module",
+	"scripts": {
+		"start": "vite",
+		"dev": "vite",
+		"build": "vite build",
+		"serve": "vite preview",
+		"typecheck": "tsc --noEmit",
+		"lint": "biome lint . --config-path ./biome.json",
+		"lint:full": "biome check . --config-path ./biome.json",
+		"lint:fix": "biome check . --write --config-path ./biome.json",
+		"format": "biome format . --write --config-path ./biome.json"
+	},
+	"license": "MIT",
+	"devDependencies": {
+		"@biomejs/biome": "^2.5.5",
+		"@vanilla-extract/vite-plugin": "^5.2.5",
+		"solid-devtools": "^0.34.3",
+		"typescript": "^5.7.2",
+		"vite": "^7.1.4",
+		"vite-plugin-solid": "^2.11.8"
+	},
+	"dependencies": {
+		"@awesome.me/webawesome": "^3.11.0",
+		"@solidjs/router": "^0.16.2",
+		"@supabase/supabase-js": "^2.110.8",
+		"@tanstack/solid-query": "^5.101.4",
+		"@vanilla-extract/css": "^1.21.1",
+		"solid-js": "^1.9.5",
+		"solid-motionone": "^1.0.4",
+		"vite-plugin-qrcode": "^0.4.1"
+	}
 }
