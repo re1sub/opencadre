@@ -79,7 +79,7 @@ export function Features() {
 		<Motion.section
 			initial={{ opacity: 0, y: 50 }}
 			inView={{ opacity: 1, y: 0 }}
-			inViewOptions={{ once: true }}
+			inViewOptions={{ once: true, amount: 0.2 }}
 			transition={{ duration: 1 }}
 		>
 			<div class={titleBlock}>

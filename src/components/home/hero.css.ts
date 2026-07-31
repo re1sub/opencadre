@@ -30,4 +30,5 @@ export const screenshotImage = style({
 	height: "auto",
 	borderRadius: "var(--wa-border-radius-l)",
 	boxShadow: "0 0 5.5px rgba(0, 0, 0, 0.25)",
+	aspectRatio: "3014 / 1644",
 });
