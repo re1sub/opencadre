@@ -1,5 +1,6 @@
 /* @refresh reload */
 import { render } from "solid-js/web";
+import { QueryClient, QueryClientProvider } from "@tanstack/solid-query";
 import "solid-devtools";
 import "#/webawesome.imports";
 import "#styles/webawesome.css";
@@ -10,6 +11,8 @@ import { ThemeProvider } from "./theme/ThemeProvider";
 
 const root = document.getElementById("root");
 
+const queryClient = new QueryClient();
+
 if (import.meta.env.DEV && !(root instanceof HTMLElement)) {
 	throw new Error(
 		"Root element not found. Did you forget to add it to your index.html? Or maybe the id attribute got misspelled?",
@@ -18,9 +21,11 @@ if (import.meta.env.DEV && !(root instanceof HTMLElement)) {
 
 render(
 	() => (
-		<ThemeProvider>
-			<App />
-		</ThemeProvider>
+		<QueryClientProvider client={queryClient}>
+			<ThemeProvider>
+				<App />
+			</ThemeProvider>
+		</QueryClientProvider>
 	),
 	root!,
 );
