@@ -23,8 +23,28 @@ opencadre lets you create pages that adapt to the way you work. Write documents 
 ```bash
 pnpm install
 cp .env.example .env   # fill in your Supabase project URL + publishable key
+
+# local Supabase stack (optional, for local development)
+pnpm supabase:start    # first run pulls Docker images
+cp .env.example .env.development  # point VITE_SUPABASE_* at the local stack output
+
 pnpm dev               # http://localhost:3000
 ```
+
+The dev server loads `.env.development` (local stack) and `pnpm build` loads
+`.env` (remote project), so nothing needs to be swapped between environments.
+
+### Local Supabase endpoints
+
+| Service          | URL                                                     |
+| ---------------- | ------------------------------------------------------- |
+| API (REST/Auth)  | http://127.0.0.1:54321                                  |
+| Studio (GUI)     | http://127.0.0.1:54323                                  |
+| Postgres         | postgresql://postgres:postgres@127.0.0.1:54322/postgres |
+| Mailpit (email)  | http://127.0.0.1:54324                                  |
+
+`pnpm supabase:status` prints the current keys. For daily work you mostly need
+Studio; Mailpit only matters once email confirmations are enabled.
 
 ## Scripts
 
@@ -37,6 +57,9 @@ pnpm dev               # http://localhost:3000
 | `pnpm lint`          | Biome lint                           |
 | `pnpm lint:fix`      | Biome check + autofix                |
 | `pnpm format`        | Biome format                         |
+| `pnpm supabase:start`  | Start the local Supabase stack     |
+| `pnpm supabase:stop`   | Stop the local Supabase stack      |
+| `pnpm supabase:status` | Show local Supabase status/keys    |
 
 
 ## Environment Variables
