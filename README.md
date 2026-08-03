@@ -72,7 +72,7 @@ Studio; Mailpit only matters once email confirmations are enabled.
 ```
 src/
 ├── components/home/   # Landing page sections (Hero, Navbar, Features, ...)
-├── pages/             # Route components (Home, Auth, Dashboard)
+├── pages/             # Route components (Home, Auth, Workspace)
 ├── styles/            # Global + font styles (vanilla-extract)
 ├── theme/             # Light/dark ThemeProvider
 ├── utils/             # supabase client
