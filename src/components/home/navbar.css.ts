@@ -17,7 +17,6 @@ export const navbar = style({
 export const logo = style({
 	fontSize: "clamp(1rem, 5vw, 2rem)",
 	fontWeight: 600,
-	color: "var(--wa-color-brand)",
 });
 
 export const auth = style({

@@ -1,8 +1,11 @@
+import { Show } from "solid-js";
+import { useAuth } from "#/contexts/AuthContext";
 import { useTheme } from "#theme/ThemeProvider";
 import { auth, drawerContent, logo, menuButton, navbar } from "./navbar.css";
 
 export function Navbar() {
 	const { theme, toggleTheme } = useTheme();
+	const { user, loading } = useAuth();
 
 	return (
 		<>
@@ -12,13 +15,21 @@ export function Navbar() {
 				</a>
 
 				<div class={auth}>
-					<wa-button href="/auth" appearance="plain">
-						Sign in
-					</wa-button>
+					<Show when={user()}>
+						<wa-button href="/workspace" variant="brand">
+							Go to app
+						</wa-button>
+					</Show>
 
-					<wa-button href="/auth?register" variant="brand">
-						Get started
-					</wa-button>
+					<Show when={!user() && !loading()}>
+						<wa-button href="/auth" appearance="plain">
+							Sign in
+						</wa-button>
+
+						<wa-button href="/auth?register" variant="brand">
+							Get started
+						</wa-button>
+					</Show>
 
 					<wa-button
 						variant="neutral"
@@ -53,20 +64,32 @@ export function Navbar() {
 			>
 				<div class={drawerContent}>
 					<div>
-						<wa-button
-							href="/auth?register"
-							variant="brand"
-							style={{ width: "100%", "margin-bottom": "0.5rem" }}
-						>
-							Get started
-						</wa-button>
-						<wa-button
-							href="/auth"
-							appearance="outlined"
-							style={{ width: "100%" }}
-						>
-							Sign in
-						</wa-button>
+						<Show when={user()}>
+							<wa-button
+								href="/workspace"
+								variant="brand"
+								style={{ width: "100%" }}
+							>
+								Go to app
+							</wa-button>
+						</Show>
+
+						<Show when={!user() && !loading()}>
+							<wa-button
+								href="/auth?register"
+								variant="brand"
+								style={{ width: "100%", "margin-bottom": "0.5rem" }}
+							>
+								Get started
+							</wa-button>
+							<wa-button
+								href="/auth"
+								appearance="outlined"
+								style={{ width: "100%" }}
+							>
+								Sign in
+							</wa-button>
+						</Show>
 					</div>
 
 					<wa-button
