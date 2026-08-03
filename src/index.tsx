@@ -8,6 +8,7 @@ import "#styles/global.css";
 
 import App from "./App";
 import { ThemeProvider } from "./theme/ThemeProvider";
+import { AuthProvider } from "./contexts/AuthContext";
 
 const root = document.getElementById("root");
 
@@ -22,9 +23,11 @@ if (import.meta.env.DEV && !(root instanceof HTMLElement)) {
 render(
 	() => (
 		<QueryClientProvider client={queryClient}>
-			<ThemeProvider>
-				<App />
-			</ThemeProvider>
+			<AuthProvider>
+				<ThemeProvider>
+					<App />
+				</ThemeProvider>
+			</AuthProvider>
 		</QueryClientProvider>
 	),
 	root!,
