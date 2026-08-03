@@ -4,7 +4,6 @@ export const titleBlock = style({
 	display: "flex",
 	flexDirection: "column",
 	alignItems: "center",
-	gap: "2rem",
 	marginTop: "5rem",
 });
 
