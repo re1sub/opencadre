@@ -8,8 +8,10 @@ import "@awesome.me/webawesome/dist/styles/webawesome.css";
 
 // Register icon libraries
 registerIconLibrary("default", {
-	resolver: (name) =>
-		`https://cdn.jsdelivr.net/npm/lucide-static@1.8.0/icons/${name}.svg`,
+	resolver: (name) => {
+		const iconName = name === "bars" ? "menu" : name;
+		return `https://cdn.jsdelivr.net/npm/lucide-static@1.8.0/icons/${iconName}.svg`;
+	},
 	mutator: (svg) =>
 		svg.querySelectorAll("path").forEach((path) => {
 			path.setAttribute("fill", "none");
@@ -25,3 +27,8 @@ import "@awesome.me/webawesome/dist/components/icon/icon.js";
 import "@awesome.me/webawesome/dist/components/input/input.js";
 import "@awesome.me/webawesome/dist/components/drawer/drawer.js";
 import "@awesome.me/webawesome/dist/components/divider/divider.js";
+import "@awesome.me/webawesome/dist/components/page/page.js";
+import "@awesome.me/webawesome/dist/components/avatar/avatar.js";
+import "@awesome.me/webawesome/dist/components/dropdown/dropdown.js";
+import "@awesome.me/webawesome/dist/components/dropdown-item/dropdown-item.js";
+import "@awesome.me/webawesome/dist/components/tooltip/tooltip.js";

@@ -11,6 +11,7 @@ globalStyle("*, *::before, *::after", {
 });
 
 globalStyle("html, body", {
+	minHeight: "100%",
 	margin: 0,
 	padding: 0,
 	fontFamily: "Geist",
@@ -23,16 +24,9 @@ globalStyle("html, body", {
   `,
 	backgroundSize: "20px 20px",
 	color: "var(--wa-color-text-normal, #ffffff)",
-	lineHeight: 1.2,
 	WebkitFontSmoothing: "antialiased",
 	textRendering: "optimizeLegibility",
 	scrollBehavior: "smooth",
-});
-
-// Remove default margins and padding from common elements
-globalStyle("h1, h2, h3, h4, h5, h6, p, blockquote, figure, figcaption", {
-	margin: 0,
-	padding: 0,
 });
 
 globalStyle("h1", {
@@ -79,4 +73,28 @@ globalStyle("button", {
 	border: "none",
 	background: "none",
 	color: "inherit",
+});
+
+globalStyle("wa-page[view='desktop'] [slot*='navigation']", {
+	borderInlineEnd:
+		"var(--wa-border-width-s) var(--wa-border-style) var(--wa-color-surface-border)",
+});
+
+globalStyle("[slot='navigation-header']", {
+	borderBlockEnd:
+		"var(--wa-border-width-s) var(--wa-border-style) var(--wa-color-surface-border)",
+});
+
+globalStyle("[slot='navigation-footer']", {
+	borderBlockStart:
+		"var(--wa-border-width-s) var(--wa-border-style) var(--wa-color-surface-border)",
+});
+
+globalStyle(
+	'@import url("https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.9.0/github-markdown.min.css");',
+	{},
+);
+
+globalStyle(".tiptap:focus-visible", {
+	outline: "none",
 });
