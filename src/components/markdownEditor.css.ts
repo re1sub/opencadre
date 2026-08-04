@@ -60,6 +60,8 @@ globalStyle(`.${editor} blockquote`, {
 	paddingLeft: "1em",
 	borderLeft: "3px solid var(--wa-color-surface-border)",
 	color: "var(--wa-color-text-quiet)",
+	fontFamily: "inherit",
+	fontSize: "1.1rem",
 });
 
 globalStyle(`.${editor} code`, {
