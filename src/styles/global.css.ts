@@ -90,11 +90,6 @@ globalStyle("[slot='navigation-footer']", {
 		"var(--wa-border-width-s) var(--wa-border-style) var(--wa-color-surface-border)",
 });
 
-globalStyle(
-	'@import url("https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.9.0/github-markdown.min.css");',
-	{},
-);
-
 globalStyle(".tiptap:focus-visible", {
 	outline: "none",
 });
