@@ -17,18 +17,16 @@ export const sidebarResizer = style({
 	position: "absolute",
 	top: 0,
 	bottom: 0,
-	right: 0,
-	width: "6px",
+	left: 0,
+	width: "3px",
 	cursor: "col-resize",
 	touchAction: "none",
 	transition: "background-color 0.2s",
-
 	":hover": {
-		backgroundColor: "var(--wa-color-primary)",
+		backgroundColor: "var(--wa-color-brand)",
 	},
-
 	":active": {
-		backgroundColor: "var(--wa-color-primary)",
+		backgroundColor: "var(--wa-color-brand)",
 	},
 });
 
@@ -74,6 +72,7 @@ export const addPage = style({
 
 export const mainContent = style({
 	padding: "var(--wa-space-xl)",
+	position: "relative",
 });
 
 globalStyle("wa-page[view='mobile']", {

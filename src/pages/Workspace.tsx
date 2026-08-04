@@ -19,7 +19,7 @@ interface Page {
 	title: string;
 }
 
-const SIDEBAR_MIN_WIDTH = 200;
+const SIDEBAR_MIN_WIDTH = 260;
 const SIDEBAR_MAX_WIDTH = 480;
 const SIDEBAR_DEFAULT_WIDTH = 260;
 const SIDEBAR_STORAGE_KEY = "workspace.sidebarWidth";
@@ -158,7 +158,6 @@ To create headings, start a line with \`#\`, \`##\`, or \`###\`.
 						</For>
 					</ul>
 				</Show>
-				<div class={sidebarResizer} onPointerDown={onResizePointerDown}></div>
 			</nav>
 			<nav slot="navigation-footer" class={navFooter}>
 				<Show when={user()} fallback={null}>
@@ -176,6 +175,7 @@ To create headings, start a line with \`#\`, \`##\`, or \`###\`.
 				</Show>
 			</nav>
 			<main class={mainContent}>
+				<div class={sidebarResizer} onPointerDown={onResizePointerDown}></div>
 				<MarkdownEditor content={gettingStartedMarkdown} />
 			</main>
 		</wa-page>
