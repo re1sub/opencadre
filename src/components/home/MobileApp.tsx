@@ -11,6 +11,7 @@ import {
 	titleColumn,
 } from "./mobileApp.css";
 import { Motion } from "solid-motionone";
+import mobileAppImg from "#assets/img/home/mobile.png";
 
 export function MobileApp() {
 	return (
@@ -51,7 +52,7 @@ export function MobileApp() {
 					transition={{ duration: 0.5 }}
 					class={screenshotWrapper}
 				>
-					<img src="/img/home/mobile.png" alt="OpenCadre mobile app" />
+					<img src={mobileAppImg} alt="OpenCadre mobile app" />
 				</Motion.div>
 			</div>
 		</section>
