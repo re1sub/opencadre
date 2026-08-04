@@ -24,7 +24,8 @@
 			"#utils/*": ["./src/utils/*"],
 			"#pages/*": ["./src/pages/*"],
 			"#styles/*": ["./src/styles/*"],
-			"#theme/*": ["./src/theme/*"]
+			"#theme/*": ["./src/theme/*"],
+			"#assets/*": ["./src/assets/*"]
 		}
 	},
 	"include": ["src", "src/**/*.css"]

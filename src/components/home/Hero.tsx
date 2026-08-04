@@ -1,6 +1,8 @@
 import { useTheme } from "#theme/ThemeProvider";
 import { hero, screenshot, screenshotImage, title } from "./hero.css";
 import { Motion } from "solid-motionone";
+import heroLight from "#assets/img/home/hero-light.png";
+import heroDark from "#assets/img/home/hero-dark.png";
 
 export function Hero() {
 	const { theme } = useTheme();
@@ -24,11 +26,7 @@ export function Hero() {
 				</h1>
 				<div class={screenshot}>
 					<img
-						src={
-							theme() === "light"
-								? "/img/home/hero-light.png"
-								: "/img/home/hero-dark.png"
-						}
+						src={theme() === "light" ? heroLight : heroDark}
 						alt="OpenCadre board editor"
 						class={screenshotImage}
 					/>

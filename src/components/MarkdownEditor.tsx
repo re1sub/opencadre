@@ -5,7 +5,7 @@ import StarterKit from "@tiptap/starter-kit";
 import { For, onCleanup, onMount, splitProps } from "solid-js";
 import { bubbleMenu } from "./editorBubbleMenu.css";
 import { editor } from "./markdownEditor.css";
-import "../../public/css/github-markdown.css";
+import "#assets/css/github-markdown.css";
 
 interface MarkdownEditorProps {
 	content: string;
