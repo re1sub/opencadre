@@ -51,7 +51,7 @@ export const card = style({
 			borderRadius: "inherit",
 			zIndex: 3,
 			backgroundImage:
-				"radial-gradient(800px circle at var(--mouse-x) var(--mouse-y), color-mix(in srgb, var(--wa-color-text-normal) 20%, transparent), transparent 40%)",
+				"radial-gradient(600px circle at var(--mouse-x) var(--mouse-y), color-mix(in srgb, var(--wa-color-brand-on-normal) 10%, transparent), transparent 40%)",
 			opacity: 0,
 			pointerEvents: "none",
 			transition: "opacity 500ms",
@@ -66,7 +66,7 @@ export const card = style({
 			borderRadius: "inherit",
 			zIndex: 1,
 			backgroundImage:
-				"radial-gradient(500px circle at var(--mouse-x) var(--mouse-y), color-mix(in srgb, var(--wa-color-text-normal) 80%, transparent), transparent 40%)",
+				"radial-gradient(500px circle at var(--mouse-x) var(--mouse-y), color-mix(in srgb, var(--wa-color-brand-on-normal) 80%, transparent), transparent 40%)",
 			opacity: 0,
 			pointerEvents: "none",
 			transition: "opacity 500ms",
