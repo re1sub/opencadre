@@ -1,16 +1,20 @@
 import { globalStyle, style } from "@vanilla-extract/css";
 
 export const page = style({
-	vars: {
-		"--menu-width": "260px",
+	selectors: {
+		"&::part(body)": {
+			transition: "grid-template-columns 0.2s ease-in-out",
+		},
 	},
 });
 
 export const sidebar = style({
 	display: "flex",
 	flexDirection: "column",
+	gap: "0",
 	height: "100%",
 	position: "relative",
+	overflowX: "hidden",
 });
 
 export const sidebarResizer = style({
@@ -18,8 +22,6 @@ export const sidebarResizer = style({
 	top: 0,
 	bottom: 0,
 	left: 0,
-	width: "3px",
-	cursor: "col-resize",
 	touchAction: "none",
 	transition: "background-color 0.2s",
 	":hover": {
@@ -30,23 +32,46 @@ export const sidebarResizer = style({
 	},
 });
 
+globalStyle(`wa-page:has(.${sidebarResizer}:active)::part(body)`, {
+	transition: "none",
+});
+
+export const navHeader = style({
+	display: "flex",
+	justifyContent: "space-between",
+	alignItems: "center",
+	flexDirection: "row",
+	gap: 0,
+	overflowX: "hidden",
+});
+
 export const navFooter = style({
 	display: "flex",
 	flexDirection: "column",
 	gap: "var(--wa-space-xs)",
+	width: "100%",
+	overflowX: "hidden",
 });
 
 export const workspaceTrigger = style({
-	display: "flex",
-	alignItems: "center",
-	gap: "var(--wa-space-xs)",
-	width: "100%",
-	borderRadius: "var(--wa-border-radius-m)",
-	padding: "var(--wa-space-xs)",
-	transition: "background-color 0.2s",
+	selectors: {
+		"&::part(button)": {
+			padding: "var(--wa-space-l) var(--wa-space-xs)",
+		},
+		"&::part(caret)": {
+			visibility: "hidden",
+		},
+		"&:hover::part(caret)": {
+			visibility: "visible",
+		},
+	},
+});
 
-	":hover": {
-		backgroundColor: "var(--wa-color-surface-raised)",
+export const closeSidebarButton = style({
+	"@media": {
+		"(max-width: 768px)": {
+			display: "none",
+		},
 	},
 });
 
