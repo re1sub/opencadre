@@ -93,3 +93,10 @@ globalStyle("[slot='navigation-footer']", {
 globalStyle(".tiptap:focus-visible", {
 	outline: "none",
 });
+
+globalStyle(
+	"address, audio, blockquote, dd, details, dl, fieldset, figure, h1, h2, h3, h4, h5, h6, hr, iframe, ol, p, pre, table, ul, video",
+	{
+		marginBlockEnd: "0.5rem",
+	},
+);
