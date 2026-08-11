@@ -1,104 +1,73 @@
-import { createSignal, For, Show } from "solid-js";
-import { MarkdownEditor } from "#/components/MarkdownEditor";
-import { useAuth } from "#/contexts/AuthContext";
+import { createSignal, Show } from "solid-js";
+import { ConfirmDialog } from "#/components/ui/ConfirmDialog";
+import { GETTING_STARTED_MARKDOWN } from "#/components/workspace/gettingStarted";
+import { PageView } from "#/components/workspace/PageView";
+import type { Page, PageKind } from "#/components/workspace/types";
+import { useSidebarResize } from "#/components/workspace/useSidebarResize";
+import { WorkspaceFooter } from "#/components/workspace/WorkspaceFooter";
+import { WorkspaceHeader } from "#/components/workspace/WorkspaceHeader";
+import { WorkspaceSidebar } from "#/components/workspace/WorkspaceSidebar";
 import {
-	addPage,
-	closeSidebarButton,
 	mainContent,
-	navFooter,
-	navHeader,
 	page,
-	pageButton,
-	pageList,
-	sidebar,
 	sidebarResizer,
-	workspaceName,
-	workspaceTrigger,
-} from "./workspace.css";
+} from "#/components/workspace/workspace.css";
+import { useAuth } from "#/contexts/AuthContext";
 
-interface Page {
+interface DeletePageTarget {
 	id: string;
 	title: string;
 }
 
-const SIDEBAR_MIN_WIDTH = 280;
-const SIDEBAR_MAX_WIDTH = 480;
-const SIDEBAR_DEFAULT_WIDTH = SIDEBAR_MIN_WIDTH;
-const SIDEBAR_STORAGE_KEY = "workspace.sidebarWidth";
-
-function getInitialSidebarWidth(): number {
-	const saved = Number(localStorage.getItem(SIDEBAR_STORAGE_KEY));
-
-	return saved >= SIDEBAR_MIN_WIDTH && saved <= SIDEBAR_MAX_WIDTH
-		? saved
-		: SIDEBAR_DEFAULT_WIDTH;
-}
-
-const NAV_SLOTS =
-	"[slot='navigation-header'], [slot='navigation'], [slot='navigation-footer']";
-
-const inNav = (el: EventTarget | null) =>
-	el instanceof Element && el.closest(NAV_SLOTS) !== null;
+const createDefaultPages = (): Page[] => [
+	{
+		id: crypto.randomUUID(),
+		title: "Getting Started",
+		kind: "markdown",
+		content: GETTING_STARTED_MARKDOWN,
+	},
+	{
+		id: crypto.randomUUID(),
+		title: "Kanban Board",
+		kind: "kanban",
+		content: "",
+	},
+];
 
 export function Workspace() {
 	const { user, logout } = useAuth();
 
 	const [error, setError] = createSignal<string | null>(null);
-	const [pages] = createSignal<Page[]>([]);
-
-	const [sidebarWidth, setSidebarWidth] = createSignal(
-		getInitialSidebarWidth(),
+	const defaults = createDefaultPages();
+	const [pages, setPages] = createSignal<Page[]>(defaults);
+	const [activePageId, setActivePageId] = createSignal<string | null>(
+		defaults[0]?.id ?? null,
+	);
+	const [deleteTarget, setDeleteTarget] = createSignal<DeletePageTarget | null>(
+		null,
 	);
 
-	// Permanent user preference.
-	const [sidebarCollapsed, setSidebarCollapsed] = createSignal(false);
+	const activePage = () =>
+		pages().find((entry) => entry.id === activePageId()) ?? null;
 
-	// Temporary state used only while hovering the collapsed edge.
-	const [sidebarHovered, setSidebarHovered] = createSignal(false);
-
-	let dragState: { startX: number; startWidth: number } | undefined;
-
-	const onResizePointerDown = (event: PointerEvent) => {
-		const target = event.currentTarget as HTMLElement;
-		if (!target) return;
-
-		target.setPointerCapture(event.pointerId);
-
-		dragState = {
-			startX: event.clientX,
-			startWidth: sidebarWidth(),
+	const addPage = (kind: PageKind) => {
+		const newPage: Page = {
+			id: crypto.randomUUID(),
+			title: kind === "kanban" ? "Kanban Board" : "Untitled",
+			kind,
+			content: "",
 		};
 
-		document.body.style.userSelect = "none";
-		document.body.style.cursor = "col-resize";
+		setPages((current) => [...current, newPage]);
+		setActivePageId(newPage.id);
+	};
 
-		const onMove = (moveEvent: PointerEvent) => {
-			if (!dragState) return;
-
-			const next =
-				dragState.startWidth + (moveEvent.clientX - dragState.startX);
-
-			setSidebarWidth(
-				Math.min(SIDEBAR_MAX_WIDTH, Math.max(SIDEBAR_MIN_WIDTH, next)),
-			);
-		};
-
-		const onEnd = () => {
-			target.removeEventListener("pointermove", onMove);
-			target.removeEventListener("pointerup", onEnd);
-			target.removeEventListener("pointercancel", onEnd);
-
-			document.body.style.userSelect = "";
-			document.body.style.cursor = "";
-
-			localStorage.setItem(SIDEBAR_STORAGE_KEY, String(sidebarWidth()));
-
-			dragState = undefined;
-		};
-
-		target.addEventListener("pointermove", onMove);
-		target.addEventListener("pointerup", onEnd);
-		target.addEventListener("pointercancel", onEnd);
+	const deletePage = (id: string) => {
+		setPages((current) => current.filter((entry) => entry.id !== id));
+		if (activePageId() === id) {
+			const remaining = pages().filter((entry) => entry.id !== id);
+			setActivePageId(remaining[0]?.id ?? null);
+		}
 	};
 
 	const handleSignOut = async () => {
@@ -115,29 +84,15 @@ export function Workspace() {
 		}
 	};
 
-	const gettingStartedMarkdown = `
-# Welcome to the Demo Page!
-
-This page serves as a demo of the markdown editor. You can use it to test out markdown formatting and see how it renders.
-
-Your changes will not be saved, this is just a placeholder, for now.
-
-### Text Formatting
-
-- **Bold:** Select text and press \`Cmd/Ctrl + B\` or wrap with \`**bold**\`
-- *Italic:* Select text and press \`Cmd/Ctrl + I\` or wrap with \`*italic*\`
-- ~~Strikethrough:~~ Wrap text with \`~~strikethrough~~\`
-- Inline Code: Wrap text with single backticks \`code\`
-
-### Structure & Lists
-
-To create headings, start a line with \`#\`, \`##\`, or \`###\`.
-
-- **Bullet list:** Start a line with \`-\` or \`*\`
-- **Numbered list:** Start a line with \`1.\`
-
-> **Pro Tip:** Highlight any text to bring up the floating formatting toolbar!
-`;
+	const {
+		sidebarWidth,
+		sidebarCollapsed,
+		setSidebarCollapsed,
+		sidebarHovered,
+		setSidebarHovered,
+		onResizePointerDown,
+		inNav,
+	} = useSidebarResize();
 
 	return (
 		<wa-page
@@ -171,117 +126,24 @@ To create headings, start a line with \`#\`, \`##\`, or \`###\`.
 				<wa-icon name="menu" label="Toggle navigation"></wa-icon>
 			</wa-button>
 
-			<nav slot="navigation-header" class={navHeader}>
-				<wa-dropdown>
-					<wa-button
-						type="button"
-						slot="trigger"
-						variant="neutral"
-						appearance="plain"
-						with-caret
-						class={workspaceTrigger}
-					>
-						<wa-avatar
-							initials="MW"
-							label="Workspace"
-							slot="start"
-							style={{ "--size": "2rem" }}
-						></wa-avatar>
-						<span class={workspaceName}>My Workspace</span>
-					</wa-button>
+			<WorkspaceHeader
+				collapsed={sidebarCollapsed}
+				onToggleCollapsed={() => setSidebarCollapsed((collapsed) => !collapsed)}
+			/>
 
-					<wa-dropdown-item value="my-workspace">
-						<wa-avatar
-							initials="MW"
-							label="Workspace"
-							slot="icon"
-							style={{ "--size": "2rem" }}
-						></wa-avatar>
-						My Workspace
-					</wa-dropdown-item>
+			<WorkspaceSidebar
+				pages={pages()}
+				activePageId={activePageId}
+				onAddPage={addPage}
+				onSelectPage={(id) => setActivePageId(id)}
+				onRequestDelete={(id) => {
+					const page = pages().find((entry) => entry.id === id);
+					if (!page) return;
+					setDeleteTarget({ id: page.id, title: page.title });
+				}}
+			/>
 
-					<wa-dropdown-item value="second-workspace">
-						<wa-avatar
-							initials="SW"
-							label="Workspace"
-							slot="icon"
-							style={{ "--size": "2rem" }}
-						></wa-avatar>
-						Second Workspace
-					</wa-dropdown-item>
-				</wa-dropdown>
-
-				<wa-button
-					appearance="plain"
-					onClick={(event) => {
-						const page = (event.currentTarget as HTMLElement).closest(
-							"wa-page",
-						);
-
-						if (page?.getAttribute("view") !== "desktop") {
-							return;
-						}
-
-						setSidebarHovered(false);
-						setSidebarCollapsed((collapsed) => !collapsed);
-					}}
-					class={closeSidebarButton}
-				>
-					<wa-icon
-						name={sidebarCollapsed() ? "pin" : "pin-off"}
-						label={sidebarCollapsed() ? "Open sidebar" : "Close sidebar"}
-						style={{ "font-size": "1.3rem" }}
-					></wa-icon>
-				</wa-button>
-			</nav>
-
-			<nav slot="navigation" class={sidebar}>
-				<Show
-					when={pages().length > 0}
-					fallback={
-						<wa-button variant="neutral" class={addPage}>
-							<wa-icon slot="start" name="plus"></wa-icon>
-							Add Page
-						</wa-button>
-					}
-				>
-					<ul class={pageList}>
-						<For each={pages()}>
-							{(page) => (
-								<li>
-									<wa-button variant="neutral" class={pageButton}>
-										{page.title}
-									</wa-button>
-								</li>
-							)}
-						</For>
-					</ul>
-				</Show>
-			</nav>
-
-			<nav slot="navigation-footer" class={navFooter}>
-				<Show when={user()} fallback={null}>
-					{(email) => (
-						<>
-							<p
-								style={{
-									"white-space": sidebarCollapsed() ? "nowrap" : "normal",
-								}}
-							>
-								Signed in as {email().email}
-							</p>
-
-							<Show when={error()}>
-								<p style={{ color: "var(--wa-color-danger)" }}>{error()}</p>
-							</Show>
-
-							<wa-button variant="neutral" onClick={handleSignOut}>
-								Sign out
-							</wa-button>
-						</>
-					)}
-				</Show>
-			</nav>
+			<WorkspaceFooter user={user} error={error} onSignOut={handleSignOut} />
 
 			<main class={mainContent}>
 				<div
@@ -300,15 +162,24 @@ To create headings, start a line with \`#\`, \`##\`, or \`###\`.
 						cursor: sidebarCollapsed() ? "auto" : "col-resize",
 					}}
 					onPointerEnter={() => {
-						if (sidebarCollapsed()) {
-							setSidebarHovered(true);
-						}
+						if (sidebarCollapsed()) setSidebarHovered(true);
 					}}
 					onPointerDown={onResizePointerDown}
 				/>
 
-				<MarkdownEditor content={gettingStartedMarkdown} />
+				<PageView page={activePage()} />
 			</main>
+
+			<Show when={deleteTarget()} keyed>
+				{(target) => (
+					<ConfirmDialog
+						label="Delete page"
+						message={`Are you sure you want to delete "${target.title}"? This action cannot be undone.`}
+						onConfirm={() => deletePage(target.id)}
+						onClose={() => setDeleteTarget(null)}
+					/>
+				)}
+			</Show>
 		</wa-page>
 	);
 }

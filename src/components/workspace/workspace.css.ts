@@ -83,21 +83,63 @@ export const workspaceName = style({
 export const pageList = style({
 	display: "flex",
 	flexDirection: "column",
-	gap: "var(--wa-space-xs)",
+	gap: 0,
 	listStyle: "none",
 });
 
-export const pageButton = style({
-	width: "100%",
+globalStyle(`${pageList} li`, {
+	margin: 0,
 });
 
-export const addPage = style({
+export const pageRow = style({
+	display: "flex",
+	alignItems: "center",
+	gap: "var(--wa-space-xs)",
+	position: "relative",
+});
+
+export const pageMenuTrigger = style({
+	position: "absolute",
+	right: "0.5rem",
+	top: "50%",
+	transform: "translateY(-50%)",
+	opacity: 0,
+	transition: "opacity 0.15s ease",
+	selectors: {
+		[`${pageRow}:hover &`]: {
+			opacity: 1,
+		},
+		[`${pageRow}:focus-within &`]: {
+			opacity: 1,
+		},
+		"&::part(label)": {
+			color: "var(--wa-color-text-normal, #ffffff)",
+			fontSize: "1.1rem",
+		},
+	},
+});
+
+export const pageButton = style({
+	flexGrow: 1,
+	minWidth: 0,
+	selectors: {
+		"&::part(base)": {
+			justifyContent: "flex-start",
+		},
+	},
+});
+
+export const addPageGroup = style({
 	width: "100%",
+	display: "flex",
+	flexDirection: "row",
+	gap: "var(--wa-space-xs)",
 });
 
 export const mainContent = style({
 	padding: "var(--wa-space-xl)",
 	position: "relative",
+	minHeight: "100vh",
 });
 
 globalStyle("wa-page[view='mobile']", {
