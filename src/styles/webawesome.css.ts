@@ -2,9 +2,9 @@ import { globalStyle } from "@vanilla-extract/css";
 
 globalStyle(":where(:root), .wa-light, .wa-dark, .wa-invert", {
 	vars: {
-		"--wa-color-brand-95": "oklch(1 0.01 281.08)",
-		"--wa-color-brand-90": "oklch(0.9 0.02 280.85)",
-		"--wa-color-brand-80": "oklch(0.9 0.05 279.93)",
+		"--wa-color-brand-95": "oklch(0.97 0.035 281.08)",
+		"--wa-color-brand-90": "oklch(0.93 0.050 280.85)",
+		"--wa-color-brand-80": "oklch(0.87 0.065 279.93)",
 		"--wa-color-brand-70": "oklch(0.8 0.07 279.08)",
 		"--wa-color-brand-60": "oklch(0.7 0.09 279.63)",
 		"--wa-color-brand-50": "oklch(0.7 0.11 279.33)",
@@ -13,7 +13,7 @@ globalStyle(":where(:root), .wa-light, .wa-dark, .wa-invert", {
 		"--wa-color-brand-20": "oklch(0.4 0.09 278.53)",
 		"--wa-color-brand-10": "oklch(0.3 0.07 278.59)",
 		"--wa-color-brand-05": "oklch(0.3 0.06 278.87)",
-		"--wa-color-brand": "oklch(0.7 0.11 279.33)",
+		"--wa-color-brand": "var(--wa-color-brand-50)",
 		"--wa-color-brand-on": "oklch(1 0 247.84)",
 	},
 });

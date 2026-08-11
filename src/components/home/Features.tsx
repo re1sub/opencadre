@@ -1,4 +1,11 @@
 import { For } from "solid-js";
+import { Motion } from "solid-motionone";
+import feature1 from "#assets/img/home/feature-1.png";
+import feature2 from "#assets/img/home/feature-2.png";
+import feature3 from "#assets/img/home/feature-3.png";
+import feature4 from "#assets/img/home/feature-4.png";
+import feature5 from "#assets/img/home/feature-5.png";
+import feature6 from "#assets/img/home/feature-6.png";
 import {
 	card,
 	cardContent,
@@ -13,14 +20,6 @@ import {
 	subtitle,
 	titleBlock,
 } from "./features.css";
-import { Motion } from "solid-motionone";
-
-import feature1 from "#assets/img/home/feature-1.png";
-import feature2 from "#assets/img/home/feature-2.png";
-import feature3 from "#assets/img/home/feature-3.png";
-import feature4 from "#assets/img/home/feature-4.png";
-import feature5 from "#assets/img/home/feature-5.png";
-import feature6 from "#assets/img/home/feature-6.png";
 
 const featureCards = [
 	{

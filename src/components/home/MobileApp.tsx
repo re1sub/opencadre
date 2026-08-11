@@ -1,3 +1,5 @@
+import { Motion } from "solid-motionone";
+import mobileAppImg from "#assets/img/home/mobile.png";
 import {
 	comingSoon,
 	cta,
@@ -10,8 +12,6 @@ import {
 	title,
 	titleColumn,
 } from "./mobileApp.css";
-import { Motion } from "solid-motionone";
-import mobileAppImg from "#assets/img/home/mobile.png";
 
 export function MobileApp() {
 	return (

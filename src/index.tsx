@@ -1,14 +1,15 @@
 /* @refresh reload */
-import { render } from "solid-js/web";
+
 import { QueryClient, QueryClientProvider } from "@tanstack/solid-query";
+import { render } from "solid-js/web";
 import "solid-devtools";
 import "#/webawesome.imports";
 import "#styles/webawesome.css";
 import "#styles/global.css";
 
 import App from "./App";
-import { ThemeProvider } from "./theme/ThemeProvider";
 import { AuthProvider } from "./contexts/AuthContext";
+import { ThemeProvider } from "./theme/ThemeProvider";
 
 const root = document.getElementById("root");
 

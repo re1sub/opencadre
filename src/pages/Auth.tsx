@@ -3,6 +3,7 @@ import { AuthApiError } from "@supabase/supabase-js";
 import { createEffect, createSignal, Show } from "solid-js";
 import { logo } from "#/components/home/navbar.css";
 import { useAuth } from "#/contexts/AuthContext";
+import { useTheme } from "#/theme/ThemeProvider";
 import {
 	card,
 	linkButton,
@@ -11,7 +12,6 @@ import {
 	orRow,
 	page,
 } from "./auth.css";
-import { useTheme } from "#/theme/ThemeProvider";
 
 type View = "signin" | "signup" | "forgot" | "reset" | "confirm";
 

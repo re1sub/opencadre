@@ -19,7 +19,12 @@ export const card = style({
 	backgroundColor: "var(--wa-color-surface-default)",
 	border: "var(--wa-border-width-s) solid var(--wa-color-surface-border)",
 	borderRadius: "var(--wa-border-radius-l)",
-	minWidth: "30vw",
+	width: "400px",
+	"@media": {
+		"(max-width: 600px)": {
+			width: "85vw",
+		},
+	},
 });
 
 export const linkButton = style({
