@@ -6,10 +6,12 @@ export const editor = style({
 	outline: "none",
 	cursor: "text",
 	margin: "5rem auto",
+	marginBottom: "0",
 });
 
 globalStyle(`.${editor}.markdown-body`, {
 	margin: "5rem auto",
+	marginBottom: "0",
 	minHeight: "100%",
 	maxWidth: "72ch",
 	cursor: "text",
@@ -19,6 +21,15 @@ globalStyle(`.${editor}.markdown-body`, {
 
 globalStyle(`.${editor} > *:first-child`, {
 	marginTop: 0,
+});
+
+globalStyle(`.${editor} h1:first-child::before`, {
+	content: "attr(data-placeholder)",
+	color: "var(--wa-color-text-quiet)",
+	opacity: 0.8,
+	float: "left",
+	height: 0,
+	pointerEvents: "none",
 });
 
 globalStyle(`.${editor} > *:last-child`, {

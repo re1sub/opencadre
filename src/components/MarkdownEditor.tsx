@@ -6,6 +6,8 @@ import { For, onCleanup, onMount, splitProps } from "solid-js";
 import { bubbleMenu } from "./editorBubbleMenu.css";
 import { editor } from "./markdownEditor.css";
 import "#assets/css/github-markdown.css";
+import Document from "@tiptap/extension-document";
+import { Placeholder } from "@tiptap/extensions";
 
 interface MarkdownEditorProps {
 	content: string;
@@ -47,13 +49,30 @@ export function MarkdownEditor(props: MarkdownEditorProps) {
 	let menuRef: HTMLDivElement | undefined;
 	let instance: Editor | undefined;
 
+	const CustomDocument = Document.extend({
+		content: "heading block*",
+	});
+
 	onMount(() => {
 		if (!editorRef || !menuRef) return;
 
 		instance = new Editor({
 			element: editorRef,
 			extensions: [
-				StarterKit,
+				CustomDocument,
+				StarterKit.configure({
+					document: false,
+					trailingNode: false,
+				}),
+				Placeholder.configure({
+					placeholder: ({ node, pos }) => {
+						if (node.type.name === "heading" && pos === 0) {
+							return "Type a title...";
+						}
+						return "";
+					},
+					showOnlyCurrent: false,
+				}),
 				Markdown,
 				BubbleMenu.configure({
 					element: menuRef,
@@ -62,7 +81,7 @@ export function MarkdownEditor(props: MarkdownEditorProps) {
 					options: { strategy: "fixed", placement: "top", offset: 8 },
 				}),
 			],
-			content: props.content,
+			content: props.content.trim() ? props.content : "#",
 			contentType: "markdown",
 			editable: props.editable ?? true,
 			onUpdate: ({ editor: editorInstance }) => {
