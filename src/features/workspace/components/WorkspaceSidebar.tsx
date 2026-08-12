@@ -1,6 +1,6 @@
 import type { Page, PageKind } from "../types";
-import { AddPageButton } from "./AddPageButton";
-import { PageList } from "./PageList";
+import AddPageButton from "./AddPageButton";
+import PageList from "./PageList";
 import { sidebar } from "./workspace.css";
 
 interface WorkspaceSidebarProps {
@@ -11,7 +11,7 @@ interface WorkspaceSidebarProps {
 	onRequestDelete: (id: string) => void;
 }
 
-export function WorkspaceSidebar(props: WorkspaceSidebarProps) {
+const WorkspaceSidebar = (props: WorkspaceSidebarProps) => {
 	return (
 		<nav slot="navigation" class={sidebar}>
 			<AddPageButton onAddPage={props.onAddPage} />
@@ -24,4 +24,6 @@ export function WorkspaceSidebar(props: WorkspaceSidebarProps) {
 			/>
 		</nav>
 	);
-}
+};
+
+export default WorkspaceSidebar;

@@ -4,7 +4,7 @@ import { For } from "solid-js";
 import { useDragTilt } from "../hooks/useDragTilt";
 import { BOARD_ID, type Card, type Column } from "../types";
 import * as styles from "./board.css";
-import { SortableCard } from "./SortableCard";
+import SortableCard from "./SortableCard";
 
 interface BoardColumnProps {
 	column: Column;
@@ -14,7 +14,7 @@ interface BoardColumnProps {
 	onEditColumn: (column: Column) => void;
 }
 
-export function BoardColumn(props: BoardColumnProps) {
+const BoardColumn = (props: BoardColumnProps) => {
 	// Column as sortable (for column reordering)
 	const {
 		ref: sortableRef,
@@ -111,4 +111,6 @@ export function BoardColumn(props: BoardColumnProps) {
 			</wa-button>
 		</section>
 	);
-}
+};
+
+export default BoardColumn;

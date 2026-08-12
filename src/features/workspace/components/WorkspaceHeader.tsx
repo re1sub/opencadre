@@ -10,7 +10,7 @@ interface WorkspaceHeaderProps {
 	onToggleCollapsed: () => void;
 }
 
-export function WorkspaceHeader(props: WorkspaceHeaderProps) {
+const WorkspaceHeader = (props: WorkspaceHeaderProps) => {
 	return (
 		<nav slot="navigation-header" class={navHeader}>
 			<wa-dropdown>
@@ -75,4 +75,6 @@ export function WorkspaceHeader(props: WorkspaceHeaderProps) {
 			</wa-button>
 		</nav>
 	);
-}
+};
+
+export default WorkspaceHeader;

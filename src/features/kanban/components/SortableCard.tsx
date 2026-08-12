@@ -11,7 +11,7 @@ interface SortableCardProps {
 	onOpen: (card: Card) => void;
 }
 
-export function SortableCard(props: SortableCardProps) {
+const SortableCard = (props: SortableCardProps) => {
 	const { ref, isDragging, isDropTarget } = useSortable({
 		get id() {
 			return props.card.id;
@@ -52,4 +52,6 @@ export function SortableCard(props: SortableCardProps) {
 			</Show>
 		</div>
 	);
-}
+};
+
+export default SortableCard;

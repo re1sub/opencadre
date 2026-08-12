@@ -8,7 +8,7 @@ interface WorkspaceFooterProps {
 	onSignOut: () => void;
 }
 
-export function WorkspaceFooter(props: WorkspaceFooterProps) {
+const WorkspaceFooter = (props: WorkspaceFooterProps) => {
 	return (
 		<nav slot="navigation-footer" class={navFooter}>
 			<Show when={props.user()} fallback={null}>
@@ -33,4 +33,6 @@ export function WorkspaceFooter(props: WorkspaceFooterProps) {
 			</Show>
 		</nav>
 	);
-}
+};
+
+export default WorkspaceFooter;

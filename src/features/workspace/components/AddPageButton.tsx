@@ -6,7 +6,7 @@ interface AddPageButtonProps {
 	onAddPage: (kind: PageKind) => void;
 }
 
-export function AddPageButton(props: AddPageButtonProps) {
+const AddPageButton = (props: AddPageButtonProps) => {
 	const handleTemplateSelect = (event: Event) => {
 		const selectEvent = event as unknown as {
 			detail: { item: { value?: string } | null };
@@ -61,5 +61,8 @@ export function AddPageButton(props: AddPageButtonProps) {
 				</For>
 			</wa-dropdown>
 		</div>
+
 	);
 }
+
+export default AddPageButton;

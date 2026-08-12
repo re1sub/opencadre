@@ -42,7 +42,7 @@ const blockButtons: ToolbarButton[] = [
 	{ id: "code-block", icon: "square-code", label: "Code block" },
 ];
 
-export function MarkdownEditor(props: MarkdownEditorProps) {
+export default function MarkdownEditor(props: MarkdownEditorProps) {
 	const [local, rest] = splitProps(props, ["class"]);
 
 	let editorRef: HTMLDivElement | undefined;

@@ -8,8 +8,8 @@ import "#styles/webawesome.css";
 import "#styles/global.css";
 
 import App from "./App";
-import { AuthProvider } from "./features/auth/AuthContext";
-import { ThemeProvider } from "./theme/ThemeProvider";
+import { AuthProvider } from "#/features/auth/AuthContext";
+import { ThemeProvider } from "#/theme/ThemeProvider";
 
 const root = document.getElementById("root");
 

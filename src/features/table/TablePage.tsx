@@ -9,7 +9,7 @@ import { SimpleTable } from "@simple-table/solid";
 import { createMemo, createSignal, onMount } from "solid-js";
 import "@simple-table/solid/styles.css";
 import { useTheme } from "#/theme/ThemeProvider";
-import { EditableHeader } from "./components/EditableHeader";
+import EditableHeader from "./components/EditableHeader";
 import { TABLE_ICONS } from "./constants/constants";
 import { tablePage } from "./tablePage.css";
 
@@ -18,7 +18,7 @@ type GridRow = { id: string } & Record<string, CellValue>;
 const ADD_COL_ACCESSOR = "__add_column__";
 const ADD_ROW_ID = "__add_row__";
 
-export function TablePage() {
+const TablePage = () => {
 	const { theme } = useTheme();
 	const [columns, setColumns] = createSignal<SolidColumnDef<GridRow>[]>([]);
 	const [rows, setRows] = createSignal<GridRow[]>([]);
@@ -221,4 +221,6 @@ export function TablePage() {
 			/>
 		</div>
 	);
-}
+};
+
+export default TablePage;

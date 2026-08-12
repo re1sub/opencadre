@@ -3,7 +3,7 @@ import { useAuth } from "#/features/auth/AuthContext";
 import { useTheme } from "#theme/ThemeProvider";
 import { auth, drawerContent, logo, menuButton, navbar } from "./navbar.css";
 
-export function Navbar() {
+const Navbar = () => {
 	const { theme, toggleTheme } = useTheme();
 	const { user, loading } = useAuth();
 
@@ -108,4 +108,6 @@ export function Navbar() {
 			</wa-drawer>
 		</>
 	);
-}
+};
+
+export default Navbar;

@@ -66,7 +66,7 @@ const featureCards = [
 	},
 ];
 
-export function Features() {
+const Features = () => {
 	let gridRef!: HTMLDivElement;
 
 	function onCardPointerMove(e: PointerEvent) {
@@ -136,4 +136,6 @@ export function Features() {
 			</div>
 		</Motion.section>
 	);
-}
+};
+
+export default Features;

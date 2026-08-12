@@ -15,7 +15,7 @@ import {
 
 type View = "signin" | "signup" | "forgot" | "reset" | "confirm";
 
-export function Auth(props: { view?: "forgot" | "reset" }) {
+const Auth = (props: { view?: "forgot" | "reset" }) => {
 	const { theme, toggleTheme } = useTheme();
 	const [searchParams, setSearchParams] = useSearchParams();
 	const navigate = useNavigate();
@@ -401,4 +401,6 @@ export function Auth(props: { view?: "forgot" | "reset" }) {
 			</wa-button>
 		</main>
 	);
-}
+};
+
+export default Auth;

@@ -14,7 +14,7 @@ interface PageListProps {
 	onRequestDelete: (id: string) => void;
 }
 
-export function PageList(props: PageListProps) {
+const PageList = (props: PageListProps) => {
 	const isActive = (id: string) => id === props.activePageId();
 
 	return (
@@ -59,4 +59,6 @@ export function PageList(props: PageListProps) {
 			</ul>
 		</Show>
 	);
-}
+};
+
+export default PageList;

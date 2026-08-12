@@ -24,7 +24,7 @@ const resourceLinks = [
 	},
 ];
 
-export function Footer() {
+const Footer = () => {
 	return (
 		<footer class={footer}>
 			<div class={body}>
@@ -60,4 +60,6 @@ export function Footer() {
 			</div>
 		</footer>
 	);
-}
+};
+
+export default Footer;

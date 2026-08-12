@@ -1,5 +1,5 @@
 import { createSignal, onCleanup, onMount } from "solid-js";
-import { DeleteButton } from "#/features/ui/DeleteButton";
+import DeleteButton from "#/features/ui/DeleteButton";
 import type { Column } from "../types";
 import * as styles from "./board.css";
 
@@ -10,7 +10,7 @@ interface ColumnDialogProps {
 	onRequestDelete: () => void;
 }
 
-export function ColumnDialog(props: ColumnDialogProps) {
+const ColumnDialog = (props: ColumnDialogProps) => {
 	let dialogRef: { open: boolean } | undefined;
 
 	const [title, setTitle] = createSignal(props.column.title);
@@ -101,4 +101,6 @@ export function ColumnDialog(props: ColumnDialogProps) {
 			</div>
 		</wa-dialog>
 	);
-}
+};
+
+export default ColumnDialog;

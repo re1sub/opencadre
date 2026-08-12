@@ -4,7 +4,7 @@ import heroLight from "#assets/img/home/hero-light.png";
 import { useTheme } from "#theme/ThemeProvider";
 import { hero, screenshot, screenshotImage, title } from "./hero.css";
 
-export function Hero() {
+const Hero = () => {
 	const { theme } = useTheme();
 
 	return (
@@ -34,4 +34,6 @@ export function Hero() {
 			</Motion.div>
 		</section>
 	);
-}
+};
+
+export default Hero;

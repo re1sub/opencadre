@@ -13,7 +13,7 @@ import {
 	titleColumn,
 } from "./mobileApp.css";
 
-export function MobileApp() {
+const MobileApp = () => {
 	return (
 		<section class={mobileApp}>
 			<div class={inner}>
@@ -57,4 +57,6 @@ export function MobileApp() {
 			</div>
 		</section>
 	);
-}
+};
+
+export default MobileApp;

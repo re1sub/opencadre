@@ -108,3 +108,5 @@ export function EditableText(props: EditableTextProps) {
 		></wa-input>
 	);
 }
+
+export default EditableText;

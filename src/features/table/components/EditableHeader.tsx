@@ -5,7 +5,7 @@ import type {
 	SolidDefaultRowData,
 } from "@simple-table/solid";
 import { createSignal } from "solid-js";
-import { EditableText } from "#/features/ui/EditableText";
+import EditableText from "#/features/ui/EditableText";
 import {
 	editableHeaderWrapper,
 	headerSortFilterWrapper,
@@ -20,9 +20,9 @@ interface EditableHeaderProps<
 	onHeaderEdit: (header: ColumnDef<TData, CellValue>, newLabel: string) => void;
 }
 
-export function EditableHeader<TData extends SolidDefaultRowData>(
+const EditableHeader = <TData extends SolidDefaultRowData>(
 	props: EditableHeaderProps<TData>,
-) {
+) => {
 	const [tempValue, setTempValue] = createSignal(props.header.label ?? "");
 
 	const save = () => {
@@ -52,4 +52,6 @@ export function EditableHeader<TData extends SolidDefaultRowData>(
 			</span>
 		</div>
 	);
-}
+};
+
+export default EditableHeader;

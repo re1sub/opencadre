@@ -1,5 +1,5 @@
 import { createSignal, onCleanup, onMount } from "solid-js";
-import { DeleteButton } from "#/features/ui/DeleteButton";
+import DeleteButton from "#/features/ui/DeleteButton";
 import type { Card } from "../types";
 import * as styles from "./board.css";
 
@@ -10,7 +10,7 @@ interface CardDialogProps {
 	onRequestDelete: () => void;
 }
 
-export function CardDialog(props: CardDialogProps) {
+const CardDialog = (props: CardDialogProps) => {
 	let dialogRef: { open: boolean } | undefined;
 
 	const [title, setTitle] = createSignal(props.card.title);
@@ -82,12 +82,13 @@ export function CardDialog(props: CardDialogProps) {
 				<div style={{ display: "flex", gap: "var(--wa-space-s)" }}>
 					<wa-button variant="neutral" onClick={close}>
 						Cancel
-					</wa-button>
-					<wa-button variant="brand" onClick={handleSave}>
+					</wa-button>\n					<wa-button variant="brand" onClick={handleSave}>
 						Save
 					</wa-button>
 				</div>
 			</div>
 		</wa-dialog>
 	);
-}
+};
+
+export default CardDialog;

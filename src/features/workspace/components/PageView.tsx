@@ -1,7 +1,4 @@
-import { Show } from "solid-js";
-import { KanbanBoard } from "#/features/kanban/KanbanBoard";
-import { MarkdownEditor } from "#/features/markdown/MarkdownEditor";
-import { TablePage } from "#/features/table/TablePage";
+import { lazy, Show, Suspense } from "solid-js";
 import type { Page } from "../types";
 
 interface PageViewProps {
@@ -9,7 +6,11 @@ interface PageViewProps {
 	onChangeContent?: (pageId: string, content: string) => void;
 }
 
-export function PageView(props: PageViewProps) {
+const MarkdownEditor = lazy(() => import("#/features/markdown/MarkdownEditor"));
+const KanbanBoard = lazy(() => import("#/features/kanban/KanbanBoard"));
+const TablePage = lazy(() => import("#/features/table/TablePage"));
+
+const PageView = (props: PageViewProps) => {
 	const activeId = () => props.page?.id ?? null;
 
 	return (
@@ -19,18 +20,24 @@ export function PageView(props: PageViewProps) {
 				if (!page || page.id !== id) return null;
 
 				if (page.kind === "kanban") {
-					return <KanbanBoard pageId={page.id} />;
+					return (
+						<Suspense fallback={<div>Loading...</div>}>
+							<KanbanBoard pageId={page.id} />
+						</Suspense>
+					);
 				}
 
 				if (page.kind === "table") {
 					return (
-						<TablePage
-						// pageId={page.id}
-						// content={page.content}
-						// onContentChange={(content) =>
-						// 	props.onChangeContent?.(page.id, content)
-						// }
-						/>
+						<Suspense fallback={<div>Loading...</div>}>
+							<TablePage
+							// pageId={page.id}
+							// content={page.content}
+							// onContentChange={(content) =>
+							// 	props.onChangeContent?.(page.id, content)
+							// }
+							/>
+						</Suspense>
 					);
 				}
 
@@ -38,4 +45,6 @@ export function PageView(props: PageViewProps) {
 			}}
 		</Show>
 	);
-}
+};
+
+export default PageView;

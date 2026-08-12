@@ -1,6 +1,6 @@
 import { onCleanup, onMount } from "solid-js";
 import { confirmActions, confirmMessage } from "./confirmDialog.css";
-import { DeleteButton } from "./DeleteButton";
+import DeleteButton from "./DeleteButton";
 
 interface ConfirmDialogProps {
 	label: string;
@@ -9,7 +9,7 @@ interface ConfirmDialogProps {
 	onClose: () => void;
 }
 
-export function ConfirmDialog(props: ConfirmDialogProps) {
+const ConfirmDialog = (props: ConfirmDialogProps) => {
 	let dialogRef: { open: boolean } | undefined;
 
 	onMount(() => {
@@ -45,4 +45,6 @@ export function ConfirmDialog(props: ConfirmDialogProps) {
 			</div>
 		</wa-dialog>
 	);
-}
+};
+
+export default ConfirmDialog;

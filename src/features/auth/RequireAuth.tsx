@@ -3,7 +3,7 @@ import type { ParentComponent } from "solid-js";
 import { Show } from "solid-js";
 import { useAuth } from "#/features/auth/AuthContext";
 
-export const RequireAuth: ParentComponent = (props) => {
+const RequireAuth: ParentComponent = (props) => {
 	const { user, loading } = useAuth();
 
 	return (
@@ -12,3 +12,4 @@ export const RequireAuth: ParentComponent = (props) => {
 		</Show>
 	);
 };
+export default RequireAuth;

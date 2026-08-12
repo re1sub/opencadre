@@ -1,11 +1,11 @@
 import { createSignal, Show } from "solid-js";
 import { useAuth } from "#/features/auth/AuthContext";
-import { ConfirmDialog } from "#/features/ui/ConfirmDialog";
-import { EditableText } from "#/features/ui/EditableText";
-import { PageView } from "./components/PageView";
-import { WorkspaceFooter } from "./components/WorkspaceFooter";
-import { WorkspaceHeader } from "./components/WorkspaceHeader";
-import { WorkspaceSidebar } from "./components/WorkspaceSidebar";
+import ConfirmDialog from "#/features/ui/ConfirmDialog";
+import EditableText from "#/features/ui/EditableText";
+import PageView from "./components/PageView";
+import WorkspaceFooter from "./components/WorkspaceFooter";
+import WorkspaceHeader from "./components/WorkspaceHeader";
+import WorkspaceSidebar from "./components/WorkspaceSidebar";
 import {
 	mainContent,
 	page,
@@ -42,7 +42,7 @@ const createDefaultPages = (): Page[] => [
 	},
 ];
 
-export function Workspace() {
+const Workspace = () => {
 	const { user, logout } = useAuth();
 
 	const [error, setError] = createSignal<string | null>(null);
@@ -224,4 +224,6 @@ export function Workspace() {
 			</Show>
 		</wa-page>
 	);
-}
+};
+
+export default Workspace;
