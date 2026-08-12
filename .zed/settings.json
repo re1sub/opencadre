@@ -1,13 +1,3 @@
 {
-	"formatter": {
-		"external": {
-			"command": "sh",
-			"arguments": [
-				"-c",
-				"node ./node_modules/@biomejs/biome/bin/biome check --write --unsafe --stdin-file-path \"$1\"",
-				"--",
-				"{buffer_path}"
-			]
-		}
-	}
+	"file_scan_exclusions": ["**/pnpm-lock.yaml"]
 }
