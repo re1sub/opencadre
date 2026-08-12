@@ -7,7 +7,7 @@ import { bubbleMenu } from "./editorBubbleMenu.css";
 import { editor } from "./markdownEditor.css";
 import "#assets/css/github-markdown.css";
 import Document from "@tiptap/extension-document";
-import { Placeholder } from "@tiptap/extensions";
+import { Placeholder } from "@tiptap/extension-placeholder";
 
 interface MarkdownEditorProps {
 	content: string;
