@@ -80,6 +80,25 @@ export const workspaceName = style({
 	textAlign: "left",
 });
 
+globalStyle(`.${workspaceName} .workspace-inline-rename`, {
+	background: "transparent",
+	border: "none",
+	color: "inherit",
+	font: "inherit",
+	width: "100%",
+	padding: 0,
+});
+
+export const workspaceItem = style({
+	paddingInlineStart: "0.5rem",
+	paddingRight: "0.2rem",
+	selectors: {
+		"&::part(checkmark)": {
+			order: 2,
+		},
+	},
+});
+
 export const pageList = style({
 	display: "flex",
 	flexDirection: "column",

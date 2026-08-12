@@ -1,7 +1,15 @@
 export type PageKind = "markdown" | "kanban" | "table";
 
+export interface Workspace {
+	id: string;
+	name: string;
+	createdAt: string;
+	updatedAt: string;
+}
+
 export interface Page {
 	id: string;
+	workspaceId: string;
 	title: string;
 	kind: PageKind;
 	content: string;
