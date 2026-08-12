@@ -7,8 +7,7 @@ interface WorkspaceSidebarProps {
 	pages: Page[];
 	activePageId: () => string | null;
 	onAddPage: (kind: PageKind) => void;
-	onSelectPage: (id: string) => void;
-	onRequestDelete: (id: string) => void;
+	onRequestDeletePage: (id: string) => void;
 }
 
 const WorkspaceSidebar = (props: WorkspaceSidebarProps) => {
@@ -19,8 +18,7 @@ const WorkspaceSidebar = (props: WorkspaceSidebarProps) => {
 			<PageList
 				pages={props.pages}
 				activePageId={props.activePageId}
-				onSelect={props.onSelectPage}
-				onRequestDelete={props.onRequestDelete}
+				onRequestDelete={props.onRequestDeletePage}
 			/>
 		</nav>
 	);

@@ -1,5 +1,4 @@
-import { type RouteDefinition } from "@solidjs/router";
-import { Navigate } from "@solidjs/router";
+import { Navigate, type RouteDefinition } from "@solidjs/router";
 import { lazy } from "solid-js";
 import RequireAuth from "#/features/auth/RequireAuth";
 
@@ -14,6 +13,14 @@ export const routes: RouteDefinition[] = [
 	{ path: "/auth/reset-password", component: () => <Auth view="reset" /> },
 	{
 		path: "/workspace",
+		component: () => (
+			<RequireAuth>
+				<Workspace />
+			</RequireAuth>
+		),
+	},
+	{
+		path: "/workspace/p/:pageId",
 		component: () => (
 			<RequireAuth>
 				<Workspace />

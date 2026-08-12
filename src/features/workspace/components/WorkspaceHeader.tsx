@@ -1,56 +1,89 @@
+import { For, Show } from "solid-js";
+import type { Workspace } from "../types";
 import {
 	closeSidebarButton,
 	navHeader,
+	workspaceItem,
 	workspaceName,
 	workspaceTrigger,
 } from "./workspace.css";
 
 interface WorkspaceHeaderProps {
 	collapsed: () => boolean;
+	activeWorkspace: () => Workspace | null | undefined;
 	onToggleCollapsed: () => void;
+	onRename: (name: string) => void;
+	onSelectWorkspace: (id: string) => void;
+	workspaces: Workspace[];
+	onAddWorkspace: () => void;
 }
 
 const WorkspaceHeader = (props: WorkspaceHeaderProps) => {
+	const handleSelect = (e: Event) => {
+		const selectEvent = e as unknown as {
+			detail: { item: { value?: string } | null };
+		};
+
+		const value = selectEvent.detail.item?.value;
+
+		if (value === "__add__") props.onAddWorkspace();
+		else if (value) props.onSelectWorkspace(value);
+	};
+
 	return (
 		<nav slot="navigation-header" class={navHeader}>
-			<wa-dropdown>
-				<wa-button
-					type="button"
-					slot="trigger"
-					variant="neutral"
-					appearance="plain"
-					with-caret
-					class={workspaceTrigger}
-				>
-					<wa-avatar
-						initials="MW"
-						label="Workspace"
-						slot="start"
-						style={{ "--size": "2rem" }}
-					></wa-avatar>
-					<span class={workspaceName}>My Workspace</span>
-				</wa-button>
+			<Show when={props.activeWorkspace()} fallback={null}>
+				{(active) => (
+					<wa-dropdown on:wa-select={handleSelect}>
+						<wa-button
+							type="button"
+							slot="trigger"
+							variant="neutral"
+							appearance="plain"
+							with-caret
+							class={workspaceTrigger}
+						>
+							<wa-avatar
+								initials={active().name.slice(0, 2).toUpperCase()}
+								label={active().name}
+								slot="start"
+								style={{ "--size": "2rem" }}
+							></wa-avatar>
+							<span class={workspaceName}>{active().name}</span>
+						</wa-button>
 
-				<wa-dropdown-item value="my-workspace">
-					<wa-avatar
-						initials="MW"
-						label="Workspace"
-						slot="icon"
-						style={{ "--size": "2rem" }}
-					></wa-avatar>
-					My Workspace
-				</wa-dropdown-item>
+						<For each={props.workspaces}>
+							{(workspace) => (
+								<wa-dropdown-item
+									value={workspace.id}
+									type="checkbox"
+									checked={workspace.id === active().id}
+									class={workspaceItem}
+									style={{
+										"background-color":
+											workspace.id === active().id
+												? "var(--wa-color-neutral-fill-normal)"
+												: "",
+									}}
+								>
+									<wa-avatar
+										initials={workspace.name.slice(0, 2).toUpperCase()}
+										label={workspace.name}
+										style={{ "--size": "2rem" }}
+										slot="icon"
+									></wa-avatar>
+									{workspace.name}
+								</wa-dropdown-item>
+							)}
+						</For>
 
-				<wa-dropdown-item value="second-workspace">
-					<wa-avatar
-						initials="SW"
-						label="Workspace"
-						slot="icon"
-						style={{ "--size": "2rem" }}
-					></wa-avatar>
-					Second Workspace
-				</wa-dropdown-item>
-			</wa-dropdown>
+						<wa-dropdown-item value="__add__">
+							<wa-icon slot="icon" name="plus"></wa-icon>
+							New workspace
+						</wa-dropdown-item>
+					</wa-dropdown>
+				)}
+			</Show>
 
 			<wa-button
 				appearance="plain"

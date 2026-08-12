@@ -1,3 +1,4 @@
+import { useNavigate } from "@solidjs/router";
 import { For, Show } from "solid-js";
 import { PAGE_KIND_META, type Page } from "../types";
 import {
@@ -10,12 +11,12 @@ import {
 interface PageListProps {
 	pages: Page[];
 	activePageId: () => string | null;
-	onSelect: (id: string) => void;
 	onRequestDelete: (id: string) => void;
 }
 
 const PageList = (props: PageListProps) => {
 	const isActive = (id: string) => id === props.activePageId();
+	const navigate = useNavigate();
 
 	return (
 		<Show when={props.pages.length > 0}>
@@ -27,7 +28,7 @@ const PageList = (props: PageListProps) => {
 								variant={isActive(entry.id) ? "brand" : "neutral"}
 								appearance={isActive(entry.id) ? "filled" : "plain"}
 								class={pageButton}
-								onClick={() => props.onSelect(entry.id)}
+								onClick={() => navigate(`/workspace/p/${entry.id}`)}
 							>
 								<wa-icon
 									slot="start"

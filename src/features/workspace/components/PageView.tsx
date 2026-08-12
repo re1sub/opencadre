@@ -1,4 +1,5 @@
 import { lazy, Show, Suspense } from "solid-js";
+import LoadingSpinner from "#/features/ui/LoadingSpinner";
 import type { Page } from "../types";
 
 interface PageViewProps {
@@ -21,7 +22,7 @@ const PageView = (props: PageViewProps) => {
 
 				if (page.kind === "kanban") {
 					return (
-						<Suspense fallback={<div>Loading...</div>}>
+						<Suspense fallback={<LoadingSpinner />}>
 							<KanbanBoard pageId={page.id} />
 						</Suspense>
 					);
@@ -29,7 +30,7 @@ const PageView = (props: PageViewProps) => {
 
 				if (page.kind === "table") {
 					return (
-						<Suspense fallback={<div>Loading...</div>}>
+						<Suspense fallback={<LoadingSpinner />}>
 							<TablePage
 							// pageId={page.id}
 							// content={page.content}
