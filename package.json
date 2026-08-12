@@ -32,6 +32,7 @@
 		"@awesome.me/webawesome": "^3.11.0",
 		"@dnd-kit/helpers": "^0.5.0",
 		"@dnd-kit/solid": "^0.5.0",
+		"@simple-table/solid": "^4.1.6",
 		"@solidjs/router": "^1.0.0",
 		"@supabase/supabase-js": "^2.110.8",
 		"@tanstack/solid-query": "^5.101.4",

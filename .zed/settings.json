@@ -4,7 +4,7 @@
 			"command": "sh",
 			"arguments": [
 				"-c",
-				"node ./node_modules/@biomejs/biome/bin/biome format --stdin-file-path \"$1\"",
+				"node ./node_modules/@biomejs/biome/bin/biome check --write --unsafe --stdin-file-path \"$1\"",
 				"--",
 				"{buffer_path}"
 			]

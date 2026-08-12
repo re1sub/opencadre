@@ -17,6 +17,9 @@ importers:
       '@dnd-kit/solid':
         specifier: ^0.5.0
         version: 0.5.0(solid-js@1.9.14)
+      '@simple-table/solid':
+        specifier: ^4.1.6
+        version: 4.1.6(solid-js@1.9.14)
       '@solidjs/router':
         specifier: ^1.0.0
         version: 1.0.0(solid-js@1.9.14)
@@ -780,6 +783,11 @@ packages:
 
   '@shoelace-style/localize@3.2.3':
     resolution: {integrity: sha512-pWoZywizMilenLfQcpE9bjaqi7WKiQXJB42cxvmSPwYS76U776wJ7B5QQ0P28yVit1vpHuFZzq1CtfVFv32jaQ==}
+
+  '@simple-table/solid@4.1.6':
+    resolution: {integrity: sha512-sDNWI+jyc9Ndyr6Z9L/jW7GhzA3MwEmJNAWjZ5OPWNGcbzwLVcCPD6qTZMWPT4ZHakJL9+Dsds/n96p3nz47Ow==}
+    peerDependencies:
+      solid-js: '>=1.0.0'
 
   '@solid-devtools/debugger@0.28.1':
     resolution: {integrity: sha512-6qIUI6VYkXoRnL8oF5bvh2KgH71qlJ18hNw/mwSyY6v48eb80ZR48/5PDXufUa3q+MBSuYa1uqTMwLewpay9eg==}
@@ -1682,6 +1690,9 @@ packages:
     resolution: {integrity: sha512-rVQVWjjSvlINzaQPZH5JFqsqEsIWdTxY3iJZCnTL/5gQbXIRooVZKI60tVCkOVfzcRPejboxO2t0P89dg5mQaA==}
     engines: {node: '>=10'}
 
+  simple-table-core@4.1.6:
+    resolution: {integrity: sha512-2GAkPUztFYC59zlAWnOf2/9L71xXbC6O+P4dRvAYnxr0EDImvhYsS1jWYPXkSatRnWGAls3ISipibQzt7StDxw==}
+
   solid-devtools@0.34.5:
     resolution: {integrity: sha512-KNVdS9MQzzeVS++Vmg4JeU0fM6ZMuBEmkBA7SmqPS2s5UHpRjv1PNH8gShmlN9L/tki6OUAzJP3H1aKq2AcOSg==}
     peerDependencies:
@@ -2442,6 +2453,11 @@ snapshots:
   '@shoelace-style/animations@1.2.0': {}
 
   '@shoelace-style/localize@3.2.3': {}
+
+  '@simple-table/solid@4.1.6(solid-js@1.9.14)':
+    dependencies:
+      simple-table-core: 4.1.6
+      solid-js: 1.9.14
 
   '@solid-devtools/debugger@0.28.1(solid-js@1.9.14)':
     dependencies:
@@ -3389,6 +3405,8 @@ snapshots:
       seroval: 1.5.6
 
   seroval@1.5.6: {}
+
+  simple-table-core@4.1.6: {}
 
   solid-devtools@0.34.5(solid-js@1.9.14)(vite@8.2.0(esbuild@0.28.1)):
     dependencies:
