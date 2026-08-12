@@ -26,6 +26,10 @@ export const logo = style({
 	fontSize: "clamp(2rem, 5vw, 2.5rem)",
 	fontWeight: 600,
 	color: "var(--wa-color-brand)",
+	display: "flex",
+	alignItems: "center",
+	justifyContent: "center",
+	gap: "0.5rem",
 });
 
 export const columnGroup = style({

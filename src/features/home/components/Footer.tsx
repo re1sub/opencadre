@@ -1,4 +1,5 @@
 import { For } from "solid-js";
+import logoSvg from "#assets/img/brand/logo.svg";
 import {
 	body,
 	columnGroup,
@@ -29,6 +30,7 @@ const Footer = () => {
 		<footer class={footer}>
 			<div class={body}>
 				<a href="/" class={logo}>
+					<img src={logoSvg} alt="OpenCadre" width="40px" height="40px" />
 					opencadre
 				</a>
 				<div class={columnGroup}>

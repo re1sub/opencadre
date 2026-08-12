@@ -1,0 +1,77 @@
+<svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 64 64"
+    width="64"
+    height="64"
+>
+    <title>Logo</title>
+    <rect width="64" height="64" rx="12" fill="#9097e2" style="" />
+    <rect
+        x="8.615"
+        y="11.077"
+        width="9.846"
+        height="9.846"
+        rx="2"
+        fill="#ffffff"
+        opacity="0.9"
+        style=""
+    />
+    <rect
+        x="24.616"
+        y="12.923"
+        width="30.769"
+        height="6.153"
+        rx="1.5"
+        fill="#ffffff"
+        opacity="0.7"
+        style=""
+    />
+    <rect
+        x="8.615"
+        y="27.076"
+        width="9.846"
+        height="9.846"
+        rx="2"
+        fill="#ffffff"
+        opacity="0.6"
+        style=""
+    />
+    <rect
+        x="24.616"
+        y="28.923"
+        width="28.308"
+        height="6.153"
+        rx="1.5"
+        fill="#ffffff"
+        opacity="0.7"
+        style=""
+    />
+    <rect
+        x="8.615"
+        y="43.077"
+        width="9.846"
+        height="9.846"
+        rx="2"
+        fill="#ffffff"
+        opacity="0.4"
+        style=""
+    />
+    <rect
+        x="24.616"
+        y="44.923"
+        width="25.847"
+        height="6.153"
+        rx="1.5"
+        fill="#ffffff"
+        opacity="0.3"
+        style=""
+    />
+    <path
+        d="M 8.615 31.054 L 12.641 35.077 L 18.964 27.028"
+        stroke="#ffffff"
+        stroke-linejoin="round"
+        fill="none"
+        opacity="0.9"
+        style="stroke-opacity: 0.9; stroke-linecap: round; stroke-width: 1.8px"
+    />
+</svg>
