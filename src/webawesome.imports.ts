@@ -36,3 +36,4 @@ import "@awesome.me/webawesome/dist/components/tooltip/tooltip.js";
 import "@awesome.me/webawesome/dist/components/dialog/dialog.js";
 import "@awesome.me/webawesome/dist/components/color-picker/color-picker.js";
 import "@awesome.me/webawesome/dist/components/switch/switch.js";
+import "@awesome.me/webawesome/dist/components/spinner/spinner.js";
