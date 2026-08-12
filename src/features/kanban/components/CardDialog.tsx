@@ -82,7 +82,8 @@ const CardDialog = (props: CardDialogProps) => {
 				<div style={{ display: "flex", gap: "var(--wa-space-s)" }}>
 					<wa-button variant="neutral" onClick={close}>
 						Cancel
-					</wa-button>\n					<wa-button variant="brand" onClick={handleSave}>
+					</wa-button>
+					<wa-button variant="brand" onClick={handleSave}>
 						Save
 					</wa-button>
 				</div>

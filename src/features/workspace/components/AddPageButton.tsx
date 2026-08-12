@@ -61,8 +61,7 @@ const AddPageButton = (props: AddPageButtonProps) => {
 				</For>
 			</wa-dropdown>
 		</div>
-
 	);
-}
+};
 
 export default AddPageButton;
