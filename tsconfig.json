@@ -20,9 +20,6 @@
 
 		"paths": {
 			"#/*": ["./src/*"],
-			"#components/*": ["./src/components/*"],
-			"#utils/*": ["./src/utils/*"],
-			"#pages/*": ["./src/pages/*"],
 			"#styles/*": ["./src/styles/*"],
 			"#theme/*": ["./src/theme/*"],
 			"#assets/*": ["./src/assets/*"]

@@ -1,18 +1,20 @@
 import { createSignal, Show } from "solid-js";
-import { ConfirmDialog } from "#/components/ui/ConfirmDialog";
-import { GETTING_STARTED_MARKDOWN } from "#/components/workspace/gettingStarted";
-import { PageView } from "#/components/workspace/PageView";
-import type { Page, PageKind } from "#/components/workspace/types";
-import { useSidebarResize } from "#/components/workspace/useSidebarResize";
-import { WorkspaceFooter } from "#/components/workspace/WorkspaceFooter";
-import { WorkspaceHeader } from "#/components/workspace/WorkspaceHeader";
-import { WorkspaceSidebar } from "#/components/workspace/WorkspaceSidebar";
+import { useAuth } from "#/features/auth/AuthContext";
+import { ConfirmDialog } from "#/features/ui/ConfirmDialog";
+import { EditableText } from "#/features/ui/EditableText";
+import { PageView } from "./components/PageView";
+import { WorkspaceFooter } from "./components/WorkspaceFooter";
+import { WorkspaceHeader } from "./components/WorkspaceHeader";
+import { WorkspaceSidebar } from "./components/WorkspaceSidebar";
 import {
 	mainContent,
 	page,
+	pageTitleStyle,
 	sidebarResizer,
-} from "#/components/workspace/workspace.css";
-import { useAuth } from "#/contexts/AuthContext";
+} from "./components/workspace.css";
+import { GETTING_STARTED_MARKDOWN } from "./constants/gettingStarted";
+import { useSidebarResize } from "./hooks/useSidebarResize";
+import type { Page, PageKind } from "./types";
 
 interface DeletePageTarget {
 	id: string;
@@ -30,6 +32,12 @@ const createDefaultPages = (): Page[] => [
 		id: crypto.randomUUID(),
 		title: "Kanban Board",
 		kind: "kanban",
+		content: "",
+	},
+	{
+		id: crypto.randomUUID(),
+		title: "Sample Table",
+		kind: "table",
 		content: "",
 	},
 ];
@@ -68,6 +76,18 @@ export function Workspace() {
 			const remaining = pages().filter((entry) => entry.id !== id);
 			setActivePageId(remaining[0]?.id ?? null);
 		}
+	};
+
+	const renamePage = (id: string, title: string) => {
+		setPages((current) =>
+			current.map((entry) => (entry.id === id ? { ...entry, title } : entry)),
+		);
+	};
+
+	const updatePageContent = (id: string, content: string) => {
+		setPages((current) =>
+			current.map((entry) => (entry.id === id ? { ...entry, content } : entry)),
+		);
 	};
 
 	const handleSignOut = async () => {
@@ -166,8 +186,30 @@ export function Workspace() {
 					}}
 					onPointerDown={onResizePointerDown}
 				/>
+				<Show when={activePageId()} keyed>
+					{(id) => {
+						const active = pages().find((entry) => entry.id === id);
+						if (!active) return null;
 
-				<PageView page={activePage()} />
+						return (
+							<div
+								style={{
+									"padding-bottom": "var(--wa-space-s)",
+									"border-bottom":
+										"var(--wa-border-width-s) var(--wa-border-style) var(--wa-color-surface-border)",
+								}}
+							>
+								<EditableText
+									value={active.title}
+									onChange={(title) => renamePage(active.id, title)}
+									class={pageTitleStyle}
+									ariaLabel="Page title"
+								/>
+							</div>
+						);
+					}}
+				</Show>
+				<PageView page={activePage()} onChangeContent={updatePageContent} />
 			</main>
 
 			<Show when={deleteTarget()} keyed>

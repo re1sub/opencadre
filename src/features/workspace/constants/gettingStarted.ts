@@ -1,5 +1,5 @@
 export const GETTING_STARTED_MARKDOWN = `
-# Getting Started
+# Welcome to the Demo page!
 
 This page serves as a demo of the markdown editor. You can use it to test out markdown formatting and see how it renders.
 

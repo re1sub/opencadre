@@ -1,8 +1,8 @@
 import { useNavigate, useSearchParams } from "@solidjs/router";
 import { AuthApiError } from "@supabase/supabase-js";
 import { createEffect, createSignal, Show } from "solid-js";
-import { logo } from "#/components/home/navbar.css";
-import { useAuth } from "#/contexts/AuthContext";
+import { useAuth } from "#/features/auth/AuthContext";
+import { logo } from "#/features/home/components/navbar.css";
 import { useTheme } from "#/theme/ThemeProvider";
 import {
 	card,

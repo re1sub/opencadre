@@ -151,3 +151,12 @@ globalStyle("wa-page[view='mobile']", {
 globalStyle(`wa-page[view='mobile'] .${sidebarResizer}`, {
 	display: "none",
 });
+
+// Large Page Title style variant
+export const pageTitleStyle = style({
+	vars: {
+		"--wa-form-control-value-font-size": "2rem",
+		"--wa-form-control-value-font-weight": "700",
+		"--wa-form-control-value-line-height": "1.2",
+	},
+});

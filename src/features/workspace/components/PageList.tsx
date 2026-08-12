@@ -1,5 +1,5 @@
 import { For, Show } from "solid-js";
-import { PAGE_KIND_META, type Page } from "./types";
+import { PAGE_KIND_META, type Page } from "../types";
 import {
 	pageButton,
 	pageList,

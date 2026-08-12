@@ -1,11 +1,11 @@
 import { DragDropProvider } from "@dnd-kit/solid";
 import { For, Show } from "solid-js";
-import { BoardColumn } from "./kanban/BoardColumn";
-import * as styles from "./kanban/board.css";
-import { CardDialog } from "./kanban/CardDialog";
-import { ColumnDialog } from "./kanban/ColumnDialog";
-import { useKanbanBoard } from "./kanban/useKanbanBoard";
-import { ConfirmDialog } from "./ui/ConfirmDialog";
+import { ConfirmDialog } from "#/features/ui/ConfirmDialog";
+import { BoardColumn } from "./components/BoardColumn";
+import * as styles from "./components/board.css";
+import { CardDialog } from "./components/CardDialog";
+import { ColumnDialog } from "./components/ColumnDialog";
+import { useKanbanBoard } from "./hooks/useKanbanBoard";
 
 interface KanbanBoardProps {
 	pageId?: string;
@@ -18,7 +18,6 @@ export function KanbanBoard(props: KanbanBoardProps) {
 		<div class={styles.board} data-page-id={props.pageId}>
 			<header class={styles.boardHeader}>
 				<div>
-					<h2 class={styles.boardTitle}>Kanban Board</h2>
 					{/*<p class={styles.boardSubtitle}>
 						{board
 							.columns()

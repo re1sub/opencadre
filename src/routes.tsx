@@ -1,8 +1,8 @@
 import { Navigate, type RouteDefinition } from "@solidjs/router";
-import { RequireAuth } from "#/components/RequireAuth";
-import { Auth } from "#/pages/Auth";
-import { Home } from "#/pages/Home";
-import { Workspace } from "#/pages/Workspace";
+import { Auth } from "#/features/auth/Auth";
+import { RequireAuth } from "#/features/auth/RequireAuth";
+import { Home } from "#/features/home/Home";
+import { Workspace } from "#/features/workspace/Workspace";
 
 export const routes: RouteDefinition[] = [
 	{ path: "/", component: Home },

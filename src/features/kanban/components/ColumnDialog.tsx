@@ -1,20 +1,20 @@
 import { createSignal, onCleanup, onMount } from "solid-js";
-import { DeleteButton } from "../ui/DeleteButton";
+import { DeleteButton } from "#/features/ui/DeleteButton";
+import type { Column } from "../types";
 import * as styles from "./board.css";
-import type { Card } from "./types";
 
-interface CardDialogProps {
-	card: Card;
+interface ColumnDialogProps {
+	column: Column;
 	onClose: () => void;
-	onSave: (card: Card) => void;
+	onSave: (column: Column) => void;
 	onRequestDelete: () => void;
 }
 
-export function CardDialog(props: CardDialogProps) {
+export function ColumnDialog(props: ColumnDialogProps) {
 	let dialogRef: { open: boolean } | undefined;
 
-	const [title, setTitle] = createSignal(props.card.title);
-	const [description, setDescription] = createSignal(props.card.description);
+	const [title, setTitle] = createSignal(props.column.title);
+	const [color, setColor] = createSignal(props.column.color);
 	const [pendingDelete, setPendingDelete] = createSignal(false);
 
 	onMount(() => {
@@ -38,9 +38,9 @@ export function CardDialog(props: CardDialogProps) {
 
 	const handleSave = () => {
 		props.onSave({
-			...props.card,
+			...props.column,
 			title: title(),
-			description: description(),
+			color: color(),
 		});
 		close();
 	};
@@ -54,30 +54,41 @@ export function CardDialog(props: CardDialogProps) {
 		<wa-dialog
 			ref={(el) => (dialogRef = el)}
 			light-dismiss
-			label="Card details"
+			label="Column settings"
 			on:wa-after-hide={handleHide}
 		>
 			<div class={styles.dialogBody}>
 				<wa-input
-					label="Title"
-					attr:value={props.card.title}
+					label="Column name"
+					attr:value={props.column.title}
 					on:input={(event) =>
 						setTitle((event.currentTarget as HTMLInputElement).value)
 					}
 				></wa-input>
 
-				<wa-textarea
-					label="Description"
-					rows={4}
-					attr:value={props.card.description}
-					on:input={(event) =>
-						setDescription((event.currentTarget as HTMLTextAreaElement).value)
-					}
-				></wa-textarea>
+				<div class={styles.dialogRow}>
+					<span class={styles.dialogLabel}>Accent color</span>
+					<div
+						style={{
+							display: "flex",
+							"align-items": "center",
+							gap: "var(--wa-space-s)",
+						}}
+					>
+						<wa-color-picker
+							attr:value={props.column.color}
+							on:input={(event) =>
+								setColor(
+									(event.currentTarget as unknown as { value: string }).value,
+								)
+							}
+						></wa-color-picker>
+					</div>
+				</div>
 			</div>
 
 			<div class={styles.dialogActions}>
-				<DeleteButton onDelete={handleDelete} label="Delete card" />
+				<DeleteButton onDelete={handleDelete} label="Delete column" />
 
 				<div style={{ display: "flex", gap: "var(--wa-space-s)" }}>
 					<wa-button variant="neutral" onClick={close}>

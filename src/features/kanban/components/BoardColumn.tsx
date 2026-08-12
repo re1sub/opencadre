@@ -1,9 +1,10 @@
+import { useDroppable } from "@dnd-kit/solid";
 import { useSortable } from "@dnd-kit/solid/sortable";
 import { For } from "solid-js";
+import { useDragTilt } from "../hooks/useDragTilt";
+import { BOARD_ID, type Card, type Column } from "../types";
 import * as styles from "./board.css";
 import { SortableCard } from "./SortableCard";
-import { BOARD_ID, type Card, type Column } from "./types";
-import { useDragTilt } from "./useDragTilt";
 
 interface BoardColumnProps {
 	column: Column;
@@ -14,7 +15,13 @@ interface BoardColumnProps {
 }
 
 export function BoardColumn(props: BoardColumnProps) {
-	const { ref, handleRef, isDragging, isDropTarget } = useSortable({
+	// Column as sortable (for column reordering)
+	const {
+		ref: sortableRef,
+		handleRef,
+		isDragging,
+		isDropTarget,
+	} = useSortable({
 		get id() {
 			return props.column.id;
 		},
@@ -27,15 +34,28 @@ export function BoardColumn(props: BoardColumnProps) {
 		collisionPriority: 1,
 	});
 
+	// Column as a droppable for cards (so empty columns can receive drops)
+	const { ref: droppableRef, isDropTarget: isCardDropTarget } = useDroppable({
+		id: `${props.column.id}-cards-droppable`,
+		type: "column-droppable",
+		accept: ["card"],
+		collisionPriority: 0, // lower than cards (cards have 2)
+	});
+
 	const rotation = useDragTilt(isDragging);
 
 	return (
 		<section
-			ref={ref}
+			ref={(el) => {
+				sortableRef(el);
+				droppableRef(el);
+			}}
 			class={styles.column}
 			classList={{
 				[styles.columnDragging]: isDragging(),
 				[styles.columnDropTarget]: isDropTarget(),
+				// optional: highlight when a card is over this column
+				[styles.columnCardDropTarget]: isCardDropTarget(),
 			}}
 			style={{
 				"--column-accent": props.column.color,

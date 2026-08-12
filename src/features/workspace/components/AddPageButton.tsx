@@ -1,5 +1,5 @@
 import { For } from "solid-js";
-import { PAGE_KIND_META, type PageKind } from "./types";
+import { PAGE_KIND_META, type PageKind } from "../types";
 import { addPageGroup } from "./workspace.css";
 
 interface AddPageButtonProps {
@@ -12,9 +12,11 @@ export function AddPageButton(props: AddPageButtonProps) {
 			detail: { item: { value?: string } | null };
 		};
 
-		const template = selectEvent.detail.item?.value;
+		const kind = selectEvent.detail.item?.value as PageKind | undefined;
 
-		props.onAddPage(template === "kanban" ? "kanban" : "markdown");
+		if (kind && PAGE_KIND_META[kind]) {
+			props.onAddPage(kind);
+		}
 	};
 
 	return (

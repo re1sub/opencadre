@@ -55,6 +55,12 @@ export const columnDropTarget = style({
 		"0 0 0 2px color-mix(in srgb, var(--wa-color-brand) 30%, transparent)",
 });
 
+export const columnCardDropTarget = style({
+	border: "1px dashed var(--wa-color-brand)",
+	boxShadow:
+		"0 0 0 2px color-mix(in srgb, var(--wa-color-brand) 30%, transparent)",
+});
+
 export const columnDragging = style({
 	opacity: 0.4,
 });
@@ -129,7 +135,6 @@ export const columnCards = style({
 	overflowX: "hidden",
 	scrollbarWidth: "none",
 	flexGrow: 1,
-	minHeight: 0,
 });
 
 export const card = style({

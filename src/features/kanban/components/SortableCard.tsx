@@ -1,8 +1,8 @@
 import { useSortable } from "@dnd-kit/solid/sortable";
 import { Show } from "solid-js";
+import { useDragTilt } from "../hooks/useDragTilt";
+import type { Card } from "../types";
 import * as styles from "./board.css";
-import type { Card } from "./types";
-import { useDragTilt } from "./useDragTilt";
 
 interface SortableCardProps {
 	card: Card;
@@ -24,6 +24,10 @@ export function SortableCard(props: SortableCardProps) {
 		},
 		type: "card",
 		accept: ["card"],
+		collisionPriority: 2,
+		transition: {
+			duration: 0, // Too jumpy
+		},
 	});
 
 	const rotation = useDragTilt(isDragging);
@@ -38,7 +42,6 @@ export function SortableCard(props: SortableCardProps) {
 			}}
 			style={{
 				rotate: `${rotation()}deg`,
-				transform: !isDragging() ? "scale(0.5) !important" : "",
 			}}
 			onClick={() => props.onOpen(props.card)}
 		>

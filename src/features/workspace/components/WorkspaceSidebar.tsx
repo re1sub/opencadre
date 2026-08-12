@@ -1,6 +1,6 @@
+import type { Page, PageKind } from "../types";
 import { AddPageButton } from "./AddPageButton";
 import { PageList } from "./PageList";
-import type { Page, PageKind } from "./types";
 import { sidebar } from "./workspace.css";
 
 interface WorkspaceSidebarProps {

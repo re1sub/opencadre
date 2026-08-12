@@ -1,7 +1,7 @@
 import { Navigate } from "@solidjs/router";
 import type { ParentComponent } from "solid-js";
 import { Show } from "solid-js";
-import { useAuth } from "#/contexts/AuthContext";
+import { useAuth } from "#/features/auth/AuthContext";
 
 export const RequireAuth: ParentComponent = (props) => {
 	const { user, loading } = useAuth();

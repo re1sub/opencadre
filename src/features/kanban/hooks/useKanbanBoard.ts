@@ -2,14 +2,14 @@ import { arrayMove, move } from "@dnd-kit/helpers";
 import type { DragDropProviderProps } from "@dnd-kit/solid";
 import { isSortable } from "@dnd-kit/solid/sortable";
 import { createSignal } from "solid-js";
-import { INITIAL_COLUMNS } from "./data";
+import { INITIAL_COLUMNS } from "../constants/data";
 import type {
 	Card,
 	CardDialogState,
 	Column,
 	ConfirmDialogState,
-} from "./types";
-import { BOARD_ID } from "./types";
+} from "../types";
+import { BOARD_ID } from "../types";
 
 export function useKanbanBoard() {
 	const [columns, setColumns] = createSignal<Column[]>(INITIAL_COLUMNS);
@@ -27,6 +27,7 @@ export function useKanbanBoard() {
 		const { source, target, canceled } = event.operation;
 		if (!source || !target || canceled) return;
 
+		// Column reordering (columns are sortable with group === BOARD_ID)
 		if (isSortable(source) && source.initialGroup === BOARD_ID) {
 			const from = source.initialIndex;
 			const to = source.index;
@@ -36,6 +37,48 @@ export function useKanbanBoard() {
 			return;
 		}
 
+		if (
+			target.type === "column-droppable" &&
+			typeof target.id === "string" &&
+			target.id.endsWith("-cards-droppable") &&
+			isSortable(source)
+		) {
+			const targetColumnId = target.id.replace("-cards-droppable", "");
+
+			const sourceColumnId = source.initialGroup as string;
+			const sourceIndex = source.initialIndex;
+
+			if (!sourceColumnId || sourceIndex == null) return;
+
+			const sourceColumn = columns().find((c) => c.id === sourceColumnId);
+			if (!sourceColumn) return;
+
+			const draggedCard = sourceColumn.cards[sourceIndex];
+			if (!draggedCard) return;
+
+			setColumns((current) => {
+				// Remove from source column
+				const withoutDragged = current.map((col) =>
+					col.id === sourceColumnId
+						? {
+								...col,
+								cards: col.cards.filter((c) => c.id !== draggedCard.id),
+							}
+						: col,
+				);
+
+				// Append to target column
+				return withoutDragged.map((col) =>
+					col.id === targetColumnId
+						? { ...col, cards: [...col.cards, draggedCard] }
+						: col,
+				);
+			});
+
+			return;
+		}
+
+		// Normal card-to-card move (existing logic)
 		const record = itemsRecord();
 		const next = move(record, event);
 
@@ -99,7 +142,7 @@ export function useKanbanBoard() {
 		const column: Column = {
 			id: crypto.randomUUID(),
 			title: "New column",
-			color: "#8b5cf6",
+			color: "",
 			cards: [],
 		};
 

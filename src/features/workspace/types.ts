@@ -1,4 +1,4 @@
-export type PageKind = "markdown" | "kanban";
+export type PageKind = "markdown" | "kanban" | "table";
 
 export interface Page {
 	id: string;
@@ -23,5 +23,10 @@ export const PAGE_KIND_META = {
 		label: "Board (Kanban)",
 		icon: "kanban",
 		iconLabel: "Board",
+	},
+	table: {
+		label: "Table",
+		icon: "table",
+		iconLabel: "Table",
 	},
 } satisfies Record<PageKind, PageKindMeta>;

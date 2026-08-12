@@ -1,5 +1,5 @@
 import { Show } from "solid-js";
-import { useAuth } from "#/contexts/AuthContext";
+import { useAuth } from "#/features/auth/AuthContext";
 import { useTheme } from "#theme/ThemeProvider";
 import { auth, drawerContent, logo, menuButton, navbar } from "./navbar.css";
 

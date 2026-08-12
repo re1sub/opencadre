@@ -5,12 +5,10 @@ export const editor = style({
 	minHeight: "100%",
 	outline: "none",
 	cursor: "text",
-	margin: "5rem auto",
-	marginBottom: "0",
 });
 
 globalStyle(`.${editor}.markdown-body`, {
-	margin: "5rem auto",
+	margin: "2rem auto",
 	marginBottom: "0",
 	minHeight: "100%",
 	maxWidth: "72ch",
