@@ -8,15 +8,15 @@ import "@awesome.me/webawesome/dist/styles/webawesome.css";
 
 // Register icon libraries
 registerIconLibrary("default", {
-	resolver: (name) => {
-		const iconName = name === "bars" ? "menu" : name;
-		return `https://cdn.jsdelivr.net/npm/lucide-static@1.8.0/icons/${iconName}.svg`;
-	},
-	mutator: (svg) =>
-		svg.querySelectorAll("path").forEach((path) => {
-			path.setAttribute("fill", "none");
-			path.setAttribute("stroke", "currentColor");
-		}),
+  resolver: (name) => {
+    const iconName = name === "bars" ? "menu" : name;
+    return `https://cdn.jsdelivr.net/npm/lucide-static@1.31.0/icons/${iconName}.svg`;
+  },
+  mutator: (svg) =>
+    svg.querySelectorAll("path").forEach((path) => {
+      path.setAttribute("fill", "none");
+      path.setAttribute("stroke", "currentColor");
+    }),
 });
 
 // Import the components you want to use
