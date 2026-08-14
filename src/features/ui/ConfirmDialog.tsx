@@ -1,4 +1,4 @@
-import { onCleanup, onMount } from "solid-js";
+import { useDialog } from "#/utils/useDialog";
 import { confirmActions, confirmMessage } from "./confirmDialog.css";
 import DeleteButton from "./DeleteButton";
 
@@ -10,35 +10,24 @@ interface ConfirmDialogProps {
 }
 
 const ConfirmDialog = (props: ConfirmDialogProps) => {
-	let dialogRef: { open: boolean } | undefined;
-
-	onMount(() => {
-		const frame = requestAnimationFrame(() => {
-			if (dialogRef) dialogRef.open = true;
-		});
-		onCleanup(() => cancelAnimationFrame(frame));
-	});
+	const dialog = useDialog(props.onClose);
 
 	const handleConfirm = () => {
 		props.onConfirm();
-		close();
-	};
-
-	const close = () => {
-		if (dialogRef) dialogRef.open = false;
+		dialog.close();
 	};
 
 	return (
 		<wa-dialog
-			ref={(el) => (dialogRef = el)}
+			ref={dialog.ref}
 			light-dismiss
 			label={props.label}
-			on:wa-after-hide={() => props.onClose()}
+			on:wa-after-hide={dialog.handleHide}
 		>
 			<p class={confirmMessage}>{props.message}</p>
 
 			<div class={confirmActions}>
-				<wa-button variant="neutral" onClick={close}>
+				<wa-button variant="neutral" onClick={dialog.close}>
 					Cancel
 				</wa-button>
 				<DeleteButton onDelete={handleConfirm} />
