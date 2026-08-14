@@ -38,3 +38,6 @@ import "@awesome.me/webawesome/dist/components/color-picker/color-picker.js";
 import "@awesome.me/webawesome/dist/components/switch/switch.js";
 import "@awesome.me/webawesome/dist/components/spinner/spinner.js";
 import "@awesome.me/webawesome/dist/components/skeleton/skeleton.js";
+import "@awesome.me/webawesome/dist/components/tag/tag.js";
+import "@awesome.me/webawesome/dist/components/popup/popup.js";
+import "@awesome.me/webawesome/dist/components/animation/animation.js";
