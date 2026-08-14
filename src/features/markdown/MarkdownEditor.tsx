@@ -1,11 +1,28 @@
-import { Editor } from "@tiptap/core";
+import { Editor, posToDOMRect } from "@tiptap/core";
 import BubbleMenu from "@tiptap/extension-bubble-menu";
 import { Markdown } from "@tiptap/markdown";
 import StarterKit from "@tiptap/starter-kit";
-import { For, onCleanup, onMount, splitProps } from "solid-js";
+import { createSignal, For, onCleanup, onMount, splitProps } from "solid-js";
+import { useAuth } from "#/features/auth/AuthContext";
+import { usePageComments } from "#/features/comments/hooks/usePageComments";
+import {
+	COMMENT_MARK_NAME,
+	CommentMark,
+} from "#/features/comments/mark/CommentMark";
+import CommentPopup from "./components/CommentPopup";
+import ToolbarButton from "./components/ToolbarButton";
 import { bubbleMenu } from "./editorBubbleMenu.css";
 import { editor } from "./markdownEditor.css";
+import {
+	blockButtons,
+	createMarkdownActions,
+	headingItems,
+	inlineButtons,
+	type MarkdownAction,
+	type ToolbarButton as ToolbarButtonDef,
+} from "./toolbar";
 import "#assets/css/github-markdown.css";
+import type WaAnimation from "@awesome.me/webawesome/dist/components/animation/animation.js";
 import Document from "@tiptap/extension-document";
 import { Placeholder } from "@tiptap/extension-placeholder";
 
@@ -13,41 +30,80 @@ interface MarkdownEditorProps {
 	content: string;
 	class?: string;
 	editable?: boolean;
+	pageId?: string;
 	onUpdate?: (markdown: string) => void;
 }
 
-interface ToolbarButton {
-	id: string;
-	icon: string;
-	label: string;
-}
-
-const inlineButtons: ToolbarButton[] = [
-	{ id: "bold", icon: "bold", label: "Bold" },
-	{ id: "italic", icon: "italic", label: "Italic" },
-	{ id: "strike", icon: "strikethrough", label: "Strikethrough" },
-	{ id: "underline", icon: "underline", label: "Underline" },
-	{ id: "code", icon: "code", label: "Inline code" },
-	{ id: "link", icon: "link", label: "Link" },
+const bubbleBlockButtons: ToolbarButtonDef[] = [
+	...headingItems.slice(1),
+	headingItems[0],
+	...blockButtons,
 ];
 
-const blockButtons: ToolbarButton[] = [
-	{ id: "heading-1", icon: "heading-1", label: "Heading 1" },
-	{ id: "heading-2", icon: "heading-2", label: "Heading 2" },
-	{ id: "heading-3", icon: "heading-3", label: "Heading 3" },
-	{ id: "paragraph", icon: "pilcrow", label: "Paragraph" },
-	{ id: "bullet-list", icon: "list", label: "Bullet list" },
-	{ id: "ordered-list", icon: "list-ordered", label: "Ordered list" },
-	{ id: "blockquote", icon: "quote", label: "Blockquote" },
-	{ id: "code-block", icon: "square-code", label: "Code block" },
+const commentButtons: ToolbarButtonDef[] = [
+	{ id: "comment", icon: "message-square-text", label: "Comment" },
 ];
 
-export default function MarkdownEditor(props: MarkdownEditorProps) {
-	const [local, rest] = splitProps(props, ["class"]);
+const MarkdownEditor = (props: MarkdownEditorProps) => {
+	const [local, rest] = splitProps(props, [
+		"class",
+		"content",
+		"editable",
+		"pageId",
+		"onUpdate",
+	]);
+	const { user } = useAuth();
 
-	let editorRef: HTMLDivElement | undefined;
-	let menuRef: HTMLDivElement | undefined;
-	let instance: Editor | undefined;
+	const [activeThreadId, setActiveThreadId] = createSignal<string | null>(null);
+	const [popupRect, setPopupRect] = createSignal<DOMRect | null>(null);
+	const [pendingComment, setPendingComment] = createSignal<{
+		threadId: string;
+		from: number;
+		to: number;
+	} | null>(null);
+	const [toolbarVersion, setToolbarVersion] = createSignal(0);
+	const bumpToolbar = () => setToolbarVersion((v) => v + 1);
+
+	const pageComments = usePageComments(props.pageId ?? "");
+
+	const author = () => user()?.email?.split("@")[0] ?? "You";
+
+	const activeThread = () =>
+		pageComments.threads().find((t) => t.id === activeThreadId()) ?? undefined;
+
+	const openThreadPopup = (threadId: string, rect: DOMRect) => {
+		setActiveThreadId(threadId);
+		setPopupRect(rect);
+	};
+
+	const discardPending = () => {
+		const pending = pendingComment();
+		if (!pending) return;
+		const thread = pageComments
+			.threads()
+			.find((t) => t.id === pending.threadId);
+		if (thread && thread.comments.length === 0) {
+			pageComments.deleteThread(pending.threadId);
+		}
+		setPendingComment(null);
+	};
+
+	const closeThreadPopup = () => {
+		discardPending();
+		setActiveThreadId(null);
+		setPopupRect(null);
+	};
+
+	let editorRef!: HTMLDivElement;
+	let menuRef!: HTMLDivElement;
+	let instance!: Editor;
+	let animRef!: WaAnimation;
+	let actions: Record<string, MarkdownAction> = {};
+
+	const isActive = (id: string) => {
+		toolbarVersion();
+		return actions[id]?.active() ?? false;
+	};
 
 	const CustomDocument = Document.extend({
 		content: "heading block*",
@@ -74,11 +130,31 @@ export default function MarkdownEditor(props: MarkdownEditorProps) {
 					showOnlyCurrent: false,
 				}),
 				Markdown,
+				CommentMark,
 				BubbleMenu.configure({
 					element: menuRef,
 					pluginKey: "editorBubbleMenu",
 					appendTo: () => document.body,
-					options: { strategy: "fixed", placement: "top", offset: 8 },
+
+					options: {
+						strategy: "fixed",
+						placement: "top",
+						offset: 8,
+						flip: {
+							boundary: editorRef,
+							padding: -50,
+						},
+						shift: {
+							boundary: editorRef,
+						},
+						onShow: () => {
+							animRef.name = "zoomIn";
+							animRef.play = true;
+						},
+						onHide: () => {
+							animRef.play = false;
+						},
+					},
 				}),
 			],
 			content: props.content.trim() ? props.content : "#",
@@ -86,107 +162,103 @@ export default function MarkdownEditor(props: MarkdownEditorProps) {
 			editable: props.editable ?? true,
 			onUpdate: ({ editor: editorInstance }) => {
 				props.onUpdate?.(editorInstance.getMarkdown());
+				pruneOrphanThreads(editorInstance);
 			},
 		});
 
 		const editorInstance = instance;
-		const menu = menuRef;
 
-		const actions: Record<string, { active: () => boolean; run: () => void }> =
-			{
-				bold: {
-					active: () => editorInstance.isActive("bold"),
-					run: () => editorInstance.chain().focus().toggleBold().run(),
-				},
-				italic: {
-					active: () => editorInstance.isActive("italic"),
-					run: () => editorInstance.chain().focus().toggleItalic().run(),
-				},
-				strike: {
-					active: () => editorInstance.isActive("strike"),
-					run: () => editorInstance.chain().focus().toggleStrike().run(),
-				},
-				underline: {
-					active: () => editorInstance.isActive("underline"),
-					run: () => editorInstance.chain().focus().toggleUnderline().run(),
-				},
-				code: {
-					active: () => editorInstance.isActive("code"),
-					run: () => editorInstance.chain().focus().toggleCode().run(),
-				},
-				link: {
-					active: () => editorInstance.isActive("link"),
-					run: () =>
-						editorInstance.isActive("link")
-							? editorInstance.chain().focus().unsetLink().run()
-							: editorInstance
-									.chain()
-									.focus()
-									.setLink({ href: "https://" })
-									.run(),
-				},
-				"heading-1": {
-					active: () => editorInstance.isActive("heading", { level: 1 }),
-					run: () =>
-						editorInstance.chain().focus().toggleHeading({ level: 1 }).run(),
-				},
-				"heading-2": {
-					active: () => editorInstance.isActive("heading", { level: 2 }),
-					run: () =>
-						editorInstance.chain().focus().toggleHeading({ level: 2 }).run(),
-				},
-				"heading-3": {
-					active: () => editorInstance.isActive("heading", { level: 3 }),
-					run: () =>
-						editorInstance.chain().focus().toggleHeading({ level: 3 }).run(),
-				},
-				paragraph: {
-					active: () => editorInstance.isActive("paragraph"),
-					run: () => editorInstance.chain().focus().setParagraph().run(),
-				},
-				"bullet-list": {
-					active: () => editorInstance.isActive("bulletList"),
-					run: () => editorInstance.chain().focus().toggleBulletList().run(),
-				},
-				"ordered-list": {
-					active: () => editorInstance.isActive("orderedList"),
-					run: () => editorInstance.chain().focus().toggleOrderedList().run(),
-				},
-				blockquote: {
-					active: () => editorInstance.isActive("blockquote"),
-					run: () => editorInstance.chain().focus().toggleBlockquote().run(),
-				},
-				"code-block": {
-					active: () => editorInstance.isActive("codeBlock"),
-					run: () => editorInstance.chain().focus().toggleCodeBlock().run(),
-				},
-			};
-
-		const sync = () => {
-			for (const button of [...inlineButtons, ...blockButtons]) {
-				const el = menu.querySelector<HTMLButtonElement>(`#${button.id}`);
-				if (!el) continue;
-				const action = actions[button.id];
-				if (!action) continue;
-				el.classList.toggle("bubble-menu-is-active", action.active());
-			}
+		const collectCommentIds = (from: number, to: number) => {
+			const ids = new Set<string>();
+			editorInstance.state.doc.nodesBetween(from, to, (node) => {
+				node.marks.forEach((mark) => {
+					if (mark.type.name === COMMENT_MARK_NAME && mark.attrs.commentId) {
+						ids.add(mark.attrs.commentId as string);
+					}
+				});
+			});
+			return [...ids];
 		};
 
-		menu.querySelectorAll("wa-button").forEach((button) => {
-			const id = button.id;
-			const action = actions[id];
-			if (!action) return;
-			button.addEventListener("click", action.run);
+		const hideBubbleMenu = () => {
+			editorInstance.view.dispatch(
+				editorInstance.state.tr.setMeta("editorBubbleMenu", "hide"),
+			);
+		};
+
+		actions = {
+			...createMarkdownActions(editorInstance),
+			comment: {
+				active: () => editorInstance.isActive(COMMENT_MARK_NAME),
+				run: () => {
+					const { from, to, empty } = editorInstance.state.selection;
+					if (empty) return;
+					const rect = posToDOMRect(editorInstance.view, from, to);
+					const existingIds = collectCommentIds(from, to);
+					if (existingIds.length > 0) {
+						discardPending();
+						if (activeThreadId() === existingIds[0]) {
+							closeThreadPopup();
+						} else {
+							openThreadPopup(existingIds[0], rect);
+						}
+						hideBubbleMenu();
+						return;
+					}
+					const text = editorInstance.state.doc.textBetween(from, to, " ");
+					const thread = pageComments.createThread(text.trim() || "…");
+					setPendingComment({ threadId: thread.id, from, to });
+					openThreadPopup(thread.id, rect);
+					hideBubbleMenu();
+				},
+			},
+		};
+
+		editorRef.addEventListener("click", (e) => {
+			const target = e.target as HTMLElement;
+			const mark = target.closest?.("mark[data-comment-id]");
+			if (!mark) return;
+			const commentId = mark.getAttribute("data-comment-id");
+			if (!commentId) return;
+			const thread = pageComments.threads().find((t) => t.id === commentId);
+			if (!thread) return;
+			e.preventDefault();
+			openThreadPopup(commentId, mark.getBoundingClientRect());
+			hideBubbleMenu();
 		});
 
-		editorInstance.on("transaction", sync);
-		editorInstance.on("selectionUpdate", sync);
-		sync();
+		editorInstance.on("transaction", bumpToolbar);
+		editorInstance.on("selectionUpdate", bumpToolbar);
+		bumpToolbar();
 	});
+
+	const pruneOrphanThreads = (editorInstance: Editor) => {
+		const ids = new Set<string>();
+		editorInstance.state.doc.descendants((node) => {
+			node.marks.forEach((mark) => {
+				if (mark.type.name === COMMENT_MARK_NAME && mark.attrs.commentId) {
+					ids.add(mark.attrs.commentId as string);
+				}
+			});
+		});
+		const valid = [...ids];
+		const threads = pageComments.threads();
+		const pending = pendingComment();
+		const orphans = threads.filter(
+			(t) =>
+				!valid.includes(t.id) &&
+				t.comments.length === 0 &&
+				t.id !== pending?.threadId,
+		);
+		if (orphans.length > 0) {
+			orphans.forEach((t) => {
+				pageComments.deleteThread(t.id);
+			});
+		}
+	};
 
 	onCleanup(() => {
 		instance?.destroy();
-		instance = undefined;
 	});
 
 	return (
@@ -200,34 +272,91 @@ export default function MarkdownEditor(props: MarkdownEditorProps) {
 					[local.class ?? ""]: Boolean(local.class),
 				}}
 			/>
-			<div
-				ref={menuRef}
-				class={bubbleMenu}
-				role="toolbar"
-				aria-label="Text formatting"
+			<wa-animation
+				name="zoomIn"
+				easing="ease-in-out"
+				duration={20}
+				iterations={1}
+				ref={(el) => {
+					animRef = el;
+				}}
 			>
-				<For each={inlineButtons}>
-					{(button) => (
-						<>
-							<wa-button id={button.id} size="s" appearance="plain">
-								<wa-icon name={button.icon} label={button.label} />
-							</wa-button>
-							<wa-tooltip for={button.id}>{button.label}</wa-tooltip>
-						</>
-					)}
-				</For>
-				<wa-divider orientation="vertical"></wa-divider>
-				<For each={blockButtons}>
-					{(button) => (
-						<>
-							<wa-button id={button.id} size="s" appearance="plain">
-								<wa-icon name={button.icon} label={button.label} />
-							</wa-button>
-							<wa-tooltip for={button.id}>{button.label}</wa-tooltip>
-						</>
-					)}
-				</For>
-			</div>
+				<div
+					ref={menuRef}
+					class={bubbleMenu}
+					role="toolbar"
+					aria-label="Text formatting"
+				>
+					<For each={inlineButtons}>
+						{(button) => (
+							<ToolbarButton
+								button={button}
+								id={button.id}
+								onClick={() => actions[button.id]?.run()}
+								activeClass="bubble-menu-is-active"
+								active={() => isActive(button.id)}
+							/>
+						)}
+					</For>
+					<wa-divider orientation="vertical"></wa-divider>
+					<For each={bubbleBlockButtons}>
+						{(button) => (
+							<ToolbarButton
+								button={button}
+								id={button.id}
+								onClick={() => actions[button.id]?.run()}
+								activeClass="bubble-menu-is-active"
+								active={() => isActive(button.id)}
+							/>
+						)}
+					</For>
+					<wa-divider orientation="vertical"></wa-divider>
+					<For each={commentButtons}>
+						{(button) => (
+							<ToolbarButton
+								button={button}
+								id={button.id}
+								onClick={() => actions[button.id]?.run()}
+								activeClass="bubble-menu-is-active"
+								active={() => isActive(button.id)}
+							/>
+						)}
+					</For>
+				</div>
+			</wa-animation>
+			<CommentPopup
+				open={() => Boolean(activeThreadId())}
+				anchorRect={popupRect}
+				thread={activeThread}
+				author={author()}
+				isPopup={true}
+				onReplaceComments={(comments) => {
+					const id = activeThreadId();
+					if (!id) return;
+					const pending = pendingComment();
+					if (pending && pending.threadId === id) {
+						const wasEmpty =
+							pageComments.threads().find((t) => t.id === id)?.comments
+								.length === 0;
+						if (wasEmpty && comments.length > 0) {
+							instance
+								?.chain()
+								.setTextSelection({ from: pending.from, to: pending.to })
+								.setComment(id)
+								.run();
+							setPendingComment(null);
+						}
+					}
+					pageComments.replaceThreadComments(id, comments);
+				}}
+				onDeleteComment={(commentId) => {
+					const id = activeThreadId();
+					if (id) pageComments.deleteComment(id, commentId);
+				}}
+				onClose={closeThreadPopup}
+			/>
 		</>
 	);
-}
+};
+
+export default MarkdownEditor;
