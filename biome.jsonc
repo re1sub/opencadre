@@ -15,6 +15,7 @@
 			"!src/assets/css/github-markdown.css"
 		]
 	},
+	"plugins": [".biome/plugins/wa_biome_rules.grit"],
 	"formatter": {
 		"enabled": true,
 		"indentStyle": "tab"
@@ -33,7 +34,7 @@
 				"noStaticElementInteractions": "off",
 				"useKeyWithClickEvents": "off"
 			}
-		}
+		},
 	},
 	"javascript": {
 		"formatter": {
