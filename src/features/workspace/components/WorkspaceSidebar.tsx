@@ -8,6 +8,7 @@ interface WorkspaceSidebarProps {
 	activePageId: () => string | null;
 	onAddPage: (kind: PageKind) => void;
 	onRequestDeletePage: (id: string) => void;
+	onReorder: (pageId: string, newIndex: number) => void;
 }
 
 const WorkspaceSidebar = (props: WorkspaceSidebarProps) => {
@@ -19,6 +20,7 @@ const WorkspaceSidebar = (props: WorkspaceSidebarProps) => {
 				pages={props.pages}
 				activePageId={props.activePageId}
 				onRequestDelete={props.onRequestDeletePage}
+				onReorder={props.onReorder}
 			/>
 		</nav>
 	);

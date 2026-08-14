@@ -3,6 +3,7 @@ import { createEffect, createSignal, Show } from "solid-js";
 import { useAuth } from "#/features/auth/AuthContext";
 import ConfirmDialog from "#/features/ui/ConfirmDialog";
 import EditableText from "#/features/ui/EditableText";
+import { uid } from "#/utils/uid";
 import PageView from "./components/PageView";
 import WorkspaceFooter from "./components/WorkspaceFooter";
 import WorkspaceHeader from "./components/WorkspaceHeader";
@@ -22,7 +23,7 @@ const createPage = (
 	title: string,
 	kind: PageKind,
 ): Page => ({
-	id: crypto.randomUUID(),
+	id: uid(),
 	workspaceId,
 	title,
 	kind,
@@ -30,7 +31,7 @@ const createPage = (
 });
 
 const createWorkspace = (name: string): WorkspaceType => ({
-	id: crypto.randomUUID(),
+	id: uid(),
 	name,
 	createdAt: new Date().toISOString(),
 	updatedAt: new Date().toISOString(),
@@ -181,7 +182,7 @@ const Workspace = () => {
 
 	const addPage = (kind: PageKind) => {
 		const newPage: Page = {
-			id: crypto.randomUUID(),
+			id: uid(),
 			workspaceId: activeWorkspaceId(),
 			title: kind === "kanban" ? "Kanban Board" : "Untitled",
 			kind,
@@ -210,6 +211,25 @@ const Workspace = () => {
 		);
 	};
 
+	const reorderPages = (pageId: string, newIndex: number) => {
+		setAllPages((current) => {
+			const activeWsId = activeWorkspaceId();
+
+			const workspacePages = current.filter(
+				(p) => p.workspaceId === activeWsId,
+			);
+			const otherPages = current.filter((p) => p.workspaceId !== activeWsId);
+
+			const oldIndex = workspacePages.findIndex((p) => p.id === pageId);
+			if (oldIndex === -1 || oldIndex === newIndex) return current;
+
+			const reorderedWorkspacePages = [...workspacePages];
+			const [moved] = reorderedWorkspacePages.splice(oldIndex, 1);
+			reorderedWorkspacePages.splice(newIndex, 0, moved);
+
+			return [...otherPages, ...reorderedWorkspacePages];
+		});
+	};
 	const updatePageContent = (id: string, content: string) => {
 		setAllPages((current) =>
 			current.map((entry) => (entry.id === id ? { ...entry, content } : entry)),
@@ -294,6 +314,7 @@ const Workspace = () => {
 					if (!page) return;
 					setDeleteTarget({ kind: "page", id: page.id, title: page.title });
 				}}
+				onReorder={reorderPages}
 			/>
 
 			<WorkspaceFooter user={user} error={error} onSignOut={handleSignOut} />
