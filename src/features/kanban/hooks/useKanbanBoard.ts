@@ -1,7 +1,9 @@
-import { arrayMove, move } from "@dnd-kit/helpers";
+import { move } from "@dnd-kit/helpers";
 import type { DragDropProviderProps } from "@dnd-kit/solid";
 import { isSortable } from "@dnd-kit/solid/sortable";
 import { createSignal } from "solid-js";
+import { uid } from "#/utils/uid";
+import { useDragReorder } from "#/utils/useDragReorder";
 import { INITIAL_COLUMNS } from "../constants/data";
 import type {
 	Card,
@@ -23,17 +25,18 @@ export function useKanbanBoard() {
 	const itemsRecord = () =>
 		Object.fromEntries(columns().map((column) => [column.id, column.cards]));
 
-	const onDragEnd: DragDropProviderProps["onDragEnd"] = (event) => {
-		const { source, target, canceled } = event.operation;
+	const reorderColumns = useDragReorder(
+		() => columns(),
+		(next) => setColumns(next),
+	);
+
+	const onDragEnd: DragDropProviderProps["onDragEnd"] = (e, manager) => {
+		const { source, target, canceled } = e.operation;
 		if (!source || !target || canceled) return;
 
 		// Column reordering (columns are sortable with group === BOARD_ID)
 		if (isSortable(source) && source.initialGroup === BOARD_ID) {
-			const from = source.initialIndex;
-			const to = source.index;
-			if (from !== to) {
-				setColumns((current) => arrayMove(current, from, to));
-			}
+			reorderColumns(e, manager);
 			return;
 		}
 
@@ -80,7 +83,7 @@ export function useKanbanBoard() {
 
 		// Normal card-to-card move (existing logic)
 		const record = itemsRecord();
-		const next = move(record, event);
+		const next = move(record, e);
 
 		if (next === record) return;
 
@@ -123,7 +126,7 @@ export function useKanbanBoard() {
 
 	const addCard = (columnId: string) => {
 		const card: Card = {
-			id: crypto.randomUUID(),
+			id: uid(),
 			title: "New card",
 			description: "",
 		};
@@ -140,7 +143,7 @@ export function useKanbanBoard() {
 
 	const addColumn = () => {
 		const column: Column = {
-			id: crypto.randomUUID(),
+			id: uid(),
 			title: "New column",
 			color: "",
 			cards: [],

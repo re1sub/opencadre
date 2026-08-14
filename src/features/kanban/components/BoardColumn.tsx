@@ -1,6 +1,7 @@
 import { useDroppable } from "@dnd-kit/solid";
 import { useSortable } from "@dnd-kit/solid/sortable";
 import { For } from "solid-js";
+import type { Tag } from "#/features/tags/types";
 import { useDragTilt } from "../hooks/useDragTilt";
 import { BOARD_ID, type Card, type Column } from "../types";
 import * as styles from "./board.css";
@@ -8,10 +9,12 @@ import SortableCard from "./SortableCard";
 
 interface BoardColumnProps {
 	column: Column;
+	tags: Tag[];
 	index: () => number;
 	onAddCard: (columnId: string) => void;
 	onOpenCard: (columnId: string, card: Card) => void;
 	onEditColumn: (column: Column) => void;
+	onFocusColumn?: (columnId: string) => void;
 }
 
 const BoardColumn = (props: BoardColumnProps) => {
@@ -54,9 +57,9 @@ const BoardColumn = (props: BoardColumnProps) => {
 			classList={{
 				[styles.columnDragging]: isDragging(),
 				[styles.columnDropTarget]: isDropTarget(),
-				// optional: highlight when a card is over this column
 				[styles.columnCardDropTarget]: isCardDropTarget(),
 			}}
+			onClick={() => props.onFocusColumn?.(props.column.id)}
 			style={{
 				"--column-accent": props.column.color,
 				rotate: `${rotation()}deg`,
@@ -91,6 +94,7 @@ const BoardColumn = (props: BoardColumnProps) => {
 					{(card, index) => (
 						<SortableCard
 							card={card}
+							tags={props.tags}
 							index={index()}
 							columnId={props.column.id}
 							onOpen={(c) => props.onOpenCard(props.column.id, c)}

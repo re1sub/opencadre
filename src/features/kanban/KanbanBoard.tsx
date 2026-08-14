@@ -1,5 +1,6 @@
 import { DragDropProvider } from "@dnd-kit/solid";
 import { For, Show } from "solid-js";
+import { useWorkspaceTags } from "#/features/tags/hooks/useWorkspaceTags";
 import ConfirmDialog from "#/features/ui/ConfirmDialog";
 import BoardColumn from "./components/BoardColumn";
 import * as styles from "./components/board.css";
@@ -9,10 +10,12 @@ import { useKanbanBoard } from "./hooks/useKanbanBoard";
 
 interface KanbanBoardProps {
 	pageId?: string;
+	workspaceId?: string;
 }
 
 const KanbanBoard = (props: KanbanBoardProps) => {
 	const board = useKanbanBoard();
+	const { tags } = useWorkspaceTags(props.workspaceId ?? "");
 
 	return (
 		<div class={styles.board} data-page-id={props.pageId}>
@@ -33,6 +36,7 @@ const KanbanBoard = (props: KanbanBoardProps) => {
 						{(column, index) => (
 							<BoardColumn
 								column={column}
+								tags={tags()}
 								index={index}
 								onAddCard={board.addCard}
 								onOpenCard={board.openCardDialog}
@@ -55,6 +59,7 @@ const KanbanBoard = (props: KanbanBoardProps) => {
 				{(dialog) => (
 					<CardDialog
 						card={dialog().card}
+						workspaceId={props.workspaceId ?? ""}
 						onClose={() => board.setCardDialog(null)}
 						onSave={board.saveCard}
 						onRequestDelete={() => {

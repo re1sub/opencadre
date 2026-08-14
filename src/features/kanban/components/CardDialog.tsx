@@ -1,86 +1,162 @@
-import { createSignal, onCleanup, onMount } from "solid-js";
+import { createSignal, Index, Show } from "solid-js";
+import CommentsPanel from "#/features/comments/components/CommentsPanel";
+import type { Comment } from "#/features/comments/types";
+import MarkdownField from "#/features/markdown/components/MarkdownField";
+import TagEditor from "#/features/tags/components/TagEditor";
+import TagPicker from "#/features/tags/components/TagPicker";
+import { useWorkspaceTags } from "#/features/tags/hooks/useWorkspaceTags";
+import type { Tag } from "#/features/tags/types";
 import DeleteButton from "#/features/ui/DeleteButton";
+import EditableText from "#/features/ui/EditableText";
+import { useDialog } from "#/utils/useDialog";
 import type { Card } from "../types";
-import * as styles from "./board.css";
+import {
+	customLabel,
+	dialogCardTitle,
+	dialogContainer,
+	dialogGrid,
+	dialogLeftColumn,
+	dialogTags,
+} from "./cardDialog.css";
 
 interface CardDialogProps {
 	card: Card;
+	workspaceId: string;
 	onClose: () => void;
 	onSave: (card: Card) => void;
 	onRequestDelete: () => void;
 }
 
 const CardDialog = (props: CardDialogProps) => {
-	let dialogRef: { open: boolean } | undefined;
+	const dialog = useDialog(props.onClose, props.onRequestDelete);
+
+	const {
+		tags,
+		addTag: addWorkspaceTag,
+		updateTag: updateWorkspaceTag,
+	} = useWorkspaceTags(props.workspaceId);
 
 	const [title, setTitle] = createSignal(props.card.title);
 	const [description, setDescription] = createSignal(props.card.description);
-	const [pendingDelete, setPendingDelete] = createSignal(false);
+	const [comments, setComments] = createSignal<Comment[]>(
+		props.card.comments ?? [],
+	);
+	const [tagIds, setTagIds] = createSignal<string[]>(props.card.tagIds ?? []);
 
-	onMount(() => {
-		const frame = requestAnimationFrame(() => {
-			if (dialogRef) dialogRef.open = true;
-		});
-		onCleanup(() => cancelAnimationFrame(frame));
-	});
-
-	const handleHide = () => {
-		if (pendingDelete()) {
-			props.onRequestDelete();
-		} else {
-			props.onClose();
-		}
-	};
-
-	const close = () => {
-		if (dialogRef) dialogRef.open = false;
-	};
+	const attachedTags = () =>
+		tagIds()
+			.map((id) => tags().find((tag) => tag.id === id))
+			.filter((tag): tag is Tag => !!tag);
 
 	const handleSave = () => {
 		props.onSave({
 			...props.card,
 			title: title(),
 			description: description(),
+			tagIds: tagIds(),
+			comments: comments(),
 		});
-		close();
+		dialog.close();
 	};
 
-	const handleDelete = () => {
-		setPendingDelete(true);
-		close();
+	const attachTag = (tagId: string) => {
+		setTagIds((current) =>
+			current.includes(tagId) ? current : [...current, tagId],
+		);
+	};
+
+	const createTag = (tagName: string, color: string) => {
+		const tag = addWorkspaceTag(tagName, color);
+		setTagIds((current) => [...current, tag.id]);
+	};
+
+	const updateTag = (tagId: string, name: string, color: string) => {
+		updateWorkspaceTag(tagId, name, color);
+	};
+
+	const removeTag = (tagId: string) => {
+		setTagIds((current) => current.filter((id) => id !== tagId));
 	};
 
 	return (
 		<wa-dialog
-			ref={(el) => (dialogRef = el)}
+			ref={dialog.ref}
 			light-dismiss
 			label="Card details"
-			on:wa-after-hide={handleHide}
+			on:wa-after-hide={dialog.handleHide}
+			class={dialogContainer}
 		>
-			<div class={styles.dialogBody}>
-				<wa-input
-					label="Title"
-					attr:value={props.card.title}
-					on:input={(event) =>
-						setTitle((event.currentTarget as HTMLInputElement).value)
-					}
-				></wa-input>
-
-				<wa-textarea
-					label="Description"
-					rows={4}
-					attr:value={props.card.description}
-					on:input={(event) =>
-						setDescription((event.currentTarget as HTMLTextAreaElement).value)
-					}
-				></wa-textarea>
+			<div slot="header-actions">
+				<DeleteButton
+					onDelete={dialog.handleDelete}
+					label="Delete card"
+					iconOnly
+				/>
 			</div>
 
-			<div class={styles.dialogActions}>
-				<DeleteButton onDelete={handleDelete} label="Delete card" />
+			<div class={dialogGrid}>
+				<div class={dialogLeftColumn}>
+					<EditableText
+						value={title()}
+						onChange={(value) => setTitle(value)}
+						ariaLabel="Title"
+						class={dialogCardTitle}
+					/>
 
+					<div
+						class={dialogLeftColumn}
+						style={{ padding: "var(--wa-space-xs)" }}
+					>
+						<div
+							style={{
+								display: "flex",
+								gap: "var(--wa-space-xs)",
+								"align-items": "center",
+							}}
+						>
+							Tags
+							<TagPicker
+								tags={tags()}
+								attachedTagIds={tagIds()}
+								onAttach={attachTag}
+								onCreate={createTag}
+							/>
+						</div>
+						<div class={dialogTags}>
+							<Show when={attachedTags().length}>
+								<Index each={attachedTags()}>
+									{(tag) => (
+										<TagEditor
+											tag={tag()}
+											onUpdate={updateTag}
+											onRemove={removeTag}
+										/>
+									)}
+								</Index>
+							</Show>
+						</div>
+						<div class={customLabel}>
+							<wa-icon name="list-sort-descending"></wa-icon>Description
+						</div>
+						<MarkdownField
+							value={description()}
+							onChange={setDescription}
+							placeholder="Add a description..."
+							minHeight="6rem"
+						/>
+					</div>
+				</div>
+
+				<CommentsPanel
+					parentId={props.card.id}
+					comments={comments()}
+					onChange={setComments}
+				/>
+			</div>
+
+			<div style={{ display: "flex", gap: "var(--wa-space-s)" }} slot="footer">
 				<div style={{ display: "flex", gap: "var(--wa-space-s)" }}>
-					<wa-button variant="neutral" onClick={close}>
+					<wa-button variant="neutral" onClick={dialog.close}>
 						Cancel
 					</wa-button>
 					<wa-button variant="brand" onClick={handleSave}>
