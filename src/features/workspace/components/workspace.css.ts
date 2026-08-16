@@ -5,6 +5,12 @@ export const page = style({
 		"&::part(body)": {
 			transition: "grid-template-columns 0.2s ease-in-out",
 		},
+		"&::part(drawer)": {
+			vars: {
+				"--spacing": "0",
+				"--size": "20rem",
+			},
+		},
 	},
 });
 
@@ -57,12 +63,6 @@ export const workspaceTrigger = style({
 	selectors: {
 		"&::part(button)": {
 			padding: "var(--wa-space-l) var(--wa-space-xs)",
-		},
-		"&::part(caret)": {
-			visibility: "hidden",
-		},
-		"&:hover::part(caret)": {
-			visibility: "visible",
 		},
 	},
 });
