@@ -5,7 +5,8 @@ export const popupPanel = style({
 	flexDirection: "column",
 	gap: "var(--wa-space-m)",
 	padding: "var(--wa-space-xs)",
-	border: "var(--wa-border-style) var(--wa-border-width-s) var(--wa-color-surface-border)",
+	border:
+		"var(--wa-border-style) var(--wa-border-width-s) var(--wa-color-surface-border)",
 	borderRadius: "var(--wa-border-radius-m)",
 	backgroundColor: "var(--wa-color-surface-raised)",
 	boxShadow: "var(--wa-shadow-m)",

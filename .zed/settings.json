@@ -1,7 +1,7 @@
 {
-  "file_scan_exclusions": ["**/pnpm-lock.yaml"],
-  "code_actions_on_format": {
-    "source.fixAll.biome": true,
-    "source.organizeImports.biome": true,
-  },
+	"file_scan_exclusions": ["**/pnpm-lock.yaml"],
+	"code_actions_on_format": {
+		"source.fixAll.biome": true,
+		"source.organizeImports.biome": true
+	}
 }

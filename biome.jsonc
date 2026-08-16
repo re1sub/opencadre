@@ -34,7 +34,7 @@
 				"noStaticElementInteractions": "off",
 				"useKeyWithClickEvents": "off"
 			}
-		},
+		}
 	},
 	"javascript": {
 		"formatter": {
