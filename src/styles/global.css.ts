@@ -43,8 +43,8 @@ globalStyle("::-webkit-scrollbar-track", {
 });
 
 globalStyle("::-webkit-scrollbar", {
-	width: "10px",
-	height: "10px",
+	width: "8px",
+	height: "8px",
 });
 
 globalStyle("::-webkit-scrollbar-thumb", {
