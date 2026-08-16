@@ -15,6 +15,15 @@ export interface Page {
 	content: string;
 }
 
+export type TrashEntry =
+	| { kind: "page"; page: Page; deletedAt: string }
+	| {
+			kind: "workspace";
+			workspace: Workspace;
+			pages: Page[];
+			deletedAt: string;
+	  };
+
 export interface PageKindMeta {
 	label: string;
 	icon: string;

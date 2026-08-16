@@ -61,7 +61,7 @@ const ColumnDialog = (props: ColumnDialogProps) => {
 				</div>
 			</div>
 
-			<div class={styles.dialogActions}>
+			<div slot="footer">
 				<DeleteButton onDelete={dialog.handleDelete} label="Delete column" />
 
 				<div style={{ display: "flex", gap: "var(--wa-space-s)" }}>

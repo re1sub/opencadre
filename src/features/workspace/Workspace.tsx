@@ -5,6 +5,7 @@ import ConfirmDialog from "#/features/ui/ConfirmDialog";
 import EditableText from "#/features/ui/EditableText";
 import { uid } from "#/utils/uid";
 import PageView from "./components/PageView";
+import TrashDialog from "./components/TrashDialog";
 import WorkspaceFooter from "./components/WorkspaceFooter";
 import WorkspaceHeader from "./components/WorkspaceHeader";
 import WorkspaceSidebar from "./components/WorkspaceSidebar";
@@ -16,7 +17,12 @@ import {
 } from "./components/workspace.css";
 import { GETTING_STARTED_MARKDOWN } from "./constants/gettingStarted";
 import { useSidebarResize } from "./hooks/useSidebarResize";
-import type { Page, PageKind, Workspace as WorkspaceType } from "./types";
+import type {
+	Page,
+	PageKind,
+	TrashEntry,
+	Workspace as WorkspaceType,
+} from "./types";
 
 const createPage = (
 	workspaceId: string,
@@ -87,6 +93,8 @@ const Workspace = () => {
 		| { kind: "workspace"; id: string; title: string }
 		| null
 	>(null);
+	const [trash, setTrash] = createSignal<TrashEntry[]>([]);
+	const [isTrashOpen, setIsTrashOpen] = createSignal(false);
 
 	const activeWorkspace = () =>
 		workspaces().find((w) => w.id === activeWorkspaceId()) ?? null;
@@ -155,6 +163,20 @@ const Workspace = () => {
 	const deleteWorkspace = (id: string) => {
 		if (workspaces().length <= 1) return;
 
+		const workspace = workspaces().find((w) => w.id === id);
+		if (!workspace) return;
+
+		const workspacePages = allPages().filter((p) => p.workspaceId === id);
+		setTrash((current) => [
+			...current,
+			{
+				kind: "workspace",
+				workspace,
+				pages: workspacePages,
+				deletedAt: new Date().toISOString(),
+			},
+		]);
+
 		const remaining = workspaces().filter((w) => w.id !== id);
 		setWorkspaces(remaining);
 		setAllPages((current) => current.filter((p) => p.workspaceId !== id));
@@ -194,6 +216,14 @@ const Workspace = () => {
 	};
 
 	const deletePage = (id: string) => {
+		const page = allPages().find((entry) => entry.id === id);
+		if (page) {
+			setTrash((current) => [
+				...current,
+				{ kind: "page", page, deletedAt: new Date().toISOString() },
+			]);
+		}
+
 		setAllPages((current) => current.filter((entry) => entry.id !== id));
 		if (activePageId() === id) {
 			const remaining = activePages().filter((entry) => entry.id !== id);
@@ -204,6 +234,71 @@ const Workspace = () => {
 			}
 		}
 	};
+
+	const restoreEntry = (entry: TrashEntry) => {
+		if (entry.kind === "workspace") {
+			setWorkspaces((current) =>
+				current.some((w) => w.id === entry.workspace.id)
+					? current
+					: [...current, entry.workspace],
+			);
+			setAllPages((current) => [
+				...current,
+				...entry.pages.filter((p) => !current.some((c) => c.id === p.id)),
+			]);
+			setTrash((current) =>
+				current.filter(
+					(t) =>
+						!(
+							t.kind === "workspace" && t.workspace.id === entry.workspace.id
+						) &&
+						!(t.kind === "page" && t.page.workspaceId === entry.workspace.id),
+				),
+			);
+			return;
+		}
+
+		const workspaceExists = workspaces().some(
+			(w) => w.id === entry.page.workspaceId,
+		);
+		if (!workspaceExists) {
+			const wsEntry = trash().find(
+				(t) =>
+					t.kind === "workspace" && t.workspace.id === entry.page.workspaceId,
+			);
+			if (wsEntry) restoreEntry(wsEntry);
+		}
+
+		setAllPages((current) =>
+			current.some((p) => p.id === entry.page.id)
+				? current
+				: [...current, entry.page],
+		);
+		setTrash((current) =>
+			current.filter(
+				(t) => !(t.kind === "page" && t.page.id === entry.page.id),
+			),
+		);
+	};
+
+	const purgeEntry = (entry: TrashEntry) => {
+		setTrash((current) => {
+			if (entry.kind === "workspace") {
+				return current.filter(
+					(t) =>
+						!(
+							t.kind === "workspace" && t.workspace.id === entry.workspace.id
+						) &&
+						!(t.kind === "page" && t.page.workspaceId === entry.workspace.id),
+				);
+			}
+			return current.filter(
+				(t) => !(t.kind === "page" && t.page.id === entry.page.id),
+			);
+		});
+	};
+
+	const emptyTrash = () => setTrash([]);
 
 	const renamePage = (id: string, title: string) => {
 		setAllPages((current) =>
@@ -317,7 +412,12 @@ const Workspace = () => {
 				onReorder={reorderPages}
 			/>
 
-			<WorkspaceFooter user={user} error={error} onSignOut={handleSignOut} />
+			<WorkspaceFooter
+				user={user}
+				error={error}
+				onSignOut={handleSignOut}
+				onOpenTrash={() => setIsTrashOpen(true)}
+			/>
 
 			<main class={mainContent}>
 				<div
@@ -372,7 +472,7 @@ const Workspace = () => {
 						return (
 							<ConfirmDialog
 								label="Delete workspace"
-								message={`Are you sure you want to delete "${target.title}" and all its pages? This action cannot be undone.`}
+								message={`Are you sure you want to delete "${target.title}" and all its pages? They will be moved to Trash and can be restored.`}
 								onConfirm={() => deleteWorkspace(target.id)}
 								onClose={() => setDeleteTarget(null)}
 							/>
@@ -382,12 +482,22 @@ const Workspace = () => {
 					return (
 						<ConfirmDialog
 							label="Delete page"
-							message={`Are you sure you want to delete "${target.title}"? This action cannot be undone.`}
+							message={`Are you sure you want to delete "${target.title}"? It will be moved to Trash and can be restored.`}
 							onConfirm={() => deletePage(target.id)}
 							onClose={() => setDeleteTarget(null)}
 						/>
 					);
 				}}
+			</Show>
+
+			<Show when={isTrashOpen()}>
+				<TrashDialog
+					entries={trash()}
+					onRestore={restoreEntry}
+					onPurge={purgeEntry}
+					onEmptyTrash={emptyTrash}
+					onClose={() => setIsTrashOpen(false)}
+				/>
 			</Show>
 		</wa-page>
 	);
