@@ -3,11 +3,12 @@ import { style } from "@vanilla-extract/css";
 export const commentsPanel = style({
   border: "1px solid var(--wa-color-surface-border)",
   borderRadius: "var(--wa-border-radius-l)",
-  padding: "var(--wa-space-m)",
+  padding: "var(--wa-space-m) var(--wa-space-s)",
   backgroundColor: "var(--wa-color-surface-raised)",
   display: "flex",
   flexDirection: "column",
   gap: 0,
+  width: "100%"
 });
 
 export const commentsHeader = style({
@@ -27,11 +28,7 @@ export const commentForm = style({
   flexDirection: "column",
   gap: "var(--wa-space-s)",
   position: "relative",
-  "@media": {
-    "(max-width: 768px)": {
-      maxWidth: "65vw",
-    },
-  },
+  width: "100%"
 });
 
 export const commentsFeed = style({

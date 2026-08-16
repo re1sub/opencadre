@@ -8,11 +8,6 @@ export const field = style({
   borderRadius: "var(--wa-border-radius-m)",
   backgroundColor: "var(--wa-color-surface-default)",
   overflow: "hidden",
-  "@media": {
-    "(max-width: 768px)": {
-      maxWidth: "80vw",
-    },
-  },
 });
 
 export const toolbar = style({

@@ -14,7 +14,7 @@ import {
 	customLabel,
 	dialogCardTitle,
 	dialogContainer,
-	dialogGrid,
+	dialogContent,
 	dialogLeftColumn,
 	dialogTags,
 } from "./cardDialog.css";
@@ -94,7 +94,7 @@ const CardDialog = (props: CardDialogProps) => {
 				/>
 			</div>
 
-			<div class={dialogGrid}>
+			<div class={dialogContent}>
 				<div class={dialogLeftColumn}>
 					<EditableText
 						value={title()}

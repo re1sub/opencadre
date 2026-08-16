@@ -13,13 +13,12 @@ export const dialogContainer = style({
   },
 });
 
-export const dialogGrid = style({
-  display: "grid",
-  gridTemplateColumns: "1fr 1fr",
+export const dialogContent = style({
+  display: "flex",
   gap: "var(--wa-space-l)",
   "@media": {
     "(max-width: 1200px)": {
-      gridTemplateColumns: "1fr",
+      flexDirection: "column",
     },
   },
 });
@@ -28,6 +27,7 @@ export const dialogLeftColumn = style({
   display: "flex",
   flexDirection: "column",
   justifyContent: "space-between",
+  width: "100%"
 });
 
 export const customLabel = style({
