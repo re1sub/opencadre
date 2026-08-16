@@ -14,6 +14,8 @@
 		"lint:full": "biome check . --config-path ./biome.jsonc",
 		"lint:fix": "biome check . --write --config-path ./biome.jsonc",
 		"format": "biome format . --write --config-path ./biome.jsonc",
+		"prepare": "husky",
+		"check:staged": "lint-staged",
 		"supabase:start": "supabase start",
 		"supabase:stop": "supabase stop",
 		"supabase:status": "supabase status"
@@ -21,7 +23,11 @@
 	"license": "MIT",
 	"devDependencies": {
 		"@biomejs/biome": "^2.5.8",
+		"@commitlint/cli": "^21.2.2",
+		"@commitlint/config-conventional": "^21.2.2",
 		"@vanilla-extract/vite-plugin": "^5.2.5",
+		"husky": "^9.1.7",
+		"lint-staged": "^17.3.0",
 		"solid-devtools": "^0.34.3",
 		"supabase": "^2.111.0",
 		"typescript": "^7.0.2",
@@ -52,5 +58,15 @@
 		"solid-js": "^1.9.5",
 		"solid-motionone": "^1.0.4",
 		"zod": "^4.4.3"
+	},
+	"lint-staged": {
+		"*.{ts,tsx,js,jsx,json,jsonc,css,html}": [
+			"biome check --write --config-path ./biome.jsonc"
+		]
+	},
+	"commitlint": {
+		"extends": [
+			"@commitlint/config-conventional"
+		]
 	}
 }
