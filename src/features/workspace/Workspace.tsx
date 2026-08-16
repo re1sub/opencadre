@@ -375,7 +375,7 @@ const Workspace = () => {
 			}}
 		>
 			<wa-button
-				slot="navigation-toggle"
+				slot="header"
 				onClick={() => {
 					setSidebarHovered(false);
 					setSidebarCollapsed(false);
@@ -383,6 +383,8 @@ const Workspace = () => {
 				size="l"
 				appearance="plain"
 				variant="neutral"
+				data-toggle-nav
+				style={{ padding: "0 var(--wa-space-s)" }}
 			>
 				<wa-icon name="menu" label="Toggle navigation"></wa-icon>
 			</wa-button>

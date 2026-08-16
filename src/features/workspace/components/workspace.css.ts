@@ -3,7 +3,7 @@ import { globalStyle, style } from "@vanilla-extract/css";
 export const page = style({
 	selectors: {
 		"&::part(body)": {
-			transition: "grid-template-columns 0.2s ease-in-out",
+			transition: "grd-template-columns 0.2s ease-in-out",
 		},
 		"&::part(drawer)": {
 			vars: {
