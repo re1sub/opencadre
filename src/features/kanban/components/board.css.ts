@@ -34,10 +34,14 @@ export const columnsTrack = style({
 	overflowX: "auto",
 	minHeight: "85vh",
 	paddingBottom: "var(--wa-space-m)",
-	scrollSnapType: "x mandatory",
-	scrollBehavior: "smooth",
-	scrollPaddingLeft: "var(--wa-space-m)",
-	scrollPaddingRight: "var(--wa-space-m)",
+	"@media": {
+		"(max-width: 480px)": {
+			scrollSnapType: "x mandatory",
+			scrollBehavior: "smooth",
+			scrollPaddingLeft: "var(--wa-space-m)",
+			scrollPaddingRight: "var(--wa-space-m)",
+		},
+	},
 });
 
 globalStyle(
