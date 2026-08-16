@@ -20,19 +20,6 @@ export const commentsHeader = style({
   marginBottom: "var(--wa-space-s)",
 });
 
-export const avatar = style({
-  width: "32px",
-  height: "32px",
-  borderRadius: "50%",
-  backgroundColor: "var(--wa-color-neutral-fill-normal)",
-  color: "var(--wa-color-text-normal)",
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  fontSize: "0.75rem",
-  fontWeight: 600,
-  flexShrink: 0,
-});
 
 export const commentForm = style({
   flex: 1,
