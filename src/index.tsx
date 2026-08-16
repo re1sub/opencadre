@@ -8,7 +8,7 @@ import "#styles/webawesome.css";
 import "#styles/global.css";
 
 import { AuthProvider } from "#/features/auth/AuthContext";
-import { ThemeProvider } from "#/theme/ThemeProvider";
+import ThemeProvider from "#/theme/ThemeProvider";
 import App from "./App";
 
 const root = document.getElementById("root");

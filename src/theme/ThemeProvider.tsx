@@ -3,22 +3,34 @@ import {
 	createContext,
 	createEffect,
 	createSignal,
+	onCleanup,
 	useContext,
 } from "solid-js";
 
 export type Theme = "light" | "dark";
+export type ThemePreference = "system" | "light" | "dark";
 
 interface ThemeContextValue {
 	theme: () => Theme;
+	themePreference: () => ThemePreference;
+	setThemePreference: (preference: ThemePreference) => void;
 	toggleTheme: () => void;
 }
 
 const ThemeContext = createContext<ThemeContextValue>();
 
-function getInitialTheme(): Theme {
-	if (typeof window === "undefined") return "light";
-	const stored = window.localStorage.getItem("theme");
-	if (stored === "light" || stored === "dark") return stored;
+const STORAGE_KEY = "theme";
+
+function getInitialPreference(): ThemePreference {
+	if (typeof window === "undefined") return "system";
+	const stored = window.localStorage.getItem(STORAGE_KEY);
+	if (stored === "light" || stored === "dark" || stored === "system") {
+		return stored;
+	}
+	return "system";
+}
+
+function getSystemTheme(): Theme {
 	return window.matchMedia?.("(prefers-color-scheme: dark)").matches
 		? "dark"
 		: "light";
@@ -31,27 +43,53 @@ function applyThemeClass(theme: Theme) {
 	el.dataset.theme = theme;
 }
 
-export function ThemeProvider(props: { children: JSX.Element }) {
-	const [theme, setTheme] = createSignal<Theme>(getInitialTheme());
+const ThemeProvider = (props: { children: JSX.Element }) => {
+	const [preference, setPreference] = createSignal<ThemePreference>(
+		getInitialPreference(),
+	);
+	const [systemTheme, setSystemTheme] = createSignal<Theme>(
+		typeof window === "undefined" ? "light" : getSystemTheme(),
+	);
+
+	const theme = (): Theme =>
+		preference() === "system" ? systemTheme() : preference();
 
 	applyThemeClass(theme());
 
 	createEffect(() => {
 		applyThemeClass(theme());
-		window.localStorage.setItem("theme", theme());
+		window.localStorage.setItem(STORAGE_KEY, preference());
 	});
 
-	const toggleTheme = () => setTheme((t) => (t === "light" ? "dark" : "light"));
+	createEffect(() => {
+		if (preference() !== "system") return;
+		const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+		const onChange = () => setSystemTheme(getSystemTheme());
+		mediaQuery.addEventListener("change", onChange);
+		onCleanup(() => mediaQuery.removeEventListener("change", onChange));
+	});
+
+	const toggleTheme = () =>
+		setPreference(theme() === "light" ? "dark" : "light");
 
 	return (
-		<ThemeContext.Provider value={{ theme, toggleTheme }}>
+		<ThemeContext.Provider
+			value={{
+				theme,
+				themePreference: preference,
+				setThemePreference: setPreference,
+				toggleTheme,
+			}}
+		>
 			{props.children}
 		</ThemeContext.Provider>
 	);
-}
+};
 
 export function useTheme(): ThemeContextValue {
 	const ctx = useContext(ThemeContext);
 	if (!ctx) throw new Error("useTheme must be used within a ThemeProvider");
 	return ctx;
 }
+
+export default ThemeProvider;
