@@ -55,6 +55,17 @@ web components, Vanilla Extract CSS (`*.css.ts`), TipTap, @simple-table/solid,
 - Vanilla Extract: styles live in `*.css.ts` next to the component
 - Prefer CSS variables from Web Awesome (`var(--wa-color-*)`, `var(--wa-space-*)`,
   `var(--wa-font-size-*)`)
+- If a style is dynamic, or there's only one or two styles – inline styles can be used, otherwise either create a `*.css.ts` file or use an already existing one that is appropriate with Vanilla Extract
+- Inline style key should NOT be camelCase. e.g.
+```tsx
+<div style={{ "background-color": "var(--wa-color-brand)" }}</div>
+```
+
+NOT
+
+```tsx
+<div style={{ backgroundColor: "var(--wa-color-brand)"}}</div>
+```
 
 ## Kanban / dnd-kit
 
