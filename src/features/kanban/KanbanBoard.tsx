@@ -21,7 +21,7 @@ const KanbanBoard = (props: KanbanBoardProps) => {
 		<div class={styles.board} data-page-id={props.pageId}>
 			<header class={styles.boardHeader}>
 				<div>
-					{/*<p class={styles.boardSubtitle}>
+					{/*<p class=d{styles.boardSubtitle}>
 						{board
 							.columns()
 							.reduce((sum, column) => sum + column.cards.length, 0)}{" "}
