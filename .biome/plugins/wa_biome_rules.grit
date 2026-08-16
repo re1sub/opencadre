@@ -1,10 +1,5 @@
 `<$tag $props />` as $node where {
-    $tag <: r"wa-.*",
-    register_diagnostic(
-        span = $node,
-        message = "Web Awesome components (<" + $tag + " />) must use an explicit closing tag: <" + $tag + "></" + $tag + ">.",
-        severity = "error",
-        fix_kind = "safe"
-    ),
-    $node => `<$tag $props></$tag>`
+	$tag <: r"wa-.*",
+	register_diagnostic(span=$node, message="Web Awesome components must use an explicit closing tag instead of a self-closing tag.", severity="error", fix_kind="safe"),
+	$node => `<$tag $props></$tag>`
 }
