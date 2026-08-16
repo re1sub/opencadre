@@ -1,4 +1,4 @@
-import { style } from "@vanilla-extract/css";
+import { globalStyle, style } from "@vanilla-extract/css";
 
 export const board = style({
 	display: "flex",
@@ -34,7 +34,27 @@ export const columnsTrack = style({
 	overflowX: "auto",
 	minHeight: "85vh",
 	paddingBottom: "var(--wa-space-m)",
+	scrollSnapType: "x mandatory",
+	scrollBehavior: "smooth",
+	scrollPaddingLeft: "var(--wa-space-m)",
+	scrollPaddingRight: "var(--wa-space-m)",
 });
+
+globalStyle(
+	`${board}:has([aria-grabbed="true"], [data-dragging="true"], .is-dragging) ${columnsTrack}`,
+	{
+		scrollSnapType: "none",
+		scrollBehavior: "auto",
+	},
+);
+
+globalStyle(
+	`body:has([aria-grabbed="true"], [data-dragging="true"], .is-dragging) ${columnsTrack}`,
+	{
+		scrollSnapType: "none",
+		scrollBehavior: "auto",
+	},
+);
 
 export const column = style({
 	width: 288,
@@ -47,6 +67,12 @@ export const column = style({
 	borderRadius: "var(--wa-border-radius-l)",
 	overflow: "hidden",
 	transition: "border-color 0.15s ease, box-shadow 0.15s ease",
+	"@media": {
+		"(max-width: 480px)": {
+			scrollSnapAlign: "start",
+			scrollSnapStop: "always",
+		},
+	},
 });
 
 export const columnDropTarget = style({
@@ -224,6 +250,7 @@ export const addColumnButton = style({
 	borderRadius: "var(--wa-border-radius-l)",
 	color: "var(--wa-color-text-quiet)",
 	transition: "border-color 0.15s ease, color 0.15s ease",
+	scrollSnapAlign: "start",
 	selectors: {
 		"&:hover": {
 			borderColor: "var(--wa-color-brand)",
