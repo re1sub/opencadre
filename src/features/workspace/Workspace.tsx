@@ -460,7 +460,6 @@ const Workspace = () => {
 									onChange={(title) => renamePage(active.id, title)}
 									class={pageTitleStyle}
 									ariaLabel="Page title"
-									endIcon="square-pen"
 								/>
 							</div>
 						);
