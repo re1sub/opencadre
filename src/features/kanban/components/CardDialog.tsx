@@ -101,6 +101,7 @@ const CardDialog = (props: CardDialogProps) => {
 						onChange={(value) => setTitle(value)}
 						ariaLabel="Title"
 						class={dialogCardTitle}
+						endIcon="square-pen"
 					/>
 
 					<div

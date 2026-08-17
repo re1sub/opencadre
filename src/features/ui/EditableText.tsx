@@ -1,4 +1,4 @@
-import { onCleanup, onMount } from "solid-js";
+import { onCleanup, onMount, Show } from "solid-js";
 import { inlineInputStyle } from "./editableText.css";
 
 interface EditableTextProps {
@@ -11,6 +11,7 @@ interface EditableTextProps {
 	class?: string;
 	isolateEvents?: boolean;
 	autoFocus?: boolean;
+	endIcon?: string;
 }
 
 export function EditableText(props: EditableTextProps) {
@@ -105,7 +106,11 @@ export function EditableText(props: EditableTextProps) {
 				);
 				label?.setAttribute("draggable", "true");
 			}}
-		></wa-input>
+		>
+			<Show when={props.endIcon}>
+				<wa-icon name={props.endIcon} slot="end"></wa-icon>
+			</Show>
+		</wa-input>
 	);
 }
 
