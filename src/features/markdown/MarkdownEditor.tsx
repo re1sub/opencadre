@@ -1,8 +1,12 @@
-import { Editor, posToDOMRect } from "@tiptap/core";
+import { Editor } from "@tiptap/core";
 import BubbleMenu from "@tiptap/extension-bubble-menu";
+import Document from "@tiptap/extension-document";
+import Heading from "@tiptap/extension-heading";
+import { Placeholder } from "@tiptap/extension-placeholder";
 import { Markdown } from "@tiptap/markdown";
 import StarterKit from "@tiptap/starter-kit";
-import { createSignal, For, onCleanup, onMount, splitProps } from "solid-js";
+import { createSignal, onCleanup, onMount, splitProps } from "solid-js";
+import { Motion } from "solid-motionone";
 import { useAuth } from "#/features/auth/AuthContext";
 import { usePageComments } from "#/features/comments/hooks/usePageComments";
 import {
@@ -10,21 +14,13 @@ import {
 	CommentMark,
 } from "#/features/comments/mark/CommentMark";
 import CommentPopup from "./components/CommentPopup";
-import ToolbarButton from "./components/ToolbarButton";
 import { bubbleMenu, bubbleMenuContent } from "./editorBubbleMenu.css";
+import { useEditorComments } from "./hooks/useEditorComments";
+import { useSlashCommand } from "./hooks/useSlashCommand";
 import { editor } from "./markdownEditor.css";
-import {
-	blockButtons,
-	createMarkdownActions,
-	headingItems,
-	inlineButtons,
-	type MarkdownAction,
-	type ToolbarButton as ToolbarButtonDef,
-} from "./toolbar";
+import { createMarkdownActions, type MarkdownAction } from "./toolbar";
 import "#assets/css/github-markdown.css";
-import Document from "@tiptap/extension-document";
-import { Placeholder } from "@tiptap/extension-placeholder";
-import { Motion } from "solid-motionone";
+import EditorMenuItems from "./components/EditorMenuItems";
 
 interface MarkdownEditorProps {
 	content: string;
@@ -34,15 +30,9 @@ interface MarkdownEditorProps {
 	onUpdate?: (markdown: string) => void;
 }
 
-const bubbleBlockButtons: ToolbarButtonDef[] = [
-	...headingItems.slice(1),
-	headingItems[0],
-	...blockButtons,
-];
-
-const commentButtons: ToolbarButtonDef[] = [
-	{ id: "comment", icon: "message-square-text", label: "Comment" },
-];
+const CustomDocument = Document.extend({
+	content: "heading block*",
+});
 
 const MarkdownEditor = (props: MarkdownEditorProps) => {
 	const [local, rest] = splitProps(props, [
@@ -53,50 +43,21 @@ const MarkdownEditor = (props: MarkdownEditorProps) => {
 		"onUpdate",
 	]);
 	const { user } = useAuth();
-
-	const [activeThreadId, setActiveThreadId] = createSignal<string | null>(null);
-	const [popupRect, setPopupRect] = createSignal<DOMRect | null>(null);
-	const [pendingComment, setPendingComment] = createSignal<{
-		threadId: string;
-		from: number;
-		to: number;
-	} | null>(null);
-	const [toolbarVersion, setToolbarVersion] = createSignal(0);
-	const bumpToolbar = () => setToolbarVersion((v) => v + 1);
-
 	const pageComments = usePageComments(props.pageId ?? "");
 
+	let instance: Editor | undefined;
+	const slashCommand = useSlashCommand(() => instance);
+	const editorComments = useEditorComments(pageComments);
+
+	const [toolbarVersion, setToolbarVersion] = createSignal(0);
+	const [bubbleVisible, setBubbleVisible] = createSignal(false);
+
+	const bumpToolbar = () => setToolbarVersion((v) => v + 1);
 	const author = () => user()?.email?.split("@")[0] ?? "You";
-
-	const activeThread = () =>
-		pageComments.threads().find((t) => t.id === activeThreadId()) ?? undefined;
-
-	const openThreadPopup = (threadId: string, rect: DOMRect) => {
-		setActiveThreadId(threadId);
-		setPopupRect(rect);
-	};
-
-	const discardPending = () => {
-		const pending = pendingComment();
-		if (!pending) return;
-		const thread = pageComments
-			.threads()
-			.find((t) => t.id === pending.threadId);
-		if (thread && thread.comments.length === 0) {
-			pageComments.deleteThread(pending.threadId);
-		}
-		setPendingComment(null);
-	};
-
-	const closeThreadPopup = () => {
-		discardPending();
-		setActiveThreadId(null);
-		setPopupRect(null);
-	};
 
 	let editorRef!: HTMLDivElement;
 	let menuRef!: HTMLDivElement;
-	let instance!: Editor;
+	let commandMenuRef!: HTMLDivElement;
 	let actions: Record<string, MarkdownAction> = {};
 
 	const isActive = (id: string) => {
@@ -104,158 +65,116 @@ const MarkdownEditor = (props: MarkdownEditorProps) => {
 		return actions[id]?.active() ?? false;
 	};
 
-	const CustomDocument = Document.extend({
-		content: "heading block*",
-	});
-
-	const [bubbleVisible, setBubbleVisible] = createSignal(false);
+	const hideBubbleMenus = () => {
+		setBubbleVisible(false);
+		slashCommand.setCommandVisible(false);
+		instance?.view.dispatch(
+			instance.state.tr
+				.setMeta("editorBubbleMenu", "hide")
+				.setMeta("editorCommandMenu", "hide"),
+		);
+	};
 
 	onMount(() => {
-		if (!editorRef || !menuRef) return;
+		if (!editorRef || !menuRef || !commandMenuRef) return;
+
+		const commonMenuOptions = {
+			strategy: "fixed" as const,
+			placement: "top" as const,
+			offset: 8,
+			flip: { boundary: editorRef, padding: -50 },
+			shift: { boundary: editorRef },
+		};
 
 		instance = new Editor({
 			element: editorRef,
 			extensions: [
 				CustomDocument,
-				StarterKit.configure({
-					document: false,
-					trailingNode: false,
-				}),
+				StarterKit.configure({ document: false, trailingNode: false }),
 				Placeholder.configure({
 					placeholder: ({ node, pos }) => {
-						if (node.type.name === "heading" && pos === 0) {
-							return "Type a title...";
-						}
+						if (node.type.name === "heading" && pos === 0) return "Heading 1";
+						if (node.type.name === "paragraph") return "Press / for commands";
 						return "";
 					},
 					showOnlyCurrent: false,
 				}),
-				Markdown,
+				Markdown.configure({ markedOptions: { gfm: true } }),
+				Heading.configure({ levels: [2, 3, 4, 5, 6] }),
 				CommentMark,
 				BubbleMenu.configure({
 					element: menuRef,
 					pluginKey: "editorBubbleMenu",
 					appendTo: () => document.body,
-
 					options: {
-						strategy: "fixed",
-						placement: "top",
-						offset: 8,
-						flip: {
-							boundary: editorRef,
-							padding: -50,
-						},
-						shift: {
-							boundary: editorRef,
-						},
-						onShow: () => {
-							setBubbleVisible(true);
-						},
-						onHide: () => {
-							setBubbleVisible(false);
-						},
+						...commonMenuOptions,
+						onShow: () => setBubbleVisible(true),
+						onHide: () => setBubbleVisible(false),
+					},
+				}),
+				BubbleMenu.configure({
+					element: commandMenuRef,
+					pluginKey: "editorCommandMenu",
+					appendTo: () => document.body,
+					shouldShow: () => slashCommand.commandVisible(),
+					options: {
+						...commonMenuOptions,
+						placement: "bottom",
+						onShow: () => slashCommand.setCommandVisible(true),
+						onHide: () => slashCommand.setCommandVisible(false),
 					},
 				}),
 			],
-			content: props.content.trim() ? props.content : "#",
+			content: props.content.trim() ? props.content : "#\n ",
 			contentType: "markdown",
 			editable: props.editable ?? true,
 			onUpdate: ({ editor: editorInstance }) => {
 				props.onUpdate?.(editorInstance.getMarkdown());
-				pruneOrphanThreads(editorInstance);
+				editorComments.pruneOrphanThreads(editorInstance);
+			},
+			editorProps: {
+				handleTextInput: (view, from, _to, text) => {
+					if (text === "/") {
+						const before =
+							from > 0 ? view.state.doc.textBetween(from - 1, from) : "";
+						if (before === "" || /\s/.test(before)) {
+							slashCommand.setCommandVisible(true);
+							slashCommand.setCommandQuery("");
+						}
+					}
+				},
+				handleKeyDown: (_view, event) =>
+					slashCommand.handleKeyDown(event, actions),
+			},
+			onSelectionUpdate: ({ editor }) => {
+				const query = slashCommand.getSlashQuery(editor);
+				if (query !== null) {
+					slashCommand.setCommandQuery(query);
+					if (!slashCommand.commandVisible()) {
+						slashCommand.setCommandVisible(true);
+					}
+				} else {
+					slashCommand.setCommandVisible(false);
+					slashCommand.setCommandQuery("");
+				}
 			},
 		});
 
-		const editorInstance = instance;
-
-		const collectCommentIds = (from: number, to: number) => {
-			const ids = new Set<string>();
-			editorInstance.state.doc.nodesBetween(from, to, (node) => {
-				node.marks.forEach((mark) => {
-					if (mark.type.name === COMMENT_MARK_NAME && mark.attrs.commentId) {
-						ids.add(mark.attrs.commentId as string);
-					}
-				});
-			});
-			return [...ids];
-		};
-
-		const hideBubbleMenu = () => {
-			editorInstance.view.dispatch(
-				editorInstance.state.tr.setMeta("editorBubbleMenu", "hide"),
-			);
-		};
-
 		actions = {
-			...createMarkdownActions(editorInstance),
+			...createMarkdownActions(instance),
 			comment: {
-				active: () => editorInstance.isActive(COMMENT_MARK_NAME),
+				active: () => instance?.isActive(COMMENT_MARK_NAME) ?? false,
 				run: () => {
-					const { from, to, empty } = editorInstance.state.selection;
-					if (empty) return;
-					const rect = posToDOMRect(editorInstance.view, from, to);
-					const existingIds = collectCommentIds(from, to);
-					if (existingIds.length > 0) {
-						discardPending();
-						if (activeThreadId() === existingIds[0]) {
-							closeThreadPopup();
-						} else {
-							openThreadPopup(existingIds[0], rect);
-						}
-						hideBubbleMenu();
-						return;
-					}
-					const text = editorInstance.state.doc.textBetween(from, to, " ");
-					const thread = pageComments.createThread(text.trim() || "…");
-					setPendingComment({ threadId: thread.id, from, to });
-					openThreadPopup(thread.id, rect);
-					hideBubbleMenu();
+					if (instance)
+						editorComments.handleCommentAction(instance, hideBubbleMenus);
 				},
 			},
 		};
 
-		editorRef.addEventListener("click", (e) => {
-			const target = e.target as HTMLElement;
-			const mark = target.closest?.("mark[data-comment-id]");
-			if (!mark) return;
-			const commentId = mark.getAttribute("data-comment-id");
-			if (!commentId) return;
-			const thread = pageComments.threads().find((t) => t.id === commentId);
-			if (!thread) return;
-			e.preventDefault();
-			openThreadPopup(commentId, mark.getBoundingClientRect());
-			hideBubbleMenu();
-		});
-
-		editorInstance.on("transaction", bumpToolbar);
-		editorInstance.on("selectionUpdate", bumpToolbar);
+		instance.on("transaction", bumpToolbar);
+		instance.on("selectionUpdate", bumpToolbar);
 		bumpToolbar();
 	});
-
-	const pruneOrphanThreads = (editorInstance: Editor) => {
-		const ids = new Set<string>();
-		editorInstance.state.doc.descendants((node) => {
-			node.marks.forEach((mark) => {
-				if (mark.type.name === COMMENT_MARK_NAME && mark.attrs.commentId) {
-					ids.add(mark.attrs.commentId as string);
-				}
-			});
-		});
-		const valid = [...ids];
-		const threads = pageComments.threads();
-		const pending = pendingComment();
-		const orphans = threads.filter(
-			(t) =>
-				!valid.includes(t.id) &&
-				t.comments.length === 0 &&
-				t.id !== pending?.threadId,
-		);
-		if (orphans.length > 0) {
-			orphans.forEach((t) => {
-				pageComments.deleteThread(t.id);
-			});
-		}
-	};
 
 	onCleanup(() => {
 		instance?.destroy();
@@ -274,6 +193,38 @@ const MarkdownEditor = (props: MarkdownEditorProps) => {
 			/>
 
 			<div
+				ref={commandMenuRef}
+				class={bubbleMenu}
+				role="toolbar"
+				aria-label="Command menu"
+			>
+				<Motion.div
+					class={bubbleMenuContent}
+					style={{
+						"grid-template-columns": "1fr",
+						"max-height": "200px",
+						overflow: "auto",
+						"justify-items": "start",
+					}}
+					animate={{
+						opacity: slashCommand.commandVisible() ? 1 : 0,
+						scale: slashCommand.commandVisible() ? 1 : 0.95,
+					}}
+					transition={{ duration: 0.2 }}
+				>
+					<EditorMenuItems
+						groups={slashCommand.filteredToolbarGroups()}
+						showLabels
+						isCommandMenu
+						selectedIndex={slashCommand.selectedIndex()}
+						actions={actions}
+						isActive={isActive}
+						onExecuteCommand={(id) => slashCommand.executeCommand(id, actions)}
+					/>
+				</Motion.div>
+			</div>
+
+			<div
 				ref={menuRef}
 				class={bubbleMenu}
 				role="toolbar"
@@ -287,58 +238,20 @@ const MarkdownEditor = (props: MarkdownEditorProps) => {
 					}}
 					transition={{ duration: 0.2 }}
 				>
-					<For each={inlineButtons}>
-						{(button) => (
-							<ToolbarButton
-								button={button}
-								id={button.id}
-								onClick={() => actions[button.id]?.run()}
-								activeClass="bubble-menu-is-active"
-								active={() => isActive(button.id)}
-							/>
-						)}
-					</For>
-
-					<wa-divider orientation="horizontal"></wa-divider>
-
-					<For each={bubbleBlockButtons}>
-						{(button) => (
-							<ToolbarButton
-								button={button}
-								id={button.id}
-								onClick={() => actions[button.id]?.run()}
-								activeClass="bubble-menu-is-active"
-								active={() => isActive(button.id)}
-							/>
-						)}
-					</For>
-
-					<wa-divider orientation="horizontal"></wa-divider>
-
-					<For each={commentButtons}>
-						{(button) => (
-							<ToolbarButton
-								button={button}
-								id={button.id}
-								onClick={() => actions[button.id]?.run()}
-								activeClass="bubble-menu-is-active"
-								active={() => isActive(button.id)}
-							/>
-						)}
-					</For>
+					<EditorMenuItems actions={actions} isActive={isActive} />
 				</Motion.div>
 			</div>
 
 			<CommentPopup
-				open={() => Boolean(activeThreadId())}
-				anchorRect={popupRect}
-				thread={activeThread}
+				open={() => Boolean(editorComments.activeThreadId())}
+				anchorRect={editorComments.popupRect}
+				thread={editorComments.activeThread}
 				author={author()}
 				isPopup={true}
 				onReplaceComments={(comments) => {
-					const id = activeThreadId();
+					const id = editorComments.activeThreadId();
 					if (!id) return;
-					const pending = pendingComment();
+					const pending = editorComments.pendingComment();
 					if (pending && pending.threadId === id) {
 						const wasEmpty =
 							pageComments.threads().find((t) => t.id === id)?.comments
@@ -349,16 +262,16 @@ const MarkdownEditor = (props: MarkdownEditorProps) => {
 								.setTextSelection({ from: pending.from, to: pending.to })
 								.setComment(id)
 								.run();
-							setPendingComment(null);
+							editorComments.setPendingComment(null);
 						}
 					}
 					pageComments.replaceThreadComments(id, comments);
 				}}
 				onDeleteComment={(commentId) => {
-					const id = activeThreadId();
+					const id = editorComments.activeThreadId();
 					if (id) pageComments.deleteComment(id, commentId);
 				}}
-				onClose={closeThreadPopup}
+				onClose={editorComments.closeThreadPopup}
 			/>
 		</>
 	);

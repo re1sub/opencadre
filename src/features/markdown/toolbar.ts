@@ -1,17 +1,9 @@
 import type { Editor } from "@tiptap/core";
+import type { MarkdownAction, ToolbarButtonDef } from "./types";
 
-export interface ToolbarButton {
-	id: string;
-	icon: string;
-	label: string;
-}
+export type { MarkdownAction, ToolbarButtonDef };
 
-export interface MarkdownAction {
-	active: () => boolean;
-	run: () => void;
-}
-
-export const inlineButtons: ToolbarButton[] = [
+export const inlineButtons: ToolbarButtonDef[] = [
 	{ id: "bold", icon: "bold", label: "Bold" },
 	{ id: "italic", icon: "italic", label: "Italic" },
 	{ id: "strike", icon: "strikethrough", label: "Strikethrough" },
@@ -20,80 +12,83 @@ export const inlineButtons: ToolbarButton[] = [
 	{ id: "link", icon: "link", label: "Link" },
 ];
 
-export const headingItems: ToolbarButton[] = [
+export const headingItems: ToolbarButtonDef[] = [
 	{ id: "paragraph", icon: "pilcrow", label: "Paragraph" },
 	{ id: "heading-1", icon: "heading-1", label: "Heading 1" },
 	{ id: "heading-2", icon: "heading-2", label: "Heading 2" },
 	{ id: "heading-3", icon: "heading-3", label: "Heading 3" },
 ];
 
-export const blockButtons: ToolbarButton[] = [
+export const blockButtons: ToolbarButtonDef[] = [
 	{ id: "bullet-list", icon: "list", label: "Bullet list" },
 	{ id: "ordered-list", icon: "list-ordered", label: "Ordered list" },
 	{ id: "blockquote", icon: "quote", label: "Blockquote" },
 	{ id: "code-block", icon: "square-code", label: "Code block" },
 ];
 
-export const createMarkdownActions = (
-	editor: Editor,
-): Record<string, MarkdownAction> => ({
-	bold: {
-		active: () => editor.isActive("bold"),
-		run: () => editor.chain().focus().toggleBold().run(),
-	},
-	italic: {
-		active: () => editor.isActive("italic"),
-		run: () => editor.chain().focus().toggleItalic().run(),
-	},
-	strike: {
-		active: () => editor.isActive("strike"),
-		run: () => editor.chain().focus().toggleStrike().run(),
-	},
-	underline: {
-		active: () => editor.isActive("underline"),
-		run: () => editor.chain().focus().toggleUnderline().run(),
-	},
-	code: {
-		active: () => editor.isActive("code"),
-		run: () => editor.chain().focus().toggleCode().run(),
-	},
-	link: {
-		active: () => editor.isActive("link"),
-		run: () =>
-			editor.isActive("link")
-				? editor.chain().focus().unsetLink().run()
-				: editor.chain().focus().setLink({ href: "https://" }).run(),
-	},
-	paragraph: {
-		active: () => editor.isActive("paragraph"),
-		run: () => editor.chain().focus().setParagraph().run(),
-	},
-	"heading-1": {
-		active: () => editor.isActive("heading", { level: 1 }),
-		run: () => editor.chain().focus().toggleHeading({ level: 1 }).run(),
-	},
-	"heading-2": {
-		active: () => editor.isActive("heading", { level: 2 }),
-		run: () => editor.chain().focus().toggleHeading({ level: 2 }).run(),
-	},
-	"heading-3": {
-		active: () => editor.isActive("heading", { level: 3 }),
-		run: () => editor.chain().focus().toggleHeading({ level: 3 }).run(),
-	},
-	"bullet-list": {
-		active: () => editor.isActive("bulletList"),
-		run: () => editor.chain().focus().toggleBulletList().run(),
-	},
-	"ordered-list": {
-		active: () => editor.isActive("orderedList"),
-		run: () => editor.chain().focus().toggleOrderedList().run(),
-	},
-	blockquote: {
-		active: () => editor.isActive("blockquote"),
-		run: () => editor.chain().focus().toggleBlockquote().run(),
-	},
-	"code-block": {
-		active: () => editor.isActive("codeBlock"),
-		run: () => editor.chain().focus().toggleCodeBlock().run(),
-	},
-});
+export const toolbarGroups: ToolbarButtonDef[][] = [
+	inlineButtons,
+	headingItems,
+	blockButtons,
+];
+
+export function createMarkdownActions(
+	editor: (() => Editor | undefined) | Editor | undefined,
+): Record<string, MarkdownAction> {
+	const getEditor = () => (typeof editor === "function" ? editor() : editor);
+
+	return {
+		bold: {
+			run: () => getEditor()?.chain().focus().toggleBold().run(),
+			active: () => getEditor()?.isActive("bold") ?? false,
+		},
+		italic: {
+			run: () => getEditor()?.chain().focus().toggleItalic().run(),
+			active: () => getEditor()?.isActive("italic") ?? false,
+		},
+		strike: {
+			run: () => getEditor()?.chain().focus().toggleStrike().run(),
+			active: () => getEditor()?.isActive("strike") ?? false,
+		},
+		underline: {
+			run: () => getEditor()?.chain().focus().toggleUnderline().run(),
+			active: () => getEditor()?.isActive("underline") ?? false,
+		},
+		code: {
+			run: () => getEditor()?.chain().focus().toggleCode().run(),
+			active: () => getEditor()?.isActive("code") ?? false,
+		},
+		paragraph: {
+			run: () => getEditor()?.chain().focus().setParagraph().run(),
+			active: () => getEditor()?.isActive("paragraph") ?? false,
+		},
+		"heading-1": {
+			run: () => getEditor()?.chain().focus().toggleHeading({ level: 2 }).run(),
+			active: () => getEditor()?.isActive("heading", { level: 2 }) ?? false,
+		},
+		"heading-2": {
+			run: () => getEditor()?.chain().focus().toggleHeading({ level: 3 }).run(),
+			active: () => getEditor()?.isActive("heading", { level: 3 }) ?? false,
+		},
+		"heading-3": {
+			run: () => getEditor()?.chain().focus().toggleHeading({ level: 4 }).run(),
+			active: () => getEditor()?.isActive("heading", { level: 4 }) ?? false,
+		},
+		"bullet-list": {
+			run: () => getEditor()?.chain().focus().toggleBulletList().run(),
+			active: () => getEditor()?.isActive("bulletList") ?? false,
+		},
+		"ordered-list": {
+			run: () => getEditor()?.chain().focus().toggleOrderedList().run(),
+			active: () => getEditor()?.isActive("orderedList") ?? false,
+		},
+		blockquote: {
+			run: () => getEditor()?.chain().focus().toggleBlockquote().run(),
+			active: () => getEditor()?.isActive("blockquote") ?? false,
+		},
+		"code-block": {
+			run: () => getEditor()?.chain().focus().toggleCodeBlock().run(),
+			active: () => getEditor()?.isActive("codeBlock") ?? false,
+		},
+	};
+}

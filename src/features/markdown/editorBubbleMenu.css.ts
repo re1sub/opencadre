@@ -5,6 +5,7 @@ export const bubbleMenu = style({
 	zIndex: 1000,
 	maxWidth: "max-content",
 	opacity: "0.95 !important",
+	visibility: "hidden",
 });
 
 export const bubbleMenuContent = style({
@@ -35,4 +36,13 @@ globalStyle(`${bubbleMenu} wa-divider`, {
 	gridColumn: "1 / -1",
 	width: "100%",
 	margin: "var(--wa-space-3xs) 0",
+});
+
+export const bubbleMenuButton = style({
+	width: "100%",
+	selectors: {
+		"&::part(base)": {
+			justifyContent: "flex-start",
+		},
+	},
 });

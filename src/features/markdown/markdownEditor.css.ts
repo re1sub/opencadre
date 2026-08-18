@@ -31,7 +31,20 @@ globalStyle(`.${editor}.markdown-body`, {
 	background: "transparent",
 });
 
-globalStyle(`.${editor} h1:first-child::before`, {
+globalStyle(`.${editor} h2`, {
+	fontSize: "2em !important",
+});
+
+globalStyle(`.${editor} h2:first-child::before`, {
+	content: "attr(data-placeholder)",
+	color: "var(--wa-color-text-quiet)",
+	opacity: 0.8,
+	float: "left",
+	height: 0,
+	pointerEvents: "none",
+});
+
+globalStyle(`.${editor} p::before`, {
 	content: "attr(data-placeholder)",
 	color: "var(--wa-color-text-quiet)",
 	opacity: 0.8,
