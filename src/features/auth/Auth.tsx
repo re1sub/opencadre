@@ -152,12 +152,13 @@ const Auth = (props: { view?: "forgot" | "reset" }) => {
 
 	return (
 		<main class={page}>
+			<h1 class="wa-visually-hidden">Account</h1>
 			<Show when={view() === "reset"}>
 				<div class={card}>
 					<a href="/" class={logo} style={{ "align-self": "center" }}>
 						opencadre
 					</a>
-					<h1 style={{ "font-size": "1.5rem" }}>Reset password</h1>
+					<h2 style={{ "font-size": "1.5rem" }}>Reset password</h2>
 					<Show when={loading()}>
 						<p>Checking your reset link...</p>
 					</Show>
@@ -198,14 +199,13 @@ const Auth = (props: { view?: "forgot" | "reset" }) => {
 					</Show>
 				</div>
 			</Show>
-
 			<Show when={view() !== "reset" && !user() && !loading()}>
 				<Show when={view() === "forgot"}>
 					<form onSubmit={handleForgotSubmit} class={card}>
 						<a href="/" class={logo} style={{ "align-self": "center" }}>
 							opencadre
 						</a>
-						<h1 style={{ "font-size": "1.5rem" }}>Forgot password</h1>
+						<h2 style={{ "font-size": "1.5rem" }}>Forgot password</h2>
 						<Show when={!sent()}>
 							<p
 								style={{
@@ -251,13 +251,12 @@ const Auth = (props: { view?: "forgot" | "reset" }) => {
 						</Show>
 					</form>
 				</Show>
-
 				<Show when={view() === "confirm"}>
 					<div class={card}>
 						<a href="/" class={logo} style={{ "align-self": "center" }}>
 							opencadre
 						</a>
-						<h1 style={{ "font-size": "1.5rem" }}>Check your email</h1>
+						<h2 style={{ "font-size": "1.5rem" }}>Check your email</h2>
 						<p>
 							We sent a confirmation link to <strong>{email()}</strong>. Click
 							it to confirm your account, then sign in.
@@ -287,15 +286,14 @@ const Auth = (props: { view?: "forgot" | "reset" }) => {
 						</span>
 					</div>
 				</Show>
-
 				<Show when={view() === "signin" || view() === "signup"}>
 					<form onSubmit={handleSubmit} class={card}>
 						<a href="/" class={logo} style={{ "align-self": "center" }}>
 							opencadre
 						</a>
-						<h1 style={{ "font-size": "1.5rem" }}>
+						<h2 style={{ "font-size": "1.5rem" }}>
 							{view() === "signup" ? "Create your account" : "Sign in"}
-						</h1>
+						</h2>
 						<wa-input
 							type="email"
 							label="Email"
@@ -307,7 +305,6 @@ const Auth = (props: { view?: "forgot" | "reset" }) => {
 								setEmail((e.currentTarget as HTMLInputElement).value)
 							}
 						></wa-input>
-
 						<wa-input
 							type="password"
 							label="Password"
@@ -323,7 +320,6 @@ const Auth = (props: { view?: "forgot" | "reset" }) => {
 								setPassword((e.currentTarget as HTMLInputElement).value)
 							}
 						></wa-input>
-
 						<Show when={error()}>
 							<p style={{ color: "var(--wa-color-danger)" }}>{error()}</p>
 						</Show>
