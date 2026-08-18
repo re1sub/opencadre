@@ -3,6 +3,11 @@ import { globalStyle, style } from "@vanilla-extract/css";
 export const bubbleMenu = style({
 	position: "fixed",
 	zIndex: 1000,
+	maxWidth: "max-content",
+	opacity: "0.95 !important",
+});
+
+export const bubbleMenuContent = style({
 	display: "grid",
 	gridTemplateColumns: "repeat(3, auto)",
 	gap: "var(--wa-space-3xs)",
@@ -11,11 +16,9 @@ export const bubbleMenu = style({
 	backgroundColor: "var(--wa-color-surface-raised)",
 	border: "1px solid var(--wa-color-surface-border)",
 	boxShadow: "var(--wa-shadow-m)",
-	maxWidth: "max-content",
-	visibility: "hidden",
 	justifyItems: "center",
 	alignItems: "center",
-	opacity: "0.95 !important",
+	width: "130%",
 });
 
 export const buttonGroup = style({

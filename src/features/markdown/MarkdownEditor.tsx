@@ -11,7 +11,7 @@ import {
 } from "#/features/comments/mark/CommentMark";
 import CommentPopup from "./components/CommentPopup";
 import ToolbarButton from "./components/ToolbarButton";
-import { bubbleMenu } from "./editorBubbleMenu.css";
+import { bubbleMenu, bubbleMenuContent } from "./editorBubbleMenu.css";
 import { editor } from "./markdownEditor.css";
 import {
 	blockButtons,
@@ -22,9 +22,9 @@ import {
 	type ToolbarButton as ToolbarButtonDef,
 } from "./toolbar";
 import "#assets/css/github-markdown.css";
-import type WaAnimation from "@awesome.me/webawesome/dist/components/animation/animation.js";
 import Document from "@tiptap/extension-document";
 import { Placeholder } from "@tiptap/extension-placeholder";
+import { Motion } from "solid-motionone";
 
 interface MarkdownEditorProps {
 	content: string;
@@ -97,7 +97,6 @@ const MarkdownEditor = (props: MarkdownEditorProps) => {
 	let editorRef!: HTMLDivElement;
 	let menuRef!: HTMLDivElement;
 	let instance!: Editor;
-	let animRef!: WaAnimation;
 	let actions: Record<string, MarkdownAction> = {};
 
 	const isActive = (id: string) => {
@@ -108,6 +107,8 @@ const MarkdownEditor = (props: MarkdownEditorProps) => {
 	const CustomDocument = Document.extend({
 		content: "heading block*",
 	});
+
+	const [bubbleVisible, setBubbleVisible] = createSignal(false);
 
 	onMount(() => {
 		if (!editorRef || !menuRef) return;
@@ -148,11 +149,10 @@ const MarkdownEditor = (props: MarkdownEditorProps) => {
 							boundary: editorRef,
 						},
 						onShow: () => {
-							animRef.name = "zoomIn";
-							animRef.play = true;
+							setBubbleVisible(true);
 						},
 						onHide: () => {
-							animRef.play = false;
+							setBubbleVisible(false);
 						},
 					},
 				}),
@@ -272,20 +272,20 @@ const MarkdownEditor = (props: MarkdownEditorProps) => {
 					[local.class ?? ""]: Boolean(local.class),
 				}}
 			/>
-			<wa-animation
-				name="zoomIn"
-				easing="ease-in-out"
-				duration={20}
-				iterations={1}
-				ref={(el) => {
-					animRef = el;
-				}}
+
+			<div
+				ref={menuRef}
+				class={bubbleMenu}
+				role="toolbar"
+				aria-label="Text formatting"
 			>
-				<div
-					ref={menuRef}
-					class={bubbleMenu}
-					role="toolbar"
-					aria-label="Text formatting"
+				<Motion.div
+					class={bubbleMenuContent}
+					animate={{
+						opacity: bubbleVisible() ? 1 : 0,
+						scale: bubbleVisible() ? 1 : 0.95,
+					}}
+					transition={{ duration: 0.2 }}
 				>
 					<For each={inlineButtons}>
 						{(button) => (
@@ -326,8 +326,9 @@ const MarkdownEditor = (props: MarkdownEditorProps) => {
 							/>
 						)}
 					</For>
-				</div>
-			</wa-animation>
+				</Motion.div>
+			</div>
+
 			<CommentPopup
 				open={() => Boolean(activeThreadId())}
 				anchorRect={popupRect}
