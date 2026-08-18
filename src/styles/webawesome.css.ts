@@ -15,6 +15,8 @@ globalStyle(":where(:root), .wa-light, .wa-dark, .wa-invert", {
 		"--wa-color-brand-05": "oklch(0.3 0.06 278.87)",
 		"--wa-color-brand": "var(--wa-color-brand-50)",
 		"--wa-color-brand-on": "oklch(1 0 247.84)",
+		"--wa-font-family-body": "Geist",
+		"--wa-font-family-heading": "Geist",
 	},
 });
 

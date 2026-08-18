@@ -171,12 +171,20 @@ globalStyle(`wa-page[view='mobile'] .${sidebarResizer}`, {
 	display: "none",
 });
 
-// Large Page Title style variant
 export const pageTitleStyle = style({
 	vars: {
-		"--wa-form-control-value-font-size": "2rem",
-		"--wa-form-control-value-font-weight": "700",
-		"--wa-form-control-value-line-height": "1.2",
+		"--page-title-font-size": "2rem",
+		"--page-title-font-weight": "700",
+		"--page-title-line-height": "1.2",
+		"--wa-form-control-value-font-size": "var(--page-title-font-size)",
+		"--wa-form-control-value-font-weight": "var(--page-title-font-weight)",
+		"--wa-form-control-value-line-height": "var(--page-title-line-height)",
+		fontSize: "var(--page-title-font-size)",
+		fontWeight: "var(--page-title-font-weight)",
+		lineHeight: "var(--page-title-line-height)",
+		paddingBottom: "0",
+		marginBottom: "0",
+		border: "0",
 	},
 });
 
