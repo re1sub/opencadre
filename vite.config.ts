@@ -15,5 +15,33 @@ export default defineConfig({
 	},
 	build: {
 		target: "esnext",
+		rolldownOptions: {
+			output: {
+				codeSplitting: {
+					groups: [
+						{
+							name: "editor-vendor",
+							test: /[\\/]node_modules[\\/](@tiptap|prosemirror.*|marked)[\\/]/,
+						},
+						{
+							name: "table-vendor",
+							test: /[\\/]node_modules[\\/]@simple-table[\\/]/,
+						},
+						{
+							name: "webawesome-vendor",
+							test: /[\\/]node_modules[\\/]@awesome\.me[\\/]/,
+						},
+						{
+							name: "dnd-vendor",
+							test: /[\\/]node_modules[\\/]@dnd-kit[\\/]/,
+						},
+						{
+							name: "solid-vendor",
+							test: /[\\/]node_modules[\\/](solid-js|@solidjs|@tanstack\/solid-query)[\\/]/,
+						},
+					],
+				},
+			},
+		},
 	},
 });
