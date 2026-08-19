@@ -51,10 +51,10 @@ const ThemeProvider = (props: { children: JSX.Element }) => {
 		typeof window === "undefined" ? "light" : getSystemTheme(),
 	);
 
-	const theme = (): Theme =>
-		preference() === "system" ? systemTheme() : preference();
-
-	applyThemeClass(theme());
+	const theme = (): Theme => {
+		const currentPref = preference();
+		return currentPref === "system" ? systemTheme() : currentPref;
+	};
 
 	createEffect(() => {
 		applyThemeClass(theme());

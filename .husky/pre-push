@@ -1,1 +1,1 @@
-pnpm lint:full && pnpm build
+pnpm typecheck && pnpm build

@@ -142,7 +142,6 @@ const CardDialog = (props: CardDialogProps) => {
 							value={description()}
 							onChange={setDescription}
 							placeholder="Add a description..."
-							minHeight="6rem"
 						/>
 					</div>
 				</div>

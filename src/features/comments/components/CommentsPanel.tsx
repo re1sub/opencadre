@@ -63,7 +63,6 @@ const CommentsPanel = (props: CommentsPanelProps) => {
 						value={commentDraft()}
 						onChange={setCommentDraft}
 						placeholder="Write a comment..."
-						minHeight="5rem"
 					/>
 					<wa-button
 						type="button"
