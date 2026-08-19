@@ -18,6 +18,7 @@ import {
 import { GETTING_STARTED_MARKDOWN } from "./constants/gettingStarted";
 import { usePages } from "./hooks/usePages";
 import { useSidebarResize } from "./hooks/useSidebarResize";
+import { useSwipeDrawer } from "./hooks/useSwipeDrawer";
 import { useTrash } from "./hooks/useTrash";
 import { useWorkspaces } from "./hooks/useWorkspaces";
 import type { Page, PageKind, Workspace as WorkspaceType } from "./types";
@@ -81,6 +82,9 @@ const Workspace = () => {
 	const { user, logout } = useAuth();
 	const navigate = useNavigate();
 	const [error, setError] = createSignal<string | null>(null);
+
+	// Ref to wa-page element to pierce Shadow DOM for internal drawer
+	let pageRef: HTMLElement | undefined;
 
 	const seed = createDefaultSeed();
 	const wsHook = useWorkspaces(seed.workspaces);
@@ -163,8 +167,43 @@ const Workspace = () => {
 		inNav,
 	} = useSidebarResize();
 
+	const getShadowDrawer = () => {
+		return pageRef?.shadowRoot?.querySelector<HTMLElement & { open: boolean }>(
+			'[part~="drawer"]',
+		);
+	};
+
+	const openDrawer = () => {
+		setSidebarHovered(false);
+		setSidebarCollapsed(false);
+
+		const shadowDrawer = getShadowDrawer();
+		if (shadowDrawer) {
+			shadowDrawer.open = true;
+		}
+	};
+
+	const closeDrawer = () => {
+		setSidebarHovered(false);
+		setSidebarCollapsed(true);
+
+		const shadowDrawer = getShadowDrawer();
+		if (shadowDrawer) {
+			shadowDrawer.open = false;
+		}
+	};
+
+	useSwipeDrawer({
+		isOpen: () => !sidebarCollapsed(),
+		onOpen: openDrawer,
+		onClose: closeDrawer,
+		edgeThreshold: 500,
+		swipeDistance: 10,
+	});
+
 	return (
 		<wa-page
+			ref={(el) => (pageRef = el)}
 			navigation-placement="start"
 			class={`${page} ${sidebarCollapsed() ? "sidebar-collapsed" : ""}`}
 			style={{
@@ -172,6 +211,19 @@ const Workspace = () => {
 					sidebarCollapsed() && !sidebarHovered()
 						? "0px"
 						: `${sidebarWidth()}px`,
+			}}
+			// Sync SolidJS signals when Web Awesome's drawer closes internally (e.g. backdrop tap)
+			onwa-drawer-hide={() => {
+				setSidebarHovered(false);
+				setSidebarCollapsed(true);
+			}}
+			onwa-after-hide={() => {
+				setSidebarHovered(false);
+				setSidebarCollapsed(true);
+			}}
+			onwa-drawer-show={() => {
+				setSidebarHovered(false);
+				setSidebarCollapsed(false);
 			}}
 			// @ts-expect-error: WA doesn't include onPointerOver/Out types
 			onPointerOver={(e: PointerEvent) => {
@@ -185,8 +237,11 @@ const Workspace = () => {
 			<wa-button
 				slot="header"
 				onClick={() => {
-					setSidebarHovered(false);
-					setSidebarCollapsed(false);
+					if (sidebarCollapsed()) {
+						openDrawer();
+					} else {
+						closeDrawer();
+					}
 				}}
 				size="l"
 				appearance="plain"
@@ -200,7 +255,13 @@ const Workspace = () => {
 			<WorkspaceHeader
 				collapsed={sidebarCollapsed}
 				activeWorkspace={wsHook.activeWorkspace}
-				onToggleCollapsed={() => setSidebarCollapsed((collapsed) => !collapsed)}
+				onToggleCollapsed={() => {
+					if (sidebarCollapsed()) {
+						openDrawer();
+					} else {
+						closeDrawer();
+					}
+				}}
 				onRename={(name) => {
 					const active = wsHook.activeWorkspace();
 					if (active) wsHook.renameWorkspace(active.id, name);
