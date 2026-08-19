@@ -129,46 +129,61 @@ const SettingsDialog = (props: SettingsDialogProps) => {
 
 					<Show when={section() === "general"}>
 						<div class={dialogBody}>
+							<h3 class={settingsSectionTitle}>Appearance</h3>
+							<wa-divider style={{ "--spacing": "0" }}></wa-divider>
 							<div class={settingsSection}>
-								<p class={settingsSectionTitle}>Appearance</p>
-								<wa-dropdown
-									placement="bottom-start"
-									on:wa-after-hide={(e) => e.stopPropagation()}
-									on:wa-select={handleThemeSelect}
+								<div
+									style={{
+										display: "flex",
+										"align-items": "center",
+										"justify-content": "space-between",
+									}}
 								>
-									<wa-button
-										type="button"
-										slot="trigger"
-										variant="neutral"
-										appearance="plain"
-										with-caret
-										class={settingsNavButton}
+									<div class={dialogBody}>
+										Theme
+										<small style={{ color: "var(--wa-color-text-quiet" }}>
+											Custom themes are coming!
+										</small>
+									</div>
+									<wa-dropdown
+										placement="bottom-start"
+										on:wa-after-hide={(e) => e.stopPropagation()}
+										on:wa-select={handleThemeSelect}
 									>
-										<wa-icon
-											slot="start"
-											name={currentTheme().icon}
-											label="Theme"
-										></wa-icon>
-										{currentTheme().label}
-									</wa-button>
-
-									<For each={THEME_PREFERENCES}>
-										{(option) => (
-											<wa-dropdown-item value={option.value}>
-												<wa-icon
-													slot="icon"
-													name={option.icon}
-													label={option.label}
-												></wa-icon>
-												{option.label}
-											</wa-dropdown-item>
-										)}
-									</For>
-								</wa-dropdown>
+										<wa-button
+											type="button"
+											slot="trigger"
+											variant="neutral"
+											appearance="outlined"
+											with-caret
+											style={{ width: "fit-content" }}
+										>
+											<wa-icon
+												slot="start"
+												name={currentTheme().icon}
+												label="Theme"
+											></wa-icon>
+											{currentTheme().label}
+										</wa-button>
+										<For each={THEME_PREFERENCES}>
+											{(option) => (
+												<wa-dropdown-item value={option.value}>
+													<wa-icon
+														slot="icon"
+														name={option.icon}
+														label={option.label}
+													></wa-icon>
+													{option.label}
+												</wa-dropdown-item>
+											)}
+										</For>
+									</wa-dropdown>
+								</div>
 							</div>
 
+							<h3 class={settingsSectionTitle}>Profile</h3>
+							<wa-divider style={{ "--spacing": "0" }}></wa-divider>
 							<div class={settingsSection}>
-								<p class={settingsSectionTitle}>Profile</p>
 								<wa-input
 									label="Email"
 									value={user()?.email ?? ""}
