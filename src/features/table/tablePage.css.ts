@@ -79,19 +79,16 @@ globalStyle('[data-row-id*="__add_row__"]', {
 	},
 });
 
-globalStyle('[data-row-id*="__add_row__"] div', {
-	width: "100%",
-});
-
-globalStyle("#__add_row__-col_1", {
+globalStyle(' [id*="__add_row__"]', {
 	width: "100% !important",
-});
-
-globalStyle("#__add_row__-col_1", {
 	// @ts-expect-error: The !important rule does work
 	position: "sticky !important",
-	top: "0",
+	bottom: "0",
 	zIndex: "100",
+});
+
+globalStyle(' [id*="__add_row__"] div', {
+	width: "100% !important",
 });
 
 // Table Header style variant

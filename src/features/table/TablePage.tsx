@@ -17,6 +17,7 @@ import "@simple-table/solid/styles.css";
 import { useTheme } from "#/theme/ThemeProvider";
 import EditableHeader from "./components/EditableHeader";
 import { TABLE_ICONS } from "./constants/constants";
+import { INITIAL_COLUMNS, INITIAL_ROWS } from "./constants/data";
 import { tablePage } from "./tablePage.css";
 
 type GridRow = { id: string } & Record<string, CellValue>;
@@ -222,10 +223,8 @@ const TablePage = () => {
 
 	onMount(() => {
 		if (columns().length === 0) {
-			addColumn();
-			for (let i = 1; i < 4; i++) {
-				addRow();
-			}
+			setColumns(INITIAL_COLUMNS(handleHeaderEdit));
+			setRows(INITIAL_ROWS);
 		}
 
 		const handleScroll = () => {
