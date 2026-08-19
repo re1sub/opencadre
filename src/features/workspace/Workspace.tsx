@@ -1,5 +1,6 @@
 import { useNavigate } from "@solidjs/router";
 import { createSignal, Show } from "solid-js";
+import { Motion } from "solid-motionone";
 import { useAuth } from "#/features/auth/AuthContext";
 import ConfirmDialog from "#/features/ui/ConfirmDialog";
 import EditableText from "#/features/ui/EditableText";
@@ -85,6 +86,7 @@ const Workspace = () => {
 
 	// Ref to wa-page element to pierce Shadow DOM for internal drawer
 	let pageRef: HTMLElement | undefined;
+	const [isPageTitleInView, setIsPageTitleInView] = createSignal(true);
 
 	const seed = createDefaultSeed();
 	const wsHook = useWorkspaces(seed.workspaces);
@@ -234,23 +236,41 @@ const Workspace = () => {
 					setSidebarHovered(false);
 			}}
 		>
-			<wa-button
-				slot="header"
-				onClick={() => {
-					if (sidebarCollapsed()) {
-						openDrawer();
-					} else {
-						closeDrawer();
-					}
-				}}
-				size="l"
-				appearance="plain"
-				variant="neutral"
-				data-toggle-nav
-				style={{ padding: "0 var(--wa-space-s)" }}
-			>
-				<wa-icon name="menu" label="Toggle navigation"></wa-icon>
-			</wa-button>
+			<div slot="header" style={{ padding: 0, gap: 0 }}>
+				<wa-button
+					onClick={() => {
+						if (sidebarCollapsed()) {
+							openDrawer();
+						} else {
+							closeDrawer();
+						}
+					}}
+					size="l"
+					appearance="plain"
+					variant="neutral"
+					data-toggle-nav
+					style={{ padding: "0" }}
+				>
+					<wa-icon name="menu" label="Toggle navigation"></wa-icon>
+				</wa-button>
+
+				<div
+					style={{
+						"margin-right": "auto",
+						"--wa-form-control-padding-inline": "var(--wa-space-2xs)",
+						opacity: isPageTitleInView() ? 0 : 1,
+						transform: isPageTitleInView()
+							? "translateY(6px)"
+							: "translateY(0)",
+						"pointer-events": isPageTitleInView() ? "none" : "auto",
+						transition: "opacity 200ms ease-out, transform 200ms ease-out",
+					}}
+				>
+					<wa-button variant="neutral" appearance="plain">
+						{pagesHook.activePage()?.title || "Untitled"}
+					</wa-button>
+				</div>
+			</div>
 
 			<WorkspaceHeader
 				collapsed={sidebarCollapsed}
@@ -324,7 +344,14 @@ const Workspace = () => {
 						const [isEditingTitle, setIsEditingTitle] = createSignal(false);
 
 						return (
-							<div
+							<Motion.div
+								inView={{ opacity: 1 }}
+								onViewEnter={() => {
+									setIsPageTitleInView(true);
+								}}
+								onViewLeave={() => {
+									setIsPageTitleInView(false);
+								}}
 								style={{
 									"padding-bottom": "var(--wa-space-s)",
 									"border-bottom":
@@ -356,7 +383,7 @@ const Workspace = () => {
 										{active.title}
 									</h1>
 								</Show>
-							</div>
+							</Motion.div>
 						);
 					}}
 				</Show>
