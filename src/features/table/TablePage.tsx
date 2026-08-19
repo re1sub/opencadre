@@ -6,7 +6,13 @@ import type {
 	SortColumn,
 } from "@simple-table/solid";
 import { SimpleTable } from "@simple-table/solid";
-import { createMemo, createSignal, onMount } from "solid-js";
+import {
+	createEffect,
+	createMemo,
+	createSignal,
+	onCleanup,
+	onMount,
+} from "solid-js";
 import "@simple-table/solid/styles.css";
 import { useTheme } from "#/theme/ThemeProvider";
 import EditableHeader from "./components/EditableHeader";
@@ -22,6 +28,7 @@ const TablePage = () => {
 	const { theme } = useTheme();
 	const [columns, setColumns] = createSignal<SolidColumnDef<GridRow>[]>([]);
 	const [rows, setRows] = createSignal<GridRow[]>([]);
+	let containerRef!: HTMLDivElement;
 
 	const addRow = () => {
 		const nextIndex = rows().length;
@@ -42,7 +49,6 @@ const TablePage = () => {
 			width: 200,
 			sortable: true,
 			editable: true,
-			// disableReorder: true,
 			headerRenderer: (props) => (
 				<EditableHeader
 					header={props.header}
@@ -57,7 +63,6 @@ const TablePage = () => {
 	};
 
 	const handleCellEdit = ({ accessor, newValue, row }: CellChangeProps) => {
-		// Ignore editing inside the dummy action row/column
 		if (row.id === ADD_ROW_ID || accessor === ADD_COL_ACCESSOR) return;
 
 		setRows((current) =>
@@ -101,7 +106,7 @@ const TablePage = () => {
 					Add column
 				</wa-button>
 			),
-			cellRenderer: () => null, // Empty cell for real data rows
+			cellRenderer: () => null,
 		};
 
 		return [...columns(), addColumnDef];
@@ -118,7 +123,6 @@ const TablePage = () => {
 		return [...userRows, addRowData];
 	});
 
-	// Custom cell renderer override to render the "Add Row" button on the dummy row's first column
 	const finalColumns = createMemo<SolidColumnDef<GridRow>[]>(() => {
 		const cols = gridColumns();
 		if (cols.length === 0) return [];
@@ -138,7 +142,11 @@ const TablePage = () => {
 									variant="neutral"
 									appearance="plain"
 									onClick={addRow}
-									style={{ width: "100%", "pointer-events": "auto" }}
+									style={{
+										width: "100%",
+										"pointer-events": "auto",
+										background: "var(--wa-color-surface-default)",
+									}}
 								>
 									<wa-icon slot="start" name="plus"></wa-icon>
 									Add row
@@ -148,12 +156,10 @@ const TablePage = () => {
 						return null;
 					}
 
-					// Fall back to custom column renderer if defined
 					if (col.cellRenderer) {
 						return col.cellRenderer(props);
 					}
 
-					// Standard cell default value: ensure return type is JSX compatible (string/number/null)
 					if (props.value == null) return null;
 					if (typeof props.value === "object")
 						return JSON.stringify(props.value);
@@ -163,18 +169,15 @@ const TablePage = () => {
 		);
 	});
 
-	// Handle sorting
 	const handleSortChange = (sort: SortColumn | null) => {
-		if (!sort?.direction) return; // Default or cleared sort order
+		if (!sort?.direction) return;
 
 		const accessor = sort.key.accessor;
 		const direction = sort.direction;
 
 		setRows((current) => {
-			// 1. Separate user data rows from the action row if present
 			const dataRows = current.filter((row) => row.id !== ADD_ROW_ID);
 
-			// 2. Sort only the real data rows
 			const sortedRows = [...dataRows].sort((a, b) => {
 				const valA = a[accessor] ?? "";
 				const valB = b[accessor] ?? "";
@@ -187,12 +190,36 @@ const TablePage = () => {
 				return direction === "asc" ? comparison : -comparison;
 			});
 
-			// 3. Return sorted data rows (gridRows memo will automatically append ADD_ROW_ID at the end)
 			return sortedRows;
 		});
 	};
 
-	// Initialize default columns and rows on mount
+	createEffect(() => {
+		gridRows(); // Track rows signal change
+		if (!containerRef) return;
+
+		requestAnimationFrame(() => {
+			const bodyMain = containerRef.querySelector(
+				".st-body-main",
+			) as HTMLElement | null;
+			if (!bodyMain) return;
+
+			const cells = bodyMain.querySelectorAll(".st-cell");
+			let maxBottom = 0;
+
+			cells.forEach((cell) => {
+				const cellEl = cell as HTMLElement;
+				const top = parseInt(cellEl.style.top || "0", 10);
+				const height = parseInt(cellEl.style.height || "38", 10);
+				if (top + height > maxBottom) maxBottom = top + height;
+			});
+
+			if (maxBottom > 0) {
+				bodyMain.style.height = `${maxBottom}px`;
+			}
+		});
+	});
+
 	onMount(() => {
 		if (columns().length === 0) {
 			addColumn();
@@ -200,15 +227,59 @@ const TablePage = () => {
 				addRow();
 			}
 		}
+
+		const handleScroll = () => {
+			if (!containerRef) return;
+
+			const headerContainer = containerRef.querySelector(
+				".st-header-container",
+			) as HTMLElement | null;
+			const tableContent = containerRef.querySelector(
+				".st-content",
+			) as HTMLElement | null;
+			const navEl = document.querySelector(
+				'nav[slot="main-header"]',
+			) as HTMLElement | null;
+
+			if (!headerContainer || !tableContent) return;
+
+			const navbarOffset = navEl ? navEl.offsetHeight : 0;
+			const originalTop =
+				tableContent.getBoundingClientRect().top + window.scrollY;
+			const scrollY = window.scrollY;
+			const rect = tableContent.getBoundingClientRect();
+
+			if (scrollY + navbarOffset >= originalTop && rect.bottom > 60) {
+				headerContainer.style.position = "fixed";
+				headerContainer.style.top = `${navbarOffset}px`;
+				headerContainer.style.left = `${rect.left}px`;
+				headerContainer.style.width = `${rect.width}px`;
+				headerContainer.style.zIndex = "1000";
+			} else {
+				headerContainer.style.position = "relative";
+				headerContainer.style.top = "0px";
+				headerContainer.style.left = "auto";
+			}
+		};
+
+		window.addEventListener("scroll", handleScroll, { passive: true });
+		window.addEventListener("resize", handleScroll, { passive: true });
+
+		onCleanup(() => {
+			window.removeEventListener("scroll", handleScroll);
+			window.removeEventListener("resize", handleScroll);
+		});
 	});
 
 	return (
-		<div class={tablePage}>
+		<div ref={containerRef} class={tablePage}>
 			<SimpleTable
 				columns={finalColumns()}
 				rows={gridRows()}
 				rowsPerPage={8}
-				customTheme={{ rowHeight: 38 }}
+				customTheme={{
+					rowHeight: 38,
+				}}
 				columnReordering
 				columnResizing
 				selectableCells

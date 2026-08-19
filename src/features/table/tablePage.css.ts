@@ -29,6 +29,12 @@ export const headerSortFilterWrapper = style({
 	gap: "8px",
 });
 
+globalStyle(".st-content-wrapper, .st-content, .st-body-container", {
+	overflow: "visible !important",
+	height: "auto !important",
+	maxHeight: "none !important",
+});
+
 globalStyle(".st-content", {
 	vars: {
 		"--st-odd-row-background-color": "transparent",
@@ -75,6 +81,10 @@ globalStyle('[data-row-id*="__add_row__"]', {
 
 globalStyle('[data-row-id*="__add_row__"] div', {
 	width: "100%",
+});
+
+globalStyle("#__add_row__-col_1", {
+	width: "100% !important",
 });
 
 globalStyle("#__add_row__-col_1", {
