@@ -1,3 +1,4 @@
+import type WaPage from "@awesome.me/webawesome/dist/components/page/page.js";
 import { useNavigate } from "@solidjs/router";
 import { createSignal, Show } from "solid-js";
 import { Motion } from "solid-motionone";
@@ -85,7 +86,7 @@ const Workspace = () => {
 	const [error, setError] = createSignal<string | null>(null);
 
 	// Ref to wa-page element to pierce Shadow DOM for internal drawer
-	let pageRef: HTMLElement | undefined;
+	let pageRef!: WaPage;
 	const [isPageTitleInView, setIsPageTitleInView] = createSignal(true);
 
 	const seed = createDefaultSeed();
@@ -169,38 +170,28 @@ const Workspace = () => {
 		inNav,
 	} = useSidebarResize();
 
-	const getShadowDrawer = () => {
-		return pageRef?.shadowRoot?.querySelector<HTMLElement & { open: boolean }>(
-			'[part~="drawer"]',
-		);
-	};
-
 	const openDrawer = () => {
 		setSidebarHovered(false);
-		setSidebarCollapsed(false);
 
-		const shadowDrawer = getShadowDrawer();
-		if (shadowDrawer) {
-			shadowDrawer.open = true;
+		if (!pageRef.navOpen) {
+			pageRef.showNavigation();
 		}
 	};
 
 	const closeDrawer = () => {
 		setSidebarHovered(false);
-		setSidebarCollapsed(true);
 
-		const shadowDrawer = getShadowDrawer();
-		if (shadowDrawer) {
-			shadowDrawer.open = false;
+		if (pageRef.navOpen) {
+			pageRef.hideNavigation();
 		}
 	};
 
 	useSwipeDrawer({
-		isOpen: () => !sidebarCollapsed(),
+		isOpen: () => pageRef.navOpen,
 		onOpen: openDrawer,
 		onClose: closeDrawer,
 		edgeThreshold: 500,
-		swipeDistance: 10,
+		swipeDistance: 20,
 	});
 
 	return (
@@ -214,19 +205,6 @@ const Workspace = () => {
 						? "0px"
 						: `${sidebarWidth()}px`,
 			}}
-			// Sync SolidJS signals when Web Awesome's drawer closes internally (e.g. backdrop tap)
-			onwa-drawer-hide={() => {
-				setSidebarHovered(false);
-				setSidebarCollapsed(true);
-			}}
-			onwa-after-hide={() => {
-				setSidebarHovered(false);
-				setSidebarCollapsed(true);
-			}}
-			onwa-drawer-show={() => {
-				setSidebarHovered(false);
-				setSidebarCollapsed(false);
-			}}
 			// @ts-expect-error: WA doesn't include onPointerOver/Out types
 			onPointerOver={(e: PointerEvent) => {
 				if (sidebarCollapsed() && inNav(e.target)) setSidebarHovered(true);
@@ -238,13 +216,6 @@ const Workspace = () => {
 		>
 			<div slot="header" style={{ padding: 0, gap: 0 }}>
 				<wa-button
-					onClick={() => {
-						if (sidebarCollapsed()) {
-							openDrawer();
-						} else {
-							closeDrawer();
-						}
-					}}
 					size="l"
 					appearance="plain"
 					variant="neutral"
@@ -277,9 +248,9 @@ const Workspace = () => {
 				activeWorkspace={wsHook.activeWorkspace}
 				onToggleCollapsed={() => {
 					if (sidebarCollapsed()) {
-						openDrawer();
+						setSidebarCollapsed(false);
 					} else {
-						closeDrawer();
+						setSidebarCollapsed(true);
 					}
 				}}
 				onRename={(name) => {
