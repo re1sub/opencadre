@@ -13,6 +13,11 @@ export const page = style({
 				"--size": "20rem",
 			},
 		},
+		"&::part(main-header)": {
+			position: "sticky",
+			top: 0,
+			zIndex: 100,
+		},
 	},
 });
 
@@ -42,6 +47,20 @@ export const sidebarResizer = style({
 
 globalStyle(`wa-page:has(.${sidebarResizer}:active)::part(body)`, {
 	transition: "none",
+});
+
+export const mainHeader = style({
+	padding: "0 var(--wa-space-s)",
+	gap: 0,
+	top: 0,
+	width: "100%",
+	zIndex: 100,
+	borderBottom: "0.5px solid var(--wa-color-surface-border)",
+	"@media": {
+		"(max-width: 768px)": {
+			padding: 0,
+		},
+	},
 });
 
 export const navHeader = style({
@@ -146,6 +165,14 @@ export const pageButton = style({
 	selectors: {
 		"&::part(base)": {
 			justifyContent: "flex-start",
+			minWidth: 0,
+		},
+		"&::part(label)": {
+			whiteSpace: "pre",
+			overflow: "hidden",
+			textOverflow: "ellipsis",
+			minWidth: 0,
+			display: "block",
 		},
 	},
 });
@@ -169,10 +196,6 @@ globalStyle("wa-page[view='mobile']", {
 	},
 });
 
-globalStyle(`wa-page[view='mobile'] .${sidebarResizer}`, {
-	display: "none",
-});
-
 export const pageTitleStyle = style({
 	vars: {
 		"--page-title-font-size": "2rem",
@@ -185,7 +208,7 @@ export const pageTitleStyle = style({
 		fontWeight: "var(--page-title-font-weight)",
 		lineHeight: "var(--page-title-line-height)",
 		paddingBottom: "0",
-		marginBottom: "0",
+		marginBottom: "10px",
 		border: "0",
 	},
 });
@@ -218,6 +241,7 @@ export const userMenuName = style({
 export const dialogBody = style({
 	display: "flex",
 	flexDirection: "column",
+	gap: "var(--wa-space-s)",
 });
 
 export const dialogActions = style({
@@ -299,7 +323,6 @@ export const settingsPanel = style({
 	minWidth: 0,
 	display: "flex",
 	flexDirection: "column",
-	gap: "var(--wa-space-s)",
 	transition: "transform 0.25s ease-in-out, opacity 0.2s ease-in-out",
 	"@media": {
 		"(max-width: 767px)": {
@@ -351,11 +374,12 @@ export const settingsSection = style({
 	display: "flex",
 	flexDirection: "column",
 	gap: "var(--wa-space-s)",
+	padding: "var(--wa-space-s)",
 });
 
 export const settingsSectionTitle = style({
 	margin: 0,
-	fontSize: "0.875rem",
+	fontSize: "1.1rem",
 	fontWeight: 600,
 	color: "var(--wa-color-text-normal)",
 });
@@ -370,7 +394,6 @@ export const shortcutRow = style({
 	borderRadius: "var(--wa-border-radius-s)",
 	backgroundColor: "var(--wa-color-surface-default)",
 	border: "1px solid var(--wa-color-surface-border)",
-	fontSize: "0.7rem",
 });
 
 export const shortcutKeys = style({
@@ -381,7 +404,7 @@ export const shortcutKeys = style({
 
 export const kbd = style({
 	fontFamily: "var(--wa-font-family-code)",
-	fontSize: "0.5rem",
+	fontSize: "0.8rem",
 	padding: "0.125rem 0.375rem",
 	borderRadius: "var(--wa-border-radius-s)",
 	border:
@@ -443,7 +466,7 @@ export const memberRow = style({
 // Settings dialog container (user edit)
 export const settingsDialogContainer = style({
 	vars: {
-		"--width": "min(72vh, 48rem)",
+		"--width": "min(72vh, 80rem)",
 	},
 	"@media": {
 		"(max-width: 767px)": {

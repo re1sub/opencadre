@@ -1,3 +1,4 @@
+import type WaInput from "@awesome.me/webawesome/dist/components/input/input.js";
 import { onCleanup, onMount, Show } from "solid-js";
 import { inlineInputStyle } from "./editableText.css";
 
@@ -28,6 +29,7 @@ export function EditableText(props: EditableTextProps) {
 		if (!inputRef) return;
 
 		const eventsToIsolate = ["click", "dblclick", "pointerdown", "mousedown"];
+
 		if (props.isolateEvents) {
 			eventsToIsolate.forEach((evt) => {
 				inputRef?.addEventListener(evt, handleEvent);
@@ -39,7 +41,7 @@ export function EditableText(props: EditableTextProps) {
 
 			if (e.key === "Enter") {
 				e.preventDefault();
-				inputRef?.blur(); // Triggers handleBlur -> onConfirm
+				inputRef?.blur();
 			} else if (e.key === "Escape") {
 				e.preventDefault();
 
@@ -52,7 +54,6 @@ export function EditableText(props: EditableTextProps) {
 		const handleBlur = (e: FocusEvent) => {
 			if (props.isolateEvents) e.stopPropagation();
 
-			// If blur was triggered by Escape, skip onConfirm
 			if (isCanceling) {
 				isCanceling = false;
 				return;
@@ -70,6 +71,7 @@ export function EditableText(props: EditableTextProps) {
 					inputRef?.removeEventListener(evt, handleEvent);
 				});
 			}
+
 			inputRef?.removeEventListener("keydown", handleKeyDown as EventListener);
 			inputRef?.removeEventListener("blur", handleBlur as EventListener);
 		});
@@ -91,19 +93,18 @@ export function EditableText(props: EditableTextProps) {
 			value={props.value}
 			placeholder={props.placeholder ?? "Untitled"}
 			aria-label={props.ariaLabel ?? "Editable text"}
-			onInput={(e) =>
-				props.onChange((e.currentTarget as HTMLInputElement).value)
-			}
+			onInput={(e) => {
+				const target = e.currentTarget as WaInput;
+				if (!target) return;
+
+				props.onChange(String(target.value));
+			}}
 			onFocus={(e) => {
-				const label = (e.currentTarget as HTMLElement).closest(
-					".st-header-label",
-				);
+				const label = (e.currentTarget as WaInput).closest(".st-header-label");
 				label?.setAttribute("draggable", "false");
 			}}
 			onBlur={(e) => {
-				const label = (e.currentTarget as HTMLElement).closest(
-					".st-header-label",
-				);
+				const label = (e.currentTarget as WaInput).closest(".st-header-label");
 				label?.setAttribute("draggable", "true");
 			}}
 		>

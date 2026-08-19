@@ -1,7 +1,6 @@
 import type WaPage from "@awesome.me/webawesome/dist/components/page/page.js";
 import { useNavigate } from "@solidjs/router";
 import { createSignal, Show } from "solid-js";
-import { Motion } from "solid-motionone";
 import { useAuth } from "#/features/auth/AuthContext";
 import ConfirmDialog from "#/features/ui/ConfirmDialog";
 import EditableText from "#/features/ui/EditableText";
@@ -13,7 +12,9 @@ import WorkspaceHeader from "./components/WorkspaceHeader";
 import WorkspaceSidebar from "./components/WorkspaceSidebar";
 import {
 	mainContent,
+	mainHeader,
 	page,
+	pageButton,
 	pageTitleStyle,
 	sidebarResizer,
 } from "./components/workspace.css";
@@ -87,7 +88,6 @@ const Workspace = () => {
 
 	// Ref to wa-page element to pierce Shadow DOM for internal drawer
 	let pageRef!: WaPage;
-	const [isPageTitleInView, setIsPageTitleInView] = createSignal(true);
 
 	const seed = createDefaultSeed();
 	const wsHook = useWorkspaces(seed.workspaces);
@@ -190,7 +190,7 @@ const Workspace = () => {
 		isOpen: () => pageRef.navOpen,
 		onOpen: openDrawer,
 		onClose: closeDrawer,
-		edgeThreshold: 500,
+		edgeThreshold: 50,
 		swipeDistance: 20,
 	});
 
@@ -214,13 +214,22 @@ const Workspace = () => {
 					setSidebarHovered(false);
 			}}
 		>
-			<div slot="header" style={{ padding: 0, gap: 0 }}>
+			<nav
+				slot="main-header"
+				class={mainHeader}
+				style={{
+					padding: sidebarCollapsed() ? 0 : "",
+				}}
+			>
 				<wa-button
-					size="l"
 					appearance="plain"
 					variant="neutral"
 					data-toggle-nav
-					style={{ padding: "0" }}
+					style={{
+						padding: "0",
+						display: sidebarCollapsed() ? "block" : "",
+					}}
+					onClick={() => setSidebarCollapsed(false)}
 				>
 					<wa-icon name="menu" label="Toggle navigation"></wa-icon>
 				</wa-button>
@@ -229,19 +238,24 @@ const Workspace = () => {
 					style={{
 						"margin-right": "auto",
 						"--wa-form-control-padding-inline": "var(--wa-space-2xs)",
-						opacity: isPageTitleInView() ? 0 : 1,
-						transform: isPageTitleInView()
-							? "translateY(6px)"
-							: "translateY(0)",
-						"pointer-events": isPageTitleInView() ? "none" : "auto",
-						transition: "opacity 200ms ease-out, transform 200ms ease-out",
 					}}
 				>
-					<wa-button variant="neutral" appearance="plain">
+					<wa-button variant="neutral" appearance="plain" class={pageButton}>
 						{pagesHook.activePage()?.title || "Untitled"}
 					</wa-button>
 				</div>
-			</div>
+				<wa-copy-button
+					value={
+						pagesHook.activePage()
+							? `${window.location.origin}/workspace/p/${pagesHook.activePage()?.id}`
+							: ""
+					}
+					copy-label="Copy page link"
+					success-label="Page link copied!"
+				>
+					<wa-icon slot="copy-icon" name="link" variant="regular"></wa-icon>
+				</wa-copy-button>
+			</nav>
 
 			<WorkspaceHeader
 				collapsed={sidebarCollapsed}
@@ -305,26 +319,15 @@ const Workspace = () => {
 					onPointerDown={onResizePointerDown}
 				/>
 
-				<Show when={pagesHook.activePageId()} keyed>
-					{(id) => {
-						const active = pagesHook
-							.activePages()
-							.find((entry) => entry.id === id);
-						if (!active) return null;
-
+				<Show when={pagesHook.activePage()}>
+					{(active) => {
 						const [isEditingTitle, setIsEditingTitle] = createSignal(false);
 
 						return (
-							<Motion.div
-								inView={{ opacity: 1 }}
-								onViewEnter={() => {
-									setIsPageTitleInView(true);
-								}}
-								onViewLeave={() => {
-									setIsPageTitleInView(false);
-								}}
+							<div
 								style={{
-									"padding-bottom": "var(--wa-space-s)",
+									"padding-bottom": "var(--wa-space-3xs)",
+									"margin-bottom": "var(--wa-space-s)",
 									"border-bottom":
 										"var(--wa-border-width-s) var(--wa-border-style) var(--wa-color-surface-border)",
 									cursor: "text",
@@ -334,9 +337,9 @@ const Workspace = () => {
 									when={!isEditingTitle()}
 									fallback={
 										<EditableText
-											value={active.title}
+											value={active().title}
 											onChange={(title) =>
-												pagesHook.renamePage(active.id, title)
+												pagesHook.renamePage(active().id, title)
 											}
 											onConfirm={() => setIsEditingTitle(false)}
 											onCancel={() => setIsEditingTitle(false)}
@@ -348,13 +351,16 @@ const Workspace = () => {
 								>
 									<h1
 										class={pageTitleStyle}
-										onDblClick={() => setIsEditingTitle(true)}
-										style={{ "padding-top": "2px" }}
+										onClick={() => setIsEditingTitle(true)}
+										style={{
+											"padding-top": "2px",
+											"white-space": "pre-wrap",
+										}}
 									>
-										{active.title}
+										{active().title}
 									</h1>
 								</Show>
-							</Motion.div>
+							</div>
 						);
 					}}
 				</Show>

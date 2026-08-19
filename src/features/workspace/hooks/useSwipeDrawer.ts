@@ -19,6 +19,16 @@ export function useSwipeDrawer({
 	let startY = 0;
 	let tracking = false;
 	let horizontalGesture = false;
+	let isScrolling = false;
+	let scrollTimeout: ReturnType<typeof setTimeout> | null = null;
+
+	const handleScroll = () => {
+		isScrolling = true;
+		if (scrollTimeout) clearTimeout(scrollTimeout);
+		scrollTimeout = setTimeout(() => {
+			isScrolling = false;
+		}, 150);
+	};
 
 	const isInteractive = (target: EventTarget | null) => {
 		return (
@@ -29,13 +39,37 @@ export function useSwipeDrawer({
 		);
 	};
 
+	// Helper to detect if touch started inside an actively scrollable container
+	const isInsideScrollableContainer = (target: EventTarget | null): boolean => {
+		let el = target instanceof HTMLElement ? target : null;
+
+		while (el && el !== document.body && el !== document.documentElement) {
+			const style = window.getComputedStyle(el);
+			const overflowY = style.overflowY;
+			const isScrollable = overflowY === "auto" || overflowY === "scroll";
+			const hasScrollableContent = el.scrollHeight > el.clientHeight;
+
+			if (isScrollable && hasScrollableContent) {
+				return true;
+			}
+			el = el.parentElement;
+		}
+
+		return false;
+	};
+
 	const handleTouchStart = (e: TouchEvent) => {
 		if (e.touches.length !== 1) return;
+
+		// Cancel tracking if any element on page is currently in momentum scroll
+		if (isScrolling) {
+			tracking = false;
+			return;
+		}
 
 		const touch = e.touches[0];
 		if (!touch) return;
 
-		// Never treat normal UI controls as swipe gestures.
 		if (isInteractive(e.target)) {
 			tracking = false;
 			return;
@@ -47,13 +81,16 @@ export function useSwipeDrawer({
 
 		const currentlyOpen = isOpen();
 
-		// Closed: only allow opening from the left edge.
 		if (!currentlyOpen) {
+			// When drawer is closed, don't trigger edge swipe if user is starting inside an overflow scroll view
+			if (isInsideScrollableContainer(e.target)) {
+				tracking = false;
+				return;
+			}
 			tracking = startX <= edgeThreshold;
 			return;
 		}
 
-		// Open: allow closing from anywhere except interactive elements.
 		tracking = true;
 	};
 
@@ -66,18 +103,18 @@ export function useSwipeDrawer({
 		const deltaX = touch.clientX - startX;
 		const deltaY = touch.clientY - startY;
 
-		// Once vertical movement dominates, this is normal scrolling.
-		if (!horizontalGesture && Math.abs(deltaY) > Math.abs(deltaX)) {
-			tracking = false;
-			return;
+		// Direction lock: If vertical movement exceeds horizontal movement, kill tracking
+		if (!horizontalGesture) {
+			if (Math.abs(deltaY) > Math.abs(deltaX) || Math.abs(deltaY) > 6) {
+				tracking = false;
+				return;
+			}
+			if (Math.abs(deltaX) > 10) {
+				horizontalGesture = true;
+			}
 		}
 
-		// Don't interfere with tiny movements.
-		if (Math.abs(deltaX) < 10) return;
-
-		horizontalGesture = true;
-
-		if (e.cancelable) {
+		if (horizontalGesture && e.cancelable) {
 			e.preventDefault();
 		}
 	};
@@ -94,8 +131,6 @@ export function useSwipeDrawer({
 		const deltaY = touch.clientY - startY;
 
 		if (!horizontalGesture) return;
-
-		// Ignore mostly-vertical gestures.
 		if (Math.abs(deltaY) >= Math.abs(deltaX)) return;
 
 		if (!isOpen() && deltaX >= swipeDistance) {
@@ -106,32 +141,44 @@ export function useSwipeDrawer({
 	};
 
 	onMount(() => {
-		window.addEventListener("touchstart", handleTouchStart, {
+		// Capture scroll events at root so sub-container scrolling triggers handleScroll
+		document.addEventListener("scroll", handleScroll, {
 			capture: true,
 			passive: true,
 		});
 
-		window.addEventListener("touchmove", handleTouchMove, {
+		document.addEventListener("touchstart", handleTouchStart, {
+			capture: true,
+			passive: true,
+		});
+
+		document.addEventListener("touchmove", handleTouchMove, {
 			capture: true,
 			passive: false,
 		});
 
-		window.addEventListener("touchend", handleTouchEnd, {
+		document.addEventListener("touchend", handleTouchEnd, {
 			capture: true,
 			passive: true,
 		});
 	});
 
 	onCleanup(() => {
-		window.removeEventListener("touchstart", handleTouchStart, {
+		if (scrollTimeout) clearTimeout(scrollTimeout);
+
+		document.removeEventListener("scroll", handleScroll, {
 			capture: true,
 		});
 
-		window.removeEventListener("touchmove", handleTouchMove, {
+		document.removeEventListener("touchstart", handleTouchStart, {
 			capture: true,
 		});
 
-		window.removeEventListener("touchend", handleTouchEnd, {
+		document.removeEventListener("touchmove", handleTouchMove, {
+			capture: true,
+		});
+
+		document.removeEventListener("touchend", handleTouchEnd, {
 			capture: true,
 		});
 	});
