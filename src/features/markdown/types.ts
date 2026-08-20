@@ -14,7 +14,8 @@ export interface MenuItemsProps {
 	showLabels?: boolean;
 	isCommandMenu?: boolean;
 	selectedIndex?: number;
-	actions: Record<string, MarkdownAction>;
+	actions?: Record<string, MarkdownAction>;
+	getAction?: (id: string) => MarkdownAction | undefined;
 	isActive: (id: string) => boolean;
 	onExecuteCommand?: (id: string) => void;
 }

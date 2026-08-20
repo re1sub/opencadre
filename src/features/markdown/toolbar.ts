@@ -26,10 +26,19 @@ export const blockButtons: ToolbarButtonDef[] = [
 	{ id: "code-block", icon: "square-code", label: "Code block" },
 ];
 
+export const commentButtons: ToolbarButtonDef[] = [
+	{ id: "comment", icon: "message-square-text", label: "Comment" },
+];
+
 export const toolbarGroups: ToolbarButtonDef[][] = [
 	inlineButtons,
 	headingItems,
 	blockButtons,
+];
+
+export const bubbleToolbarGroups: ToolbarButtonDef[][] = [
+	...toolbarGroups,
+	commentButtons,
 ];
 
 export function createMarkdownActions(
