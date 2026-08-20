@@ -58,7 +58,10 @@ const EditorMenuItems = (props: MenuItemsProps) => {
 											if (props.isCommandMenu && props.onExecuteCommand) {
 												props.onExecuteCommand(button.id);
 											} else {
-												props.actions[button.id]?.run();
+												const action =
+													props.getAction?.(button.id) ??
+													props.actions?.[button.id];
+												action?.run();
 											}
 										}}
 										active={() => isFocused() || props.isActive(button.id)}

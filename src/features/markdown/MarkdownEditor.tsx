@@ -18,7 +18,11 @@ import { bubbleMenu, bubbleMenuContent } from "./editorBubbleMenu.css";
 import { useEditorComments } from "./hooks/useEditorComments";
 import { useSlashCommand } from "./hooks/useSlashCommand";
 import { editor } from "./markdownEditor.css";
-import { createMarkdownActions, type MarkdownAction } from "./toolbar";
+import {
+	bubbleToolbarGroups,
+	createMarkdownActions,
+	type MarkdownAction,
+} from "./toolbar";
 import "#assets/css/github-markdown.css";
 import EditorMenuItems from "./components/EditorMenuItems";
 
@@ -238,7 +242,11 @@ const MarkdownEditor = (props: MarkdownEditorProps) => {
 					}}
 					transition={{ duration: 0.2 }}
 				>
-					<EditorMenuItems actions={actions} isActive={isActive} />
+					<EditorMenuItems
+						groups={bubbleToolbarGroups}
+						getAction={(id) => actions[id]}
+						isActive={isActive}
+					/>
 				</Motion.div>
 			</div>
 
