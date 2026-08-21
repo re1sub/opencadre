@@ -69,8 +69,19 @@ export function useEditorComments(pageComments: PageCommentsReturn) {
 		instance: Editor,
 		hideBubbleMenus: () => void,
 	) => {
-		const { from, to, empty } = instance.state.selection;
-		if (empty) return;
+		let { from, to, empty } = instance.state.selection;
+		if (empty) {
+			const $pos = instance.state.selection.$from;
+			const text = $pos.parent.textContent;
+			const offset = $pos.parentOffset;
+			let start = offset;
+			let end = offset;
+			while (start > 0 && /\w/.test(text[start - 1])) start--;
+			while (end < text.length && /\w/.test(text[end])) end++;
+			if (start === end) return;
+			from = $pos.start() + start;
+			to = $pos.start() + end;
+		}
 		const rect = posToDOMRect(instance.view, from, to);
 
 		const existingIds = new Set<string>();
