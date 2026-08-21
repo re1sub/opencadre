@@ -94,7 +94,16 @@ const MarkdownEditor = (props: MarkdownEditorProps) => {
 			element: editorRef,
 			extensions: [
 				CustomDocument,
-				StarterKit.configure({ document: false, trailingNode: false }),
+				StarterKit.configure({
+					document: false,
+					trailingNode: false,
+					heading: false,
+					link: {
+						HTMLAttributes: {
+							title: "my-custom-title",
+						},
+					},
+				}),
 				Placeholder.configure({
 					placeholder: ({ node, pos }) => {
 						if (node.type.name === "heading" && pos === 0) return "Heading 1";
@@ -129,7 +138,7 @@ const MarkdownEditor = (props: MarkdownEditorProps) => {
 					},
 				}),
 			],
-			content: props.content.trim() ? props.content : "#\n ",
+			content: props.content.trim() ? props.content : "#\n",
 			contentType: "markdown",
 			editable: props.editable ?? true,
 			onUpdate: ({ editor: editorInstance }) => {
