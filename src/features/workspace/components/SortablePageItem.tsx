@@ -6,7 +6,6 @@ interface SortablePageItemProps {
 	entry: Page;
 	index: number;
 	isActive: boolean;
-	onNavigate: (id: string) => void;
 	onRequestDelete: (id: string) => void;
 }
 
@@ -38,14 +37,13 @@ export const SortablePageItem = (props: SortablePageItemProps) => {
 				variant={props.isActive ? "brand" : "neutral"}
 				appearance={props.isActive ? "filled" : "plain"}
 				class={pageButton}
+				href={`/workspace/p/${props.entry.id}`}
 				onClick={(e) => {
 					const waPage = (e.currentTarget as HTMLElement).closest("wa-page");
 
 					if (waPage) {
 						waPage.hideNavigation();
 					}
-
-					props.onNavigate(props.entry.id);
 				}}
 			>
 				<wa-icon

@@ -1,7 +1,6 @@
 import { RestrictToVerticalAxis } from "@dnd-kit/abstract/modifiers";
 import { RestrictToElement } from "@dnd-kit/dom/modifiers";
 import { DragDropProvider } from "@dnd-kit/solid";
-import { useNavigate } from "@solidjs/router";
 import { For, Show } from "solid-js";
 import { useDragReorder } from "#/utils/useDragReorder";
 import type { Page } from "../types";
@@ -16,8 +15,6 @@ interface PageListProps {
 }
 
 const PageList = (props: PageListProps) => {
-	const navigate = useNavigate();
-
 	const onDragEnd = useDragReorder(
 		() => props.pages,
 		(next, movedId) => {
@@ -45,7 +42,6 @@ const PageList = (props: PageListProps) => {
 								entry={entry}
 								index={index()}
 								isActive={entry.id === props.activePageId()}
-								onNavigate={(id) => navigate(`/workspace/p/${id}`)}
 								onRequestDelete={props.onRequestDelete}
 							/>
 						)}
