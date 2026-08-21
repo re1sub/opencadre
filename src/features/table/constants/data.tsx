@@ -1,4 +1,9 @@
-import type { CellValue, ColumnDef, SolidColumnDef } from "@simple-table/solid";
+import type {
+	CellValue,
+	ColumnDef,
+	HeaderRendererComponents,
+	SolidColumnDef,
+} from "@simple-table/solid";
 import EditableHeader from "../components/EditableHeader";
 
 type GridRow = { id: string } & Record<string, CellValue>;
@@ -159,4 +164,43 @@ export const INITIAL_ROWS: GridRow[] = [
 		col_location: "Seoul",
 		col_active: "true",
 	},
+];
+
+const makeHeaderRenderer =
+	(
+		onHeaderEdit: (
+			header: ColumnDef<GridRow, CellValue>,
+			newLabel: string,
+		) => void,
+	) =>
+	(props: {
+		header: ColumnDef<GridRow, CellValue>;
+		components?: HeaderRendererComponents;
+	}) => (
+		<EditableHeader
+			header={props.header}
+			components={props.components}
+			onHeaderEdit={onHeaderEdit}
+		/>
+	);
+
+export const TABLE_EMPTY_COLUMNS: (
+	onHeaderEdit: (
+		header: ColumnDef<GridRow, CellValue>,
+		newLabel: string,
+	) => void,
+) => SolidColumnDef<GridRow>[] = (onHeaderEdit) =>
+	[1, 2, 3].map((i) => ({
+		accessor: `col_${i}`,
+		label: `Column ${i}`,
+		width: 200,
+		sortable: true,
+		editable: true,
+		headerRenderer: makeHeaderRenderer(onHeaderEdit),
+	}));
+
+export const TABLE_EMPTY_ROWS: GridRow[] = [
+	{ id: "row_1", col_1: "", col_2: "", col_3: "" },
+	{ id: "row_2", col_1: "", col_2: "", col_3: "" },
+	{ id: "row_3", col_1: "", col_2: "", col_3: "" },
 ];

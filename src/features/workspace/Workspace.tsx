@@ -220,6 +220,13 @@ const Workspace = () => {
 				style={{
 					padding: sidebarCollapsed() ? 0 : "",
 				}}
+				ref={(el) => {
+					requestAnimationFrame(() => {
+						const height = el.getBoundingClientRect().height;
+
+						pageRef?.style.setProperty("--main-header-height", `${height}px`);
+					});
+				}}
 			>
 				<wa-button
 					appearance="plain"

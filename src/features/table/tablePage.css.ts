@@ -1,9 +1,16 @@
 import { globalStyle, style } from "@vanilla-extract/css";
 
 export const tablePage = style({
+	position: "relative",
 	display: "flex",
 	flexDirection: "column",
 	gap: "8px",
+	paddingLeft: "15px",
+	"@media": {
+		"(max-width: 768px)": {
+			paddingLeft: "0",
+		},
+	},
 });
 
 export const tablePageHeader = style({
@@ -29,10 +36,47 @@ export const headerSortFilterWrapper = style({
 	gap: "8px",
 });
 
+export const floatingAddRowBtn = style({
+	position: "absolute",
+	left: "-45px",
+	top: "50%",
+	transform: "translateY(-50%)",
+	zIndex: 10,
+	display: "flex",
+	alignItems: "center",
+	justifyContent: "center",
+	opacity: 0,
+	transition: "opacity 0.15s ease-in-out, visibility 0.15s ease-in-out",
+	"@media": {
+		"(max-width: 768px)": {
+			display: "none",
+		},
+	},
+});
+
+globalStyle(
+	`.st-row:hover .${floatingAddRowBtn}, .st-row-hovered .${floatingAddRowBtn}, .${floatingAddRowBtn}:hover`,
+	{
+		opacity: 1,
+	},
+);
+
+globalStyle(
+	".st-row, .st-cell, .st-row-button-container, .st-content-wrapper, .st-content, .st-body-container, .st-body-pinned-left",
+	{
+		overflow: "visible !important",
+	},
+);
+
 globalStyle(".st-content-wrapper, .st-content, .st-body-container", {
-	overflow: "visible !important",
 	height: "auto !important",
 	maxHeight: "none !important",
+});
+
+globalStyle(".simple-table-root.st-external-scroll .st-header-container", {
+	vars: {
+		"--st-external-scroll-padding-top": "calc(-1 * var(--main-header-height))",
+	},
 });
 
 globalStyle(".st-content", {
@@ -44,6 +88,7 @@ globalStyle(".st-content", {
 
 globalStyle(".st-cell", {
 	borderColor: "var(--wa-color-neutral-border-quiet)",
+	transform: "none !important",
 });
 
 globalStyle(".st-header-resize-handle", {
@@ -63,32 +108,8 @@ globalStyle(
 	},
 );
 
-globalStyle(".st-cell", {
-	transform: "none !important",
-});
-
 globalStyle(".st-cell-editing > input.editable-cell-input", {
 	color: "var(--wa-color-text-normal)",
-});
-
-globalStyle('[data-row-id*="__add_row__"]', {
-	pointerEvents: "none",
-	backgroundColor: "transparent !important",
-	vars: {
-		"--st-cell-padding": "0",
-	},
-});
-
-globalStyle(' [id*="__add_row__"]', {
-	width: "100% !important",
-	// @ts-expect-error: The !important rule does work
-	position: "sticky !important",
-	bottom: "0",
-	zIndex: "100",
-});
-
-globalStyle(' [id*="__add_row__"] div', {
-	width: "100% !important",
 });
 
 // Table Header style variant
