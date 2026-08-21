@@ -6,6 +6,7 @@ import {
 	onCleanup,
 	useContext,
 } from "solid-js";
+import { useHotkey } from "#/utils/useHotkey";
 
 export type Theme = "light" | "dark";
 export type ThemePreference = "system" | "light" | "dark";
@@ -71,6 +72,8 @@ const ThemeProvider = (props: { children: JSX.Element }) => {
 
 	const toggleTheme = () =>
 		setPreference(theme() === "light" ? "dark" : "light");
+
+	useHotkey("mod+l", toggleTheme);
 
 	return (
 		<ThemeContext.Provider

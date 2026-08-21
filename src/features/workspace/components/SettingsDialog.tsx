@@ -47,9 +47,9 @@ const THEME_PREFERENCES: {
 	{ value: "dark", label: "Dark", icon: "moon" },
 ];
 
-const PLACEHOLDER_SHORTCUTS = [
+const KEYBOARD_SHORTCUTS = [
 	{ action: "New page", keys: ["Ctrl", "Shift", "N"] },
-	{ action: "Toggle theme", keys: ["Ctrl", "J"] },
+	{ action: "Toggle theme", keys: ["Ctrl", "L"] },
 	{ action: "Open settings", keys: ["Ctrl", ","] },
 ];
 
@@ -202,7 +202,7 @@ const SettingsDialog = (props: SettingsDialogProps) => {
 								Keyboard shortcut configuration is a future feature. Here's a
 								preview of what's coming.
 							</p>
-							<For each={PLACEHOLDER_SHORTCUTS}>
+							<For each={KEYBOARD_SHORTCUTS}>
 								{(shortcut) => (
 									<div class={shortcutRow}>
 										<span style={{ color: "var(--wa-color-text-normal)" }}>
