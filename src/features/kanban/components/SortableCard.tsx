@@ -10,7 +10,7 @@ interface SortableCardProps {
 	tags: Tag[];
 	index: number;
 	columnId: string;
-	onOpen: (card: Card) => void;
+	pageId?: string;
 }
 
 const colMixBg = (color: string, opacity: number = 30) =>
@@ -51,8 +51,9 @@ const SortableCard = (props: SortableCardProps) => {
 	const commentsCount = () => props.card.comments?.length ?? 0;
 
 	return (
-		<div
+		<a
 			ref={ref}
+			href={`/workspace/p/${props.pageId ?? ""}?c=${props.card.id}`}
 			class={styles.card}
 			classList={{
 				[styles.cardDragging]: isDragging(),
@@ -61,7 +62,7 @@ const SortableCard = (props: SortableCardProps) => {
 			style={{
 				rotate: `${rotation()}deg`,
 			}}
-			onClick={() => props.onOpen(props.card)}
+			data-card-id={props.card.id}
 		>
 			<h4 class={styles.cardTitle}>{props.card.title}</h4>
 
@@ -80,7 +81,6 @@ const SortableCard = (props: SortableCardProps) => {
 									"background-color": colMixBg(tag.color, 30),
 									color: "var(--wa-color-text-normal)",
 								}}
-								onClick={() => props.onOpen(props.card)}
 							>
 								{tag.name}
 							</wa-tag>
@@ -108,7 +108,7 @@ const SortableCard = (props: SortableCardProps) => {
 				<wa-icon name="message-square-text" label="Comments"></wa-icon>
 				<span>{commentsCount()}</span>
 			</div>
-		</div>
+		</a>
 	);
 };
 

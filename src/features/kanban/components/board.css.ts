@@ -168,6 +168,9 @@ export const columnCards = style({
 });
 
 export const card = style({
+	width: "100%",
+	textDecoration: "none",
+	color: "inherit",
 	display: "flex",
 	flexDirection: "column",
 	gap: "var(--wa-space-xs)",
@@ -267,6 +270,7 @@ export const dialogBody = style({
 	display: "flex",
 	flexDirection: "column",
 	gap: "var(--wa-space-m)",
+	padding: "var(--wa-space-m) var(--wa-space-m) 0",
 });
 
 export const dialogRow = style({
@@ -286,5 +290,4 @@ export const dialogActions = style({
 	justifyContent: "space-between",
 	alignItems: "center",
 	gap: "var(--wa-space-m)",
-	marginTop: "var(--wa-space-s)",
 });

@@ -3,7 +3,7 @@ import { useSortable } from "@dnd-kit/solid/sortable";
 import { For } from "solid-js";
 import type { Tag } from "#/features/tags/types";
 import { useDragTilt } from "../hooks/useDragTilt";
-import { BOARD_ID, type Card, type Column } from "../types";
+import { BOARD_ID, type Column } from "../types";
 import * as styles from "./board.css";
 import SortableCard from "./SortableCard";
 
@@ -11,8 +11,8 @@ interface BoardColumnProps {
 	column: Column;
 	tags: Tag[];
 	index: () => number;
+	pageId?: string;
 	onAddCard: (columnId: string) => void;
-	onOpenCard: (columnId: string, card: Card) => void;
 	onEditColumn: (column: Column) => void;
 	onFocusColumn?: (columnId: string) => void;
 }
@@ -97,7 +97,7 @@ const BoardColumn = (props: BoardColumnProps) => {
 							tags={props.tags}
 							index={index()}
 							columnId={props.column.id}
-							onOpen={(c) => props.onOpenCard(props.column.id, c)}
+							pageId={props.pageId}
 						/>
 					)}
 				</For>

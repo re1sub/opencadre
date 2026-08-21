@@ -13,8 +13,15 @@ import type {
 } from "../types";
 import { BOARD_ID } from "../types";
 
-export function useKanbanBoard() {
-	const [columns, setColumns] = createSignal<Column[]>(INITIAL_COLUMNS);
+interface UseKanbanBoardOptions {
+	initialColumns?: Column[];
+	onChange?: (columns: Column[]) => void;
+}
+
+export function useKanbanBoard(options?: UseKanbanBoardOptions) {
+	const [columns, setColumns] = createSignal<Column[]>(
+		options?.initialColumns ?? INITIAL_COLUMNS,
+	);
 	const [cardDialog, setCardDialog] = createSignal<CardDialogState | null>(
 		null,
 	);
@@ -22,12 +29,27 @@ export function useKanbanBoard() {
 	const [confirmDialog, setConfirmDialog] =
 		createSignal<ConfirmDialogState | null>(null);
 
+	const emitChange = (next: Column[]) => {
+		options?.onChange?.(next);
+	};
+
+	const updateColumns = (fn: (current: Column[]) => Column[]) => {
+		setColumns((current) => {
+			const next = fn(current);
+			emitChange(next);
+			return next;
+		});
+	};
+
 	const itemsRecord = () =>
 		Object.fromEntries(columns().map((column) => [column.id, column.cards]));
 
 	const reorderColumns = useDragReorder(
 		() => columns(),
-		(next) => setColumns(next),
+		(next) => {
+			setColumns(() => next);
+			emitChange(next);
+		},
 	);
 
 	const onDragEnd: DragDropProviderProps["onDragEnd"] = (e, manager) => {
@@ -59,7 +81,7 @@ export function useKanbanBoard() {
 			const draggedCard = sourceColumn.cards[sourceIndex];
 			if (!draggedCard) return;
 
-			setColumns((current) => {
+			updateColumns((current) => {
 				// Remove from source column
 				const withoutDragged = current.map((col) =>
 					col.id === sourceColumnId
@@ -87,7 +109,7 @@ export function useKanbanBoard() {
 
 		if (next === record) return;
 
-		setColumns((current) =>
+		updateColumns((current) =>
 			current.map((column) => ({
 				...column,
 				cards: next[column.id] ?? column.cards,
@@ -102,7 +124,7 @@ export function useKanbanBoard() {
 		const columnId = cardDialog()?.columnId;
 		if (!columnId) return;
 
-		setColumns((current) =>
+		updateColumns((current) =>
 			current.map((column) =>
 				column.id === columnId
 					? {
@@ -115,7 +137,7 @@ export function useKanbanBoard() {
 	};
 
 	const deleteCard = (columnId: string, cardId: string) => {
-		setColumns((current) =>
+		updateColumns((current) =>
 			current.map((column) =>
 				column.id === columnId
 					? { ...column, cards: column.cards.filter((c) => c.id !== cardId) }
@@ -131,7 +153,7 @@ export function useKanbanBoard() {
 			description: "",
 		};
 
-		setColumns((current) =>
+		updateColumns((current) =>
 			current.map((column) =>
 				column.id === columnId
 					? { ...column, cards: [...column.cards, card] }
@@ -149,18 +171,18 @@ export function useKanbanBoard() {
 			cards: [],
 		};
 
-		setColumns((current) => [...current, column]);
+		updateColumns((current) => [...current, column]);
 		setColumnDialog(column);
 	};
 
 	const saveColumn = (column: Column) => {
-		setColumns((current) =>
+		updateColumns((current) =>
 			current.map((c) => (c.id === column.id ? column : c)),
 		);
 	};
 
 	const deleteColumn = (columnId: string) => {
-		setColumns((current) => current.filter((c) => c.id !== columnId));
+		updateColumns((current) => current.filter((c) => c.id !== columnId));
 	};
 
 	return {

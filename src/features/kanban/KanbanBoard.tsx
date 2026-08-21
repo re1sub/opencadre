@@ -1,5 +1,6 @@
 import { DragDropProvider } from "@dnd-kit/solid";
-import { For, Show } from "solid-js";
+import { useSearchParams } from "@solidjs/router";
+import { createEffect, For, Show } from "solid-js";
 import { useWorkspaceTags } from "#/features/tags/hooks/useWorkspaceTags";
 import ConfirmDialog from "#/features/ui/ConfirmDialog";
 import BoardColumn from "./components/BoardColumn";
@@ -8,14 +9,82 @@ import CardDialog from "./components/CardDialog";
 import ColumnDialog from "./components/ColumnDialog";
 import { useKanbanBoard } from "./hooks/useKanbanBoard";
 
+import type { Card, Column } from "./types";
+
 interface KanbanBoardProps {
 	pageId?: string;
 	workspaceId?: string;
+	content?: string;
+	onChangeContent?: (content: string) => void;
 }
 
+const parseColumns = (content: string): Column[] | null => {
+	if (!content) return null;
+	try {
+		const parsed = JSON.parse(content);
+		if (Array.isArray(parsed)) return parsed;
+		return null;
+	} catch {
+		return null;
+	}
+};
+
 const KanbanBoard = (props: KanbanBoardProps) => {
-	const board = useKanbanBoard();
+	const [searchParams, setSearchParams] = useSearchParams<{ c?: string }>();
+	const clearCardParam = () =>
+		setSearchParams({ c: undefined }, { replace: true });
+
+	const initialColumns = () => parseColumns(props.content ?? "") ?? undefined;
+	const board = useKanbanBoard({
+		initialColumns: initialColumns(),
+		onChange: (columns) => {
+			props.onChangeContent?.(JSON.stringify(columns));
+		},
+	});
 	const { tags } = useWorkspaceTags(props.workspaceId ?? "");
+
+	let openedCardParam: string | undefined;
+
+	createEffect(() => {
+		const cardId = searchParams.c;
+		if (!cardId) {
+			openedCardParam = undefined;
+			return;
+		}
+
+		const columns = board.columns();
+
+		let found: { columnId: string; card: Card } | undefined;
+
+		for (const col of columns) {
+			const card = col.cards.find((c) => c.id === cardId);
+			if (card) {
+				found = { columnId: col.id, card };
+				break;
+			}
+		}
+
+		if (!found) {
+			clearCardParam();
+			return;
+		}
+
+		if (openedCardParam === cardId) return;
+
+		openedCardParam = cardId;
+		board.openCardDialog(found.columnId, found.card);
+
+		requestAnimationFrame(() => {
+			const el = document.querySelector(`[data-card-id="${cardId}"]`);
+			el?.scrollIntoView({ behavior: "smooth", block: "center" });
+		});
+	});
+
+	const closeCardDialog = () => {
+		openedCardParam = undefined;
+		clearCardParam();
+		board.setCardDialog(null);
+	};
 
 	return (
 		<div class={styles.board} data-page-id={props.pageId}>
@@ -38,8 +107,8 @@ const KanbanBoard = (props: KanbanBoardProps) => {
 								column={column}
 								tags={tags()}
 								index={index}
+								pageId={props.pageId}
 								onAddCard={board.addCard}
-								onOpenCard={board.openCardDialog}
 								onEditColumn={board.setColumnDialog}
 							/>
 						)}
@@ -60,11 +129,11 @@ const KanbanBoard = (props: KanbanBoardProps) => {
 					<CardDialog
 						card={dialog().card}
 						workspaceId={props.workspaceId ?? ""}
-						onClose={() => board.setCardDialog(null)}
+						onClose={closeCardDialog}
 						onSave={board.saveCard}
 						onRequestDelete={() => {
 							const target = dialog();
-							board.setCardDialog(null);
+							closeCardDialog();
 							board.setConfirmDialog({
 								kind: "card",
 								columnId: target.columnId,
