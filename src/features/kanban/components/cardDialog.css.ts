@@ -2,12 +2,25 @@ import { globalStyle, style } from "@vanilla-extract/css";
 
 export const dialogContainer = style({
 	vars: {
-		"--width": "70vw",
+		"--width": "auto",
+		"--spacing": "0",
+	},
+	selectors: {
+		"&::part(dialog)": {
+			marginLeft: "15%",
+			marginRight: "15%",
+		},
 	},
 	"@media": {
-		"(max-width: 1024px)": {
+		"(max-width: 768px)": {
 			vars: {
 				"--width": "90vw",
+			},
+			selectors: {
+				"&::part(dialog)": {
+					marginLeft: "auto",
+					marginRight: "auto",
+				},
 			},
 		},
 	},
@@ -27,6 +40,7 @@ export const dialogLeftColumn = style({
 	display: "flex",
 	flexDirection: "column",
 	justifyContent: "space-between",
+	padding: "var(--wa-space-l)",
 	width: "100%",
 });
 

@@ -33,6 +33,13 @@ const ColumnDialog = (props: ColumnDialogProps) => {
 			label="Column settings"
 			on:wa-after-hide={dialog.handleHide}
 		>
+			<div slot="header-actions">
+				<DeleteButton
+					onDelete={dialog.handleDelete}
+					label="Delete card"
+					iconOnly
+				/>
+			</div>
 			<div class={styles.dialogBody}>
 				<wa-input
 					label="Column name"
@@ -62,8 +69,6 @@ const ColumnDialog = (props: ColumnDialogProps) => {
 			</div>
 
 			<div slot="footer">
-				<DeleteButton onDelete={dialog.handleDelete} label="Delete column" />
-
 				<div style={{ display: "flex", gap: "var(--wa-space-s)" }}>
 					<wa-button variant="neutral" onClick={dialog.close}>
 						Cancel

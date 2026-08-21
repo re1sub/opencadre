@@ -36,38 +36,42 @@ const CardDialog = (props: CardDialogProps) => {
 		updateTag: updateWorkspaceTag,
 	} = useWorkspaceTags(props.workspaceId);
 
-	const [title, setTitle] = createSignal(props.card.title);
-	const [description, setDescription] = createSignal(props.card.description);
-	const [comments, setComments] = createSignal<Comment[]>(
-		props.card.comments ?? [],
-	);
-	const [tagIds, setTagIds] = createSignal<string[]>(props.card.tagIds ?? []);
+	const [card, setCard] = createSignal<Card>(props.card);
 
 	const attachedTags = () =>
-		tagIds()
+		(card().tagIds ?? [])
 			.map((id) => tags().find((tag) => tag.id === id))
 			.filter((tag): tag is Tag => !!tag);
 
-	const handleSave = () => {
-		props.onSave({
-			...props.card,
-			title: title(),
-			description: description(),
-			tagIds: tagIds(),
-			comments: comments(),
-		});
-		dialog.close();
+	const updateAndSaveCard = (updates: Partial<Card>) => {
+		const updated = { ...card(), ...updates };
+		setCard(updated);
+		props.onSave(updated);
+	};
+
+	const handleTitleChange = (newTitle: string) => {
+		updateAndSaveCard({ title: newTitle });
+	};
+
+	const handleCommentsChange = (newComments: Comment[]) => {
+		updateAndSaveCard({ comments: newComments });
+	};
+
+	const handleDescriptionSave = (newDescription: string) => {
+		updateAndSaveCard({ description: newDescription });
 	};
 
 	const attachTag = (tagId: string) => {
-		setTagIds((current) =>
-			current.includes(tagId) ? current : [...current, tagId],
-		);
+		const current = card().tagIds ?? [];
+		if (!current.includes(tagId)) {
+			updateAndSaveCard({ tagIds: [...current, tagId] });
+		}
 	};
 
 	const createTag = (tagName: string, color: string) => {
 		const tag = addWorkspaceTag(tagName, color);
-		setTagIds((current) => [...current, tag.id]);
+		const current = card().tagIds ?? [];
+		updateAndSaveCard({ tagIds: [...current, tag.id] });
 	};
 
 	const updateTag = (tagId: string, name: string, color: string) => {
@@ -75,7 +79,8 @@ const CardDialog = (props: CardDialogProps) => {
 	};
 
 	const removeTag = (tagId: string) => {
-		setTagIds((current) => current.filter((id) => id !== tagId));
+		const current = card().tagIds ?? [];
+		updateAndSaveCard({ tagIds: current.filter((id) => id !== tagId) });
 	};
 
 	return (
@@ -97,8 +102,8 @@ const CardDialog = (props: CardDialogProps) => {
 			<div class={dialogContent}>
 				<div class={dialogLeftColumn}>
 					<EditableText
-						value={title()}
-						onChange={(value) => setTitle(value)}
+						value={card().title}
+						onChange={handleTitleChange}
 						ariaLabel="Title"
 						class={dialogCardTitle}
 					/>
@@ -117,7 +122,7 @@ const CardDialog = (props: CardDialogProps) => {
 							Tags
 							<TagPicker
 								tags={tags()}
-								attachedTagIds={tagIds()}
+								attachedTagIds={card().tagIds ?? []}
 								onAttach={attachTag}
 								onCreate={createTag}
 							/>
@@ -138,30 +143,20 @@ const CardDialog = (props: CardDialogProps) => {
 						<div class={customLabel}>
 							<wa-icon name="list-sort-descending"></wa-icon>Description
 						</div>
+
 						<MarkdownField
-							value={description()}
-							onChange={setDescription}
+							value={card().description ?? ""}
+							onSave={handleDescriptionSave}
 							placeholder="Add a description..."
 						/>
 					</div>
 				</div>
 
 				<CommentsPanel
-					parentId={props.card.id}
-					comments={comments()}
-					onChange={setComments}
+					parentId={card().id}
+					comments={card().comments ?? []}
+					onChange={handleCommentsChange}
 				/>
-			</div>
-
-			<div style={{ display: "flex", gap: "var(--wa-space-s)" }} slot="footer">
-				<div style={{ display: "flex", gap: "var(--wa-space-s)" }}>
-					<wa-button variant="neutral" onClick={dialog.close}>
-						Cancel
-					</wa-button>
-					<wa-button variant="brand" onClick={handleSave}>
-						Save
-					</wa-button>
-				</div>
 			</div>
 		</wa-dialog>
 	);
