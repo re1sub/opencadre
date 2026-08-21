@@ -73,6 +73,7 @@ globalStyle(`.${view} pre code`, {
 globalStyle(`.${view} a`, {
 	color: "var(--wa-color-text-link)",
 	textDecoration: "underline",
+	cursor: "pointer",
 });
 
 globalStyle(`.${view} img`, {

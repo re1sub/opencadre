@@ -3,7 +3,14 @@ import Heading from "@tiptap/extension-heading";
 import { Placeholder } from "@tiptap/extension-placeholder";
 import { Markdown } from "@tiptap/markdown";
 import StarterKit from "@tiptap/starter-kit";
-import { createEffect, createSignal, For, onCleanup, onMount } from "solid-js";
+import {
+	createEffect,
+	createSignal,
+	For,
+	onCleanup,
+	onMount,
+	Show,
+} from "solid-js";
 import { uid } from "#/utils/uid";
 import {
 	blockButtons,
@@ -19,8 +26,11 @@ interface MarkdownFieldProps {
 	value: string;
 	placeholder?: string;
 	minHeight?: string;
+	onSave?: (markdown: string) => void;
+	onCancel?: () => void;
 	onChange?: (markdown: string) => void;
 	class?: string;
+	noControlsFooter?: boolean;
 }
 
 const visibleInlineButtons = inlineButtons.filter(({ id }) =>
@@ -47,7 +57,11 @@ const MarkdownField = (props: MarkdownFieldProps) => {
 	let instance!: Editor;
 	let actions: Record<string, MarkdownAction> = {};
 	let lastValue = props.value;
+
+	const [draftValue, setDraftValue] = createSignal(props.value);
+	const [isFocused, setIsFocused] = createSignal(false);
 	const [toolbarVersion, setToolbarVersion] = createSignal(0);
+
 	const bumpToolbar = () => setToolbarVersion((v) => v + 1);
 
 	const isActive = (id: string) => {
@@ -71,15 +85,26 @@ const MarkdownField = (props: MarkdownFieldProps) => {
 		bumpToolbar();
 	};
 
+	const handleSave = () => {
+		props.onSave?.(draftValue());
+		setIsFocused(false);
+	};
+
+	const handleCancel = () => {
+		lastValue = props.value;
+		setDraftValue(props.value);
+		instance?.commands.setContent(props.value, { emitUpdate: false });
+		setIsFocused(false);
+		props.onCancel?.();
+	};
+
 	onMount(() => {
 		if (!editorRef || !toolbarRef) return;
 
 		instance = new Editor({
 			element: editorRef,
 			extensions: [
-				StarterKit.configure({
-					trailingNode: false,
-				}),
+				StarterKit.configure({ trailingNode: false }),
 				Heading.configure({ levels: [1, 2, 3] }),
 				Placeholder.configure({
 					placeholder: props.placeholder ?? "",
@@ -92,7 +117,14 @@ const MarkdownField = (props: MarkdownFieldProps) => {
 			onUpdate: ({ editor: editorInstance }) => {
 				const markdown = editorInstance.getMarkdown();
 				lastValue = markdown;
+				setDraftValue(markdown);
 				props.onChange?.(markdown);
+			},
+			onFocus: () => {
+				setIsFocused(true);
+			},
+			onBlur: () => {
+				setIsFocused(false);
 			},
 		});
 
@@ -109,177 +141,195 @@ const MarkdownField = (props: MarkdownFieldProps) => {
 		if (!instance) return;
 		if (props.value === lastValue) return;
 
-		instance.commands.setContent(props.value, {
-			emitUpdate: false,
-		});
-
 		lastValue = props.value;
+		setDraftValue(props.value);
+		instance.commands.setContent(props.value, { emitUpdate: false });
 	});
 
 	onCleanup(() => {
 		instance?.destroy();
 	});
 
-	createEffect(() => {
-		if (!toolbarRef) return;
-
-		const tooltips = toolbarRef.querySelectorAll("wa-tooltip");
-
-		tooltips.forEach((tooltip) => {
-			tooltip.addEventListener("wa-hide", (event) => {
-				event.stopPropagation();
-			});
-
-			tooltip.addEventListener("wa-after-hide", (event) => {
-				event.stopPropagation();
-			});
-		});
-	});
-
 	return (
-		<div class={`${field} ${props.class ?? ""}`}>
-			<div ref={toolbarRef} class={toolbar} role="toolbar">
-				<For each={visibleInlineButtons}>
-					{(button) => (
-						<ToolbarButton
-							button={button}
-							id={`${ns}-${button.id}`}
-							onClick={() => actions[button.id]?.run()}
-							activeClass={activeButton}
-							active={() => isActive(button.id)}
-						/>
-					)}
-				</For>
+		<>
+			<div class={`${field} ${props.class ?? ""}`}>
+				<div ref={toolbarRef} class={toolbar} role="toolbar">
+					<For each={visibleInlineButtons}>
+						{(button) => (
+							<ToolbarButton
+								button={button}
+								id={`${ns}-${button.id}`}
+								onClick={() => actions[button.id]?.run()}
+								activeClass={activeButton}
+								active={() => isActive(button.id)}
+							/>
+						)}
+					</For>
 
-				<wa-divider
-					orientation="vertical"
-					style={{ "--spacing": "var(--wa-space-3xs)" }}
-				></wa-divider>
+					<wa-divider
+						orientation="vertical"
+						style={{ "--spacing": "var(--wa-space-3xs)" }}
+					></wa-divider>
 
-				<wa-dropdown
-					placement="bottom-start"
-					size="s"
-					on:wa-after-hide={(event) => event.stopPropagation()}
-					on:wa-hide={(event) => event.stopPropagation()}
-					on:wa-select={handleSelect}
-				>
-					<wa-button
-						id={`${ns}-heading-trigger`}
-						slot="trigger"
+					<wa-dropdown
+						placement="bottom-start"
 						size="s"
-						appearance="plain"
-						with-caret
-						classList={{ [activeButton]: isHeadingActive() }}
+						on:wa-after-hide={(e: Event) => e.stopPropagation()}
+						on:wa-hide={(e: Event) => e.stopPropagation()}
+						on:wa-select={handleSelect}
 					>
-						<wa-icon name="heading-2" label="Paragraph style"></wa-icon>
-					</wa-button>
+						<wa-button
+							id={`${ns}-heading-trigger`}
+							slot="trigger"
+							size="s"
+							appearance="plain"
+							with-caret
+							classList={{ [activeButton]: isHeadingActive() }}
+						>
+							<wa-icon name="heading-2" label="Paragraph style"></wa-icon>
+						</wa-button>
 
-					<For each={headingItems}>
-						{(item) => (
-							<wa-dropdown-item
-								type="checkbox"
-								value={item.id}
-								checked={isActive(item.id)}
-							>
-								<wa-icon
-									slot="icon"
-									name={item.icon}
-									label={item.label}
-								></wa-icon>
-								{item.label}
-							</wa-dropdown-item>
+						<For each={headingItems}>
+							{(item) => (
+								<wa-dropdown-item
+									type="checkbox"
+									value={item.id}
+									checked={isActive(item.id)}
+								>
+									<wa-icon
+										slot="icon"
+										name={item.icon}
+										label={item.label}
+									></wa-icon>
+									{item.label}
+								</wa-dropdown-item>
+							)}
+						</For>
+					</wa-dropdown>
+
+					<wa-tooltip
+						for={`${ns}-heading-trigger`}
+						on:wa-after-hide={(e: Event) => e.stopPropagation()}
+					>
+						Paragraph style
+					</wa-tooltip>
+
+					<wa-divider
+						orientation="vertical"
+						style={{ "--spacing": "var(--wa-space-3xs)" }}
+					></wa-divider>
+
+					<For each={visibleBlockButtons}>
+						{(button) => (
+							<ToolbarButton
+								button={button}
+								id={`${ns}-${button.id}`}
+								onClick={() => actions[button.id]?.run()}
+								activeClass={activeButton}
+								active={() => isActive(button.id)}
+							/>
 						)}
 					</For>
-				</wa-dropdown>
 
-				<wa-tooltip for={`${ns}-heading-trigger`}>Paragraph style</wa-tooltip>
-
-				<wa-divider
-					orientation="vertical"
-					style={{ "--spacing": "var(--wa-space-3xs)" }}
-				></wa-divider>
-
-				<For each={visibleBlockButtons}>
-					{(button) => (
-						<ToolbarButton
-							button={button}
-							id={`${ns}-${button.id}`}
-							onClick={() => actions[button.id]?.run()}
-							activeClass={activeButton}
-							active={() => isActive(button.id)}
-						/>
-					)}
-				</For>
-
-				<wa-dropdown
-					placement="bottom-end"
-					size="s"
-					on:wa-after-hide={(event) => event.stopPropagation()}
-					on:wa-hide={(event) => event.stopPropagation()}
-					on:wa-select={handleSelect}
-				>
-					<wa-button
-						id={`${ns}-more-trigger`}
-						slot="trigger"
+					<wa-dropdown
+						placement="bottom-end"
 						size="s"
-						appearance="plain"
+						on:wa-after-hide={(e: Event) => e.stopPropagation()}
+						on:wa-hide={(e: Event) => e.stopPropagation()}
+						on:wa-select={handleSelect}
 					>
-						<wa-icon name="ellipsis" label="More formatting"></wa-icon>
-					</wa-button>
+						<wa-button
+							id={`${ns}-more-trigger`}
+							slot="trigger"
+							size="s"
+							appearance="plain"
+						>
+							<wa-icon name="ellipsis" label="More formatting"></wa-icon>
+						</wa-button>
 
-					<For each={moreInlineButtons}>
-						{(item) => (
-							<wa-dropdown-item
-								type="checkbox"
-								value={item.id}
-								checked={isActive(item.id)}
-							>
-								<wa-icon
-									slot="icon"
-									name={item.icon}
-									label={item.label}
-								></wa-icon>
-								{item.label}
-							</wa-dropdown-item>
-						)}
-					</For>
+						<For each={moreInlineButtons}>
+							{(item) => (
+								<wa-dropdown-item
+									type="checkbox"
+									value={item.id}
+									checked={isActive(item.id)}
+								>
+									<wa-icon
+										slot="icon"
+										name={item.icon}
+										label={item.label}
+									></wa-icon>
+									{item.label}
+								</wa-dropdown-item>
+							)}
+						</For>
 
-					<wa-divider></wa-divider>
+						<wa-divider></wa-divider>
 
-					<For each={moreBlockButtons}>
-						{(item) => (
-							<wa-dropdown-item
-								type="checkbox"
-								value={item.id}
-								checked={isActive(item.id)}
-							>
-								<wa-icon
-									slot="icon"
-									name={item.icon}
-									label={item.label}
-								></wa-icon>
-								{item.label}
-							</wa-dropdown-item>
-						)}
-					</For>
-				</wa-dropdown>
+						<For each={moreBlockButtons}>
+							{(item) => (
+								<wa-dropdown-item
+									type="checkbox"
+									value={item.id}
+									checked={isActive(item.id)}
+								>
+									<wa-icon
+										slot="icon"
+										name={item.icon}
+										label={item.label}
+									></wa-icon>
+									{item.label}
+								</wa-dropdown-item>
+							)}
+						</For>
+					</wa-dropdown>
 
-				<wa-tooltip for={`${ns}-more-trigger`}>More formatting</wa-tooltip>
+					<wa-tooltip
+						for={`${ns}-more-trigger`}
+						on:wa-after-hide={(e: Event) => e.stopPropagation()}
+					>
+						More formatting
+					</wa-tooltip>
+				</div>
+
+				<div
+					ref={editorRef}
+					class={content}
+					style={{ "min-height": props.minHeight ?? "5rem" }}
+					onClick={() => {
+						if (!instance?.isFocused) {
+							instance?.commands.focus();
+						}
+					}}
+				/>
 			</div>
-
-			<div
-				ref={editorRef}
-				class={content}
-				style={{
-					"min-height": props.minHeight ?? "5rem",
-				}}
-				onClick={() => {
-					if (!instance.isFocused) {
-						instance?.commands.focus();
-					}
-				}}
-			/>
-		</div>
+			<Show when={isFocused() && !props.noControlsFooter}>
+				<div
+					style={{
+						display: "flex",
+						gap: "var(--wa-space-xs)",
+						"margin-top": "var(--wa-space-xs)",
+					}}
+				>
+					<wa-button
+						variant="brand"
+						appearance="filled"
+						onMouseDown={(e: MouseEvent) => e.preventDefault()}
+						onClick={handleSave}
+					>
+						Save
+					</wa-button>
+					<wa-button
+						variant="neutral"
+						appearance="outlined"
+						onMouseDown={(e: MouseEvent) => e.preventDefault()}
+						onClick={handleCancel}
+					>
+						Cancel
+					</wa-button>
+				</div>
+			</Show>
+		</>
 	);
 };
 

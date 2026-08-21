@@ -62,3 +62,7 @@ globalStyle(`.${editor} hr`, {
 globalStyle(`.${editor} .ProseMirror-selectednode`, {
 	outline: "none",
 });
+
+globalStyle(`.${editor} a`, {
+	cursor: "pointer",
+});

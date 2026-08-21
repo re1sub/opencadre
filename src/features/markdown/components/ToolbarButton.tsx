@@ -32,7 +32,12 @@ const ToolbarButton = (props: ToolbarButtonProps) => {
 				<Show when={props.showLabels}>{props.button.label}</Show>
 			</wa-button>
 			<Show when={!props.showLabels}>
-				<wa-tooltip for={props.id}>{props.button.label}</wa-tooltip>
+				<wa-tooltip
+					for={props.id}
+					on:wa-after-hide={(e) => e.stopPropagation()}
+				>
+					{props.button.label}
+				</wa-tooltip>
 			</Show>
 		</>
 	);
