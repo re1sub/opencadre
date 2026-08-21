@@ -242,13 +242,13 @@ export const dialogBody = style({
 	display: "flex",
 	flexDirection: "column",
 	gap: "var(--wa-space-s)",
+	marginTop: "var(--wa-space-l)",
 });
 
 export const dialogActions = style({
 	display: "flex",
 	justifyContent: "flex-end",
 	gap: "var(--wa-space-s)",
-	marginTop: "var(--wa-space-l)",
 });
 
 export const dialogLabel = style({
@@ -466,7 +466,16 @@ export const memberRow = style({
 // Settings dialog container (user edit)
 export const settingsDialogContainer = style({
 	vars: {
-		"--width": "min(72vh, 80rem)",
+		"--width": "auto",
+	},
+	selectors: {
+		"&::part(body)": {
+			height: "65vh",
+		},
+		"&::part(dialog)": {
+			marginLeft: "15%",
+			marginRight: "15%",
+		},
 	},
 	"@media": {
 		"(max-width: 767px)": {
@@ -477,6 +486,8 @@ export const settingsDialogContainer = style({
 					height: "100%",
 					maxHeight: "100%",
 					borderRadius: "0",
+					marginLeft: "auto",
+					marginRight: "auto",
 				},
 			},
 			vars: {

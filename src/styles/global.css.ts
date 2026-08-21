@@ -43,12 +43,17 @@ globalStyle("::-webkit-scrollbar-track", {
 });
 
 globalStyle("::-webkit-scrollbar", {
-	width: "8px",
-	height: "8px",
+	width: "8.5px",
+	height: "8.5px",
 });
 
 globalStyle("::-webkit-scrollbar-thumb", {
-	backgroundColor: "var(--wa-color-surface-border)",
+	backgroundColor:
+		"color-mix(in srgb, var(--wa-color-surface-border) 80%, transparent)",
+});
+
+globalStyle("::-webkit-scrollbar-thumb:hover", {
+	backgroundColor: " var(--wa-color-surface-border)",
 });
 
 globalStyle("img", {
@@ -101,3 +106,13 @@ globalStyle(
 		marginBlockEnd: "0.5rem",
 	},
 );
+
+globalStyle("wa-dialog::part(header)", {
+	borderBottom: "1px solid var(--wa-color-surface-border)",
+});
+
+globalStyle("wa-dialog::part(footer)", {
+	borderTop: "1px solid var(--wa-color-surface-border)",
+	paddingBlockStart: "inherit",
+	padding: "var(--wa-space-s)",
+});

@@ -51,7 +51,7 @@ const AddMembersDialog = (props: AddMembersDialogProps) => {
 				</div>
 			</div>
 
-			<div class={dialogActions}>
+			<div class={dialogActions} slot="footer">
 				<wa-button variant="neutral" onClick={dialog.close}>
 					Cancel
 				</wa-button>
