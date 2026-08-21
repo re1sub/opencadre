@@ -2,9 +2,9 @@ import { style } from "@vanilla-extract/css";
 
 export const commentsPanel = style({
 	border: "1px solid var(--wa-color-surface-border)",
-	borderRadius: "var(--wa-border-radius-l)",
-	padding: "var(--wa-space-m) var(--wa-space-s)",
-	backgroundColor: "var(--wa-color-surface-raised)",
+	padding: "var(--wa-space-l)",
+
+	backgroundColor: "var(--wa-color-fill-quiet)",
 	display: "flex",
 	flexDirection: "column",
 	gap: 0,
@@ -45,6 +45,7 @@ export const commentBubble = style({
 	padding: "var(--wa-space-s)",
 	borderRadius: "var(--wa-border-radius-m)",
 	border: "1px solid var(--wa-color-surface-border)",
+	position: "relative",
 });
 
 export const commentMeta = style({
