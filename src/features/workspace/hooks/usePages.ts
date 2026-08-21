@@ -1,7 +1,8 @@
 import { useNavigate, useParams } from "@solidjs/router";
 import { createEffect, createSignal } from "solid-js";
+import { KANBAN_EMPTY_COLUMNS } from "#/features/kanban/constants/data";
+import { TABLE_EMPTY_ROWS } from "#/features/table/constants/data";
 import { uid } from "#/utils/uid";
-import { GETTING_STARTED_MARKDOWN } from "../constants/gettingStarted";
 import type { Page, PageKind } from "../types";
 
 export const usePages = (
@@ -22,6 +23,14 @@ export const usePages = (
 
 	const activePage = () =>
 		activePages().find((entry) => entry.id === activePageId()) ?? null;
+
+	const createEmptyMarkdownPage = (): Page => ({
+		id: uid(),
+		workspaceId: activeWorkspaceId(),
+		title: "Untitled",
+		kind: "markdown",
+		content: "",
+	});
 
 	createEffect(() => {
 		const pageId = params.pageId;
@@ -46,19 +55,34 @@ export const usePages = (
 			if (fallbackPage) {
 				navigate(`/workspace/p/${fallbackPage.id}`, { replace: true });
 			} else {
-				setActivePageId(null);
-				navigate("/workspace", { replace: true });
+				const newPage = createEmptyMarkdownPage();
+				setAllPages((prev) => [...prev, newPage]);
+				navigate(`/workspace/p/${newPage.id}`, { replace: true });
 			}
 		}
 	});
 
 	const addPage = (kind: PageKind) => {
+		const initialContent =
+			kind === "kanban"
+				? JSON.stringify(KANBAN_EMPTY_COLUMNS)
+				: kind === "table"
+					? JSON.stringify({
+							columns: [1, 2, 3].map((i) => ({
+								accessor: `col_${i}`,
+								label: `Column ${i}`,
+								width: 200,
+							})),
+							rows: TABLE_EMPTY_ROWS,
+						})
+					: "";
+
 		const newPage: Page = {
 			id: uid(),
 			workspaceId: activeWorkspaceId(),
 			title: kind === "kanban" ? "Kanban Board" : "Untitled",
 			kind,
-			content: kind === "markdown" ? GETTING_STARTED_MARKDOWN : "",
+			content: initialContent,
 		};
 
 		setAllPages((prev) => [...prev, newPage]);
@@ -72,7 +96,13 @@ export const usePages = (
 
 		if (activePageId() === id) {
 			const remaining = activePages().filter((p) => p.id !== id);
-			navigate(remaining[0] ? `/workspace/p/${remaining[0].id}` : "/workspace");
+			if (remaining[0]) {
+				navigate(`/workspace/p/${remaining[0].id}`);
+			} else {
+				const newPage = createEmptyMarkdownPage();
+				setAllPages((prev) => [...prev, newPage]);
+				navigate(`/workspace/p/${newPage.id}`);
+			}
 		}
 
 		return page;

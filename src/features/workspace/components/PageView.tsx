@@ -29,20 +29,34 @@ const PageView = (props: PageViewProps) => {
 				if (!page || page.id !== id) return null;
 
 				return (
-					<Switch fallback={<MarkdownEditor content={page.content} />}>
+					<Switch
+						fallback={
+							<MarkdownEditor
+								content={page.content}
+								onUpdate={(content) =>
+									props.onChangeContent?.(page.id, content)
+								}
+							/>
+						}
+					>
 						<Match when={page.kind === "kanban"}>
 							<Suspense fallback={<Skeleton />}>
-								<KanbanBoard pageId={page.id} />
+								<KanbanBoard
+									pageId={page.id}
+									content={page.content}
+									onChangeContent={(content) =>
+										props.onChangeContent?.(page.id, content)
+									}
+								/>
 							</Suspense>
 						</Match>
 						<Match when={page.kind === "table"}>
 							<Suspense fallback={<Skeleton />}>
 								<TablePage
-								// pageId={page.id}
-								// content={page.content}
-								// onContentChange={(content) =>
-								// 	props.onChangeContent?.(page.id, content)
-								// }
+									content={page.content}
+									onChangeContent={(content) =>
+										props.onChangeContent?.(page.id, content)
+									}
 								/>
 							</Suspense>
 						</Match>
