@@ -32,7 +32,7 @@ export const columnsTrack = style({
 	alignItems: "flex-start",
 	gap: "var(--wa-space-xs)",
 	overflowX: "auto",
-	minHeight: "85vh",
+	minHeight: "80dvh",
 	paddingBottom: "var(--wa-space-m)",
 	"@media": {
 		"(max-width: 480px)": {
