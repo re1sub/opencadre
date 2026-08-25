@@ -1,6 +1,8 @@
 import { useSortable } from "@dnd-kit/solid/sortable";
 import { For, Show } from "solid-js";
 import type { Tag } from "#/features/tags/types";
+import type { WorkspaceMember } from "#/features/workspace/types";
+import { formatDueDate, getDueDateStatus } from "#/utils/date";
 import { useDragTilt } from "../hooks/useDragTilt";
 import type { Card } from "../types";
 import * as styles from "./board.css";
@@ -8,6 +10,7 @@ import * as styles from "./board.css";
 interface SortableCardProps {
 	card: Card;
 	tags: Tag[];
+	members?: WorkspaceMember[];
 	index: number;
 	columnId: string;
 	pageId?: string;
@@ -17,6 +20,8 @@ const colMixBg = (color: string, opacity: number = 30) =>
 	`color-mix(in srgb, ${color} ${opacity}%, transparent)`;
 
 const MAX_TAGS = 3;
+
+const initialsOf = (name: string) => name.slice(0, 2).toUpperCase();
 
 const SortableCard = (props: SortableCardProps) => {
 	const { ref, isDragging, isDropTarget } = useSortable({
@@ -49,6 +54,11 @@ const SortableCard = (props: SortableCardProps) => {
 	const remainingCount = () => cardTags().length - MAX_TAGS;
 
 	const commentsCount = () => props.card.comments?.length ?? 0;
+
+	const assignedMembers = () =>
+		(props.card.assigneeIds ?? [])
+			.map((id) => props.members?.find((member) => member.id === id))
+			.filter((member): member is WorkspaceMember => !!member);
 
 	return (
 		<a
@@ -105,8 +115,39 @@ const SortableCard = (props: SortableCardProps) => {
 				</div>
 			</Show>
 			<div class={styles.cardMeta}>
-				<wa-icon name="message-square-text" label="Comments"></wa-icon>
-				<span>{commentsCount()}</span>
+				<Show when={props.card.dueDate}>
+					{(due) => (
+						<span class={styles.cardDue} data-status={getDueDateStatus(due())}>
+							<wa-icon name="calendar" label="Due date"></wa-icon>
+							{formatDueDate(due())}
+						</span>
+					)}
+				</Show>
+				<div class={styles.cardMetaGroup}>
+					<wa-icon name="message-square-text" label="Comments"></wa-icon>
+					<span>{commentsCount()}</span>
+				</div>
+				<div class={styles.cardMetaSpacer}></div>
+				<Show when={assignedMembers().length}>
+					<div class={styles.cardAvatarStack}>
+						<For each={assignedMembers().slice(0, 3)}>
+							{(member) => (
+								<span
+									class={styles.cardAvatar}
+									style={{ "background-color": member.color }}
+									title={member.name}
+								>
+									{initialsOf(member.name)}
+								</span>
+							)}
+						</For>
+						<Show when={assignedMembers().length > 3}>
+							<span class={styles.cardAvatar}>
+								+{assignedMembers().length - 3}
+							</span>
+						</Show>
+					</div>
+				</Show>
 			</div>
 		</a>
 	);

@@ -8,22 +8,32 @@ import { useWorkspaceTags } from "#/features/tags/hooks/useWorkspaceTags";
 import type { Tag } from "#/features/tags/types";
 import DeleteButton from "#/features/ui/DeleteButton";
 import EditableText from "#/features/ui/EditableText";
+import type { WorkspaceMember } from "#/features/workspace/types";
 import { useDialog } from "#/utils/useDialog";
 import type { Card } from "../types";
+import AssigneePicker from "./AssigneePicker";
 import {
 	customLabel,
 	dialogCardTitle,
 	dialogContainer,
 	dialogContent,
 	dialogLeftColumn,
+	dialogMetaGroup,
+	dialogMetaRow,
 	dialogTags,
+	editCardDialog,
 } from "./cardDialog.css";
+import DueDate from "./DueDate";
+import MemberChips from "./MemberChips";
 
 interface CardDialogProps {
 	card: Card;
 	workspaceId: string;
+	members: WorkspaceMember[];
+	isNew?: boolean;
 	onClose: () => void;
 	onSave: (card: Card) => void;
+	onCreate?: (card: Card) => void;
 	onRequestDelete: () => void;
 }
 
@@ -46,7 +56,7 @@ const CardDialog = (props: CardDialogProps) => {
 	const updateAndSaveCard = (updates: Partial<Card>) => {
 		const updated = { ...card(), ...updates };
 		setCard(updated);
-		props.onSave(updated);
+		if (!props.isNew) props.onSave(updated);
 	};
 
 	const handleTitleChange = (newTitle: string) => {
@@ -59,6 +69,11 @@ const CardDialog = (props: CardDialogProps) => {
 
 	const handleDescriptionSave = (newDescription: string) => {
 		updateAndSaveCard({ description: newDescription });
+	};
+
+	const handleCreate = () => {
+		props.onCreate?.(card());
+		dialog.close();
 	};
 
 	const attachTag = (tagId: string) => {
@@ -83,6 +98,15 @@ const CardDialog = (props: CardDialogProps) => {
 		updateAndSaveCard({ tagIds: current.filter((id) => id !== tagId) });
 	};
 
+	const toggleAssignee = (memberId: string) => {
+		const current = card().assigneeIds ?? [];
+		updateAndSaveCard({
+			assigneeIds: current.includes(memberId)
+				? current.filter((id) => id !== memberId)
+				: [...current, memberId],
+		});
+	};
+
 	return (
 		<wa-dialog
 			ref={dialog.ref}
@@ -90,13 +114,19 @@ const CardDialog = (props: CardDialogProps) => {
 			label="Card details"
 			on:wa-after-hide={dialog.handleHide}
 			class={dialogContainer}
+			classList={{
+				[editCardDialog]: !props.isNew,
+			}}
+			style={{ "--width": props.isNew ? "40vw" : "" }}
 		>
 			<div slot="header-actions">
-				<DeleteButton
-					onDelete={dialog.handleDelete}
-					label="Delete card"
-					iconOnly
-				/>
+				<Show when={!props.isNew}>
+					<DeleteButton
+						onDelete={dialog.handleDelete}
+						label="Delete card"
+						iconOnly
+					/>
+				</Show>
 			</div>
 
 			<div class={dialogContent}>
@@ -106,19 +136,31 @@ const CardDialog = (props: CardDialogProps) => {
 						onChange={handleTitleChange}
 						ariaLabel="Title"
 						class={dialogCardTitle}
+						autoFocus={props.isNew}
 					/>
 
 					<div
 						class={dialogLeftColumn}
 						style={{ padding: "var(--wa-space-xs)" }}
 					>
-						<div
-							style={{
-								display: "flex",
-								gap: "var(--wa-space-xs)",
-								"align-items": "center",
-							}}
-						>
+						<div class={dialogMetaRow}>
+							<div class={dialogMetaGroup}>
+								Assignees
+								<AssigneePicker
+									members={props.members}
+									assigneeIds={card().assigneeIds ?? []}
+									onToggle={toggleAssignee}
+								/>
+							</div>
+						</div>
+
+						<MemberChips
+							assigneeIds={card().assigneeIds ?? []}
+							members={props.members}
+							onRemove={toggleAssignee}
+						/>
+
+						<div class={dialogMetaGroup}>
 							Tags
 							<TagPicker
 								tags={tags()}
@@ -127,7 +169,11 @@ const CardDialog = (props: CardDialogProps) => {
 								onCreate={createTag}
 							/>
 						</div>
-						<div class={dialogTags}>
+
+						<div
+							class={dialogTags}
+							style={{ height: attachedTags().length ? "80px" : "10px" }}
+						>
 							<Show when={attachedTags().length}>
 								<Index each={attachedTags()}>
 									{(tag) => (
@@ -140,24 +186,51 @@ const CardDialog = (props: CardDialogProps) => {
 								</Index>
 							</Show>
 						</div>
+
+						<div
+							class={dialogMetaGroup}
+							style={{ "margin-bottom": "var(--wa-space-xs)" }}
+						>
+							Description
+						</div>
+						<DueDate
+							value={card().dueDate ?? null}
+							onChange={(v) => updateAndSaveCard({ dueDate: v })}
+						/>
 						<div class={customLabel}>
 							<wa-icon name="list-sort-descending"></wa-icon>Description
 						</div>
-
 						<MarkdownField
 							value={card().description ?? ""}
 							onSave={handleDescriptionSave}
+							onChange={props.isNew ? handleDescriptionSave : undefined}
+							noControlsFooter={props.isNew}
 							placeholder="Add a description..."
 						/>
 					</div>
 				</div>
 
-				<CommentsPanel
-					parentId={card().id}
-					comments={card().comments ?? []}
-					onChange={handleCommentsChange}
-				/>
+				<Show when={!props.isNew}>
+					<CommentsPanel
+						parentId={card().id}
+						comments={card().comments ?? []}
+						onChange={handleCommentsChange}
+					/>
+				</Show>
 			</div>
+
+			<Show when={props.isNew}>
+				<div slot="footer">
+					<div style={{ display: "flex", gap: "var(--wa-space-s)" }}>
+						<wa-button variant="neutral" onClick={() => dialog.close()}>
+							Cancel
+						</wa-button>
+						<wa-button variant="brand" onClick={handleCreate}>
+							Create card
+						</wa-button>
+					</div>
+				</div>
+			</Show>
 		</wa-dialog>
 	);
 };

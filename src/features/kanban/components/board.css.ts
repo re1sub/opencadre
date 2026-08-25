@@ -229,6 +229,70 @@ export const cardMeta = style({
 	fontSize: "0.75rem",
 });
 
+export const cardMetaGroup = style({
+	display: "inline-flex",
+	alignItems: "center",
+	gap: "var(--wa-space-3xs)",
+});
+
+export const cardMetaSpacer = style({
+	flexGrow: 1,
+});
+
+export const cardDue = style({
+	display: "inline-flex",
+	alignItems: "center",
+	gap: "3px",
+	padding: "1px 6px",
+	borderRadius: "var(--wa-border-radius-s)",
+	backgroundColor: "var(--wa-color-neutral-fill-quiet)",
+	color: "var(--wa-color-text-quiet)",
+	whiteSpace: "nowrap",
+	fontWeight: 600,
+	selectors: {
+		'&[data-status="overdue"]': {
+			backgroundColor:
+				"color-mix(in srgb, var(--wa-color-danger) 18%, transparent)",
+			color: "var(--wa-color-danger)",
+		},
+		'&[data-status="today"]': {
+			backgroundColor:
+				"color-mix(in srgb, var(--wa-color-warning) 24%, transparent)",
+			color: "var(--wa-color-warning)",
+		},
+		'&[data-status="soon"]': {
+			backgroundColor:
+				"color-mix(in srgb, var(--wa-color-warning) 12%, transparent)",
+			color: "var(--wa-color-text-normal)",
+		},
+	},
+});
+
+export const cardAvatarStack = style({
+	display: "flex",
+	alignItems: "center",
+});
+
+export const cardAvatar = style({
+	display: "inline-flex",
+	alignItems: "center",
+	justifyContent: "center",
+	width: "1.25rem",
+	height: "1.25rem",
+	borderRadius: "50%",
+	fontSize: "0.55rem",
+	fontWeight: 700,
+	color: "#fff",
+	flexShrink: 0,
+	userSelect: "none",
+	selectors: {
+		[`${cardAvatarStack} & + &`]: {
+			marginLeft: "-0.4rem",
+			boxShadow: "0 0 0 2px var(--wa-color-surface-raised)",
+		},
+	},
+});
+
 export const cardDescription = style({
 	margin: 0,
 	fontSize: "0.8rem",

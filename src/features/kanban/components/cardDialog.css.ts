@@ -3,18 +3,18 @@ import { globalStyle, style } from "@vanilla-extract/css";
 export const dialogContainer = style({
 	vars: {
 		"--width": "auto",
-		"--spacing": "0",
 	},
 	selectors: {
-		"&::part(dialog)": {
-			marginLeft: "15%",
-			marginRight: "15%",
+		"&::part(body)": {
+			vars: {
+				"--spacing": "0",
+			},
 		},
 	},
 	"@media": {
 		"(max-width: 768px)": {
 			vars: {
-				"--width": "90vw",
+				"--width": "90vw !important",
 			},
 			selectors: {
 				"&::part(dialog)": {
@@ -22,6 +22,15 @@ export const dialogContainer = style({
 					marginRight: "auto",
 				},
 			},
+		},
+	},
+});
+
+export const editCardDialog = style({
+	selectors: {
+		"&::part(dialog)": {
+			marginLeft: "15%",
+			marginRight: "15%",
 		},
 	},
 });
@@ -71,7 +80,6 @@ export const dialogTags = style({
 	alignItems: "flex-start",
 	flexWrap: "wrap",
 	gap: "var(--wa-space-xs)",
-	height: "80px",
 	overflowY: "auto",
 	margin: "0",
 	paddingBottom: "var(--wa-space-m)",
@@ -87,3 +95,33 @@ globalStyle(
 		color: "var(--wa-color-neutral-0)",
 	},
 );
+
+export const dialogMetaRow = style({
+	display: "flex",
+	alignItems: "center",
+	gap: "var(--wa-space-xl)",
+	flexWrap: "wrap",
+});
+
+export const dialogMetaGroup = style({
+	display: "flex",
+	alignItems: "center",
+	gap: "var(--wa-space-xs)",
+	color: "var(--wa-color-text-quiet)",
+	fontSize: "0.9rem",
+});
+
+export const dueDateRow = style({
+	display: "flex",
+	alignItems: "center",
+	gap: "var(--wa-space-xs)",
+	marginBottom: "var(--wa-space-m)",
+});
+
+export const memberChipsRow = style({
+	display: "flex",
+	alignItems: "flex-start",
+	flexWrap: "wrap",
+	gap: "var(--wa-space-xs)",
+	marginBottom: "var(--wa-space-s)",
+});
