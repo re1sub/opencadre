@@ -1,5 +1,15 @@
 export type PageKind = "markdown" | "kanban" | "table";
 
+export type WorkspaceRole = "owner" | "admin" | "member" | "guest";
+
+export interface WorkspaceMember {
+	id: string;
+	name: string;
+	email: string;
+	role: WorkspaceRole;
+	color?: string;
+}
+
 export interface Workspace {
 	id: string;
 	name: string;
