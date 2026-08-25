@@ -43,6 +43,7 @@ const PageView = (props: PageViewProps) => {
 							<Suspense fallback={<Skeleton />}>
 								<KanbanBoard
 									pageId={page.id}
+									workspaceId={page.workspaceId}
 									content={page.content}
 									onChangeContent={(content) =>
 										props.onChangeContent?.(page.id, content)

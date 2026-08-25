@@ -1,31 +1,36 @@
 import type { User } from "@supabase/supabase-js";
 import { createSignal, Show } from "solid-js";
+import { useProfile } from "../hooks/useProfile";
 import AddAccountDialog from "./AddAccountDialog";
-import AddMembersDialog from "./AddMembersDialog";
+import type { SettingsSection } from "./SettingsDialog";
 import SettingsDialog from "./SettingsDialog";
 import { navFooter, userMenuName, userMenuTrigger } from "./workspace.css";
 
 interface WorkspaceFooterProps {
 	user: () => User | null;
 	error: () => string | null;
+	activeWorkspaceId: () => string;
 	onSignOut: () => void;
 	onOpenTrash: () => void;
 }
 
 const WorkspaceFooter = (props: WorkspaceFooterProps) => {
 	const [showSettings, setShowSettings] = createSignal(false);
-	const [showAddMembers, setShowAddMembers] = createSignal(false);
+	const [settingsSection, setSettingsSection] = createSignal<SettingsSection>();
 	const [showAddAccount, setShowAddAccount] = createSignal(false);
 
-	const displayName = () => {
-		const user = props.user();
-		if (!user) return "";
-		return user.email ?? "";
-	};
+	const { name } = useProfile(() => props.user()?.email);
+
+	const displayName = () => name();
 
 	const initials = () => {
-		const name = displayName();
-		return name ? name.slice(0, 2).toUpperCase() : "?";
+		const value = displayName();
+		return value ? value.slice(0, 2).toUpperCase() : "?";
+	};
+
+	const openSettings = (section?: SettingsSection) => {
+		setSettingsSection(section);
+		setShowSettings(true);
 	};
 
 	const handleSelect = (e: Event) => {
@@ -36,8 +41,8 @@ const WorkspaceFooter = (props: WorkspaceFooterProps) => {
 		const value = selectEvent.detail.item?.value;
 
 		if (value === "__signout__") props.onSignOut();
-		else if (value === "__settings__") setShowSettings(true);
-		else if (value === "__members__") setShowAddMembers(true);
+		else if (value === "__settings__") openSettings();
+		else if (value === "__members__") openSettings("members");
 		else if (value === "__account__") setShowAddAccount(true);
 		else if (value === "__trash__") props.onOpenTrash();
 	};
@@ -64,8 +69,8 @@ const WorkspaceFooter = (props: WorkspaceFooterProps) => {
 					</wa-button>
 
 					<wa-dropdown-item value="__members__">
-						<wa-icon slot="icon" name="users" label="Add members"></wa-icon>
-						Add members
+						<wa-icon slot="icon" name="users" label="Members"></wa-icon>
+						Members
 					</wa-dropdown-item>
 
 					<wa-dropdown-item value="__account__">
@@ -99,11 +104,14 @@ const WorkspaceFooter = (props: WorkspaceFooterProps) => {
 			</Show>
 
 			<Show when={showSettings()}>
-				<SettingsDialog onClose={() => setShowSettings(false)} />
-			</Show>
-
-			<Show when={showAddMembers()}>
-				<AddMembersDialog onClose={() => setShowAddMembers(false)} />
+				<SettingsDialog
+					workspaceId={props.activeWorkspaceId()}
+					initialSection={settingsSection()}
+					onClose={() => {
+						setShowSettings(false);
+						setSettingsSection(undefined);
+					}}
+				/>
 			</Show>
 
 			<Show when={showAddAccount()}>

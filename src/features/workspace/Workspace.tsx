@@ -300,6 +300,7 @@ const Workspace = () => {
 			<WorkspaceFooter
 				user={user}
 				error={error}
+				activeWorkspaceId={wsHook.activeWorkspaceId}
 				onSignOut={handleSignOut}
 				onOpenTrash={() => setIsTrashOpen(true)}
 			/>

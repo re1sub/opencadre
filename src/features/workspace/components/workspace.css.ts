@@ -463,6 +463,54 @@ export const memberRow = style({
 	padding: "var(--wa-space-xs) 0",
 });
 
+// Members management
+export const memberAddRow = style({
+	display: "flex",
+	alignItems: "flex-end",
+	gap: "var(--wa-space-s)",
+	flexWrap: "wrap",
+});
+
+export const memberAvatar = style({
+	display: "inline-flex",
+	alignItems: "center",
+	justifyContent: "center",
+	width: "2rem",
+	height: "2rem",
+	borderRadius: "50%",
+	fontSize: "0.7rem",
+	fontWeight: 700,
+	color: "#fff",
+	flexShrink: 0,
+	userSelect: "none",
+});
+
+export const memberMeta = style({
+	display: "flex",
+	flexDirection: "column",
+	gap: "var(--wa-space-3xs)",
+	flexGrow: 1,
+	minWidth: 0,
+});
+
+export const memberName = style({
+	margin: 0,
+	fontSize: "0.9rem",
+	fontWeight: 600,
+	color: "var(--wa-color-text-normal)",
+	whiteSpace: "nowrap",
+	overflow: "hidden",
+	textOverflow: "ellipsis",
+});
+
+export const memberEmail = style({
+	color: "var(--wa-color-text-quiet)",
+	fontSize: "0.75rem",
+	whiteSpace: "nowrap",
+	overflow: "hidden",
+	textOverflow: "ellipsis",
+});
+
 // Settings dialog container (user edit)
 export const settingsDialogContainer = style({
 	vars: {
