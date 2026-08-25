@@ -149,18 +149,29 @@ export function useKanbanBoard(options?: UseKanbanBoardOptions) {
 	const addCard = (columnId: string) => {
 		const card: Card = {
 			id: uid(),
-			title: "New card",
+			title: "",
 			description: "",
+		};
+
+		setCardDialog({ columnId, card, isNew: true });
+	};
+
+	const createCard = (draft: Card) => {
+		const target = cardDialog();
+		if (!target) return;
+
+		const card: Card = {
+			...draft,
+			title: draft.title.trim() || "Untitled",
 		};
 
 		updateColumns((current) =>
 			current.map((column) =>
-				column.id === columnId
+				column.id === target.columnId
 					? { ...column, cards: [...column.cards, card] }
 					: column,
 			),
 		);
-		setCardDialog({ columnId, card });
 	};
 
 	const addColumn = () => {
@@ -196,6 +207,7 @@ export function useKanbanBoard(options?: UseKanbanBoardOptions) {
 		onDragEnd,
 		openCardDialog,
 		saveCard,
+		createCard,
 		deleteCard,
 		addCard,
 		addColumn,

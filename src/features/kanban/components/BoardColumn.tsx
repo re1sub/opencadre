@@ -2,6 +2,7 @@ import { useDroppable } from "@dnd-kit/solid";
 import { useSortable } from "@dnd-kit/solid/sortable";
 import { For } from "solid-js";
 import type { Tag } from "#/features/tags/types";
+import type { WorkspaceMember } from "#/features/workspace/types";
 import { useDragTilt } from "../hooks/useDragTilt";
 import { BOARD_ID, type Column } from "../types";
 import * as styles from "./board.css";
@@ -10,6 +11,7 @@ import SortableCard from "./SortableCard";
 interface BoardColumnProps {
 	column: Column;
 	tags: Tag[];
+	members?: WorkspaceMember[];
 	index: () => number;
 	pageId?: string;
 	onAddCard: (columnId: string) => void;
@@ -95,6 +97,7 @@ const BoardColumn = (props: BoardColumnProps) => {
 						<SortableCard
 							card={card}
 							tags={props.tags}
+							members={props.members}
 							index={index()}
 							columnId={props.column.id}
 							pageId={props.pageId}

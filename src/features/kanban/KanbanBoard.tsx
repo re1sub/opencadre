@@ -3,6 +3,7 @@ import { useSearchParams } from "@solidjs/router";
 import { createEffect, For, Show } from "solid-js";
 import { useWorkspaceTags } from "#/features/tags/hooks/useWorkspaceTags";
 import ConfirmDialog from "#/features/ui/ConfirmDialog";
+import { useWorkspaceMembers } from "#/features/workspace/hooks/useWorkspaceMembers";
 import BoardColumn from "./components/BoardColumn";
 import * as styles from "./components/board.css";
 import CardDialog from "./components/CardDialog";
@@ -42,6 +43,7 @@ const KanbanBoard = (props: KanbanBoardProps) => {
 		},
 	});
 	const { tags } = useWorkspaceTags(props.workspaceId ?? "");
+	const { members } = useWorkspaceMembers(props.workspaceId ?? "");
 
 	let openedCardParam: string | undefined;
 
@@ -106,6 +108,7 @@ const KanbanBoard = (props: KanbanBoardProps) => {
 							<BoardColumn
 								column={column}
 								tags={tags()}
+								members={members()}
 								index={index}
 								pageId={props.pageId}
 								onAddCard={board.addCard}
@@ -129,8 +132,11 @@ const KanbanBoard = (props: KanbanBoardProps) => {
 					<CardDialog
 						card={dialog().card}
 						workspaceId={props.workspaceId ?? ""}
+						members={members()}
+						isNew={dialog().isNew}
 						onClose={closeCardDialog}
 						onSave={board.saveCard}
+						onCreate={(draft) => board.createCard(draft)}
 						onRequestDelete={() => {
 							const target = dialog();
 							closeCardDialog();
