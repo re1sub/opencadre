@@ -12,6 +12,12 @@ import {
 	orRow,
 	page,
 } from "./auth.css";
+import {
+	forgotPasswordSchema,
+	resetPasswordSchema,
+	signInSchema,
+	signUpSchema,
+} from "./schemas";
 
 type View = "signin" | "signup" | "forgot" | "reset" | "confirm";
 
@@ -90,9 +96,21 @@ const Auth = (props: { view?: "forgot" | "reset" }) => {
 
 	const handleSubmit = (event: SubmitEvent) => {
 		event.preventDefault();
+		setError(null);
+
+		const schema = view() === "signup" ? signUpSchema : signInSchema;
+		const result = schema.safeParse({
+			email: email(),
+			password: password(),
+		});
+		if (!result.success) {
+			setError(result.error.issues[0].message);
+			return;
+		}
+
 		void authenticate(
-			email(),
-			password(),
+			result.data.email,
+			result.data.password,
 			view() === "signup" ? "signup" : "signin",
 		);
 	};
@@ -104,9 +122,16 @@ const Auth = (props: { view?: "forgot" | "reset" }) => {
 	const handleForgotSubmit = (event: SubmitEvent) => {
 		event.preventDefault();
 		setError(null);
+
+		const result = forgotPasswordSchema.safeParse({ email: email() });
+		if (!result.success) {
+			setError(result.error.issues[0].message);
+			return;
+		}
+
 		setPending(true);
 
-		sendPasswordReset(email())
+		sendPasswordReset(result.data.email)
 			.then(() => setSent(true))
 			.catch((resetError: unknown) => {
 				setError(
@@ -121,9 +146,18 @@ const Auth = (props: { view?: "forgot" | "reset" }) => {
 	const handleResetSubmit = (event: SubmitEvent) => {
 		event.preventDefault();
 		setError(null);
+
+		const result = resetPasswordSchema.safeParse({
+			password: newPassword(),
+		});
+		if (!result.success) {
+			setError(result.error.issues[0].message);
+			return;
+		}
+
 		setPending(true);
 
-		updatePassword(newPassword())
+		updatePassword(result.data.password)
 			.then(() => navigate("/workspace"))
 			.catch((resetError: unknown) => {
 				setError(

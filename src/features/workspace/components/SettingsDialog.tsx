@@ -13,6 +13,7 @@ import {
 } from "../constants/roles";
 import { useProfile } from "../hooks/useProfile";
 import { useWorkspaceMembers } from "../hooks/useWorkspaceMembers";
+import { addMemberSchema } from "../schemas";
 import type { WorkspaceRole } from "../types";
 import {
 	dialogBody,
@@ -139,17 +140,23 @@ const SettingsDialog = (props: SettingsDialogProps) => {
 	};
 
 	const handleAddMember = () => {
-		const email = newEmail().trim().toLowerCase();
 		setMemberError(null);
-		if (!email?.includes("@")) {
-			setMemberError("Enter a valid email address.");
+
+		const result = addMemberSchema.safeParse({
+			email: newEmail(),
+			role: newRole(),
+		});
+		if (!result.success) {
+			setMemberError(result.error.issues[0].message);
 			return;
 		}
+
+		const email = result.data.email.toLowerCase();
 		if (members().some((member) => member.email === email)) {
 			setMemberError("That person is already a member.");
 			return;
 		}
-		addMember(email, newRole());
+		addMember(email, result.data.role);
 		setNewEmail("");
 		setNewRole("member");
 	};

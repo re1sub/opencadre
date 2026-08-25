@@ -6,6 +6,7 @@ import {
 	MEMBER_COLOR_POOL,
 	SEED_MEMBERS,
 } from "../constants/members";
+import { addMemberSchema } from "../schemas";
 import type { WorkspaceMember, WorkspaceRole } from "../types";
 import { useProfile } from "./useProfile";
 
@@ -50,7 +51,8 @@ export function useWorkspaceMembers(workspaceId: string) {
 		"owner";
 
 	const addMember = (email: string, role: WorkspaceRole): WorkspaceMember => {
-		const trimmed = email.trim().toLowerCase();
+		const parsed = addMemberSchema.shape.email.safeParse(email);
+		const trimmed = (parsed.success ? parsed.data : email).trim().toLowerCase();
 		const member: WorkspaceMember = {
 			id: uid(),
 			name: trimmed.split("@")[0],

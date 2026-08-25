@@ -5,6 +5,7 @@ import { createSignal } from "solid-js";
 import { uid } from "#/utils/uid";
 import { useDragReorder } from "#/utils/useDragReorder";
 import { INITIAL_COLUMNS } from "../constants/data";
+import { cardDraftSchema } from "../schemas";
 import type {
 	Card,
 	CardDialogState,
@@ -160,9 +161,19 @@ export function useKanbanBoard(options?: UseKanbanBoardOptions) {
 		const target = cardDialog();
 		if (!target) return;
 
+		const result = cardDraftSchema.safeParse({
+			title: draft.title,
+			description: draft.description,
+			dueDate: draft.dueDate,
+		});
+
+		const title = result.success
+			? result.data.title || "Untitled"
+			: draft.title.trim() || "Untitled";
+
 		const card: Card = {
 			...draft,
-			title: draft.title.trim() || "Untitled",
+			title,
 		};
 
 		updateColumns((current) =>

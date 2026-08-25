@@ -1,6 +1,7 @@
 import { createEffect, createSignal, For, Show } from "solid-js";
 import { colorMix } from "#/utils/color";
 import { DEFAULT_TAG_COLOR } from "../constants/colors";
+import { tagSchema } from "../schemas";
 import type { Tag } from "../types";
 import TagColorSwatches from "./TagColorSwatches";
 import TagPopup from "./TagPopup";
@@ -34,9 +35,9 @@ const TagPicker = (props: TagPickerProps) => {
 	};
 
 	const handleCreate = (close: () => void) => {
-		const trimmed = name().trim();
-		if (!trimmed) return;
-		props.onCreate(trimmed, color());
+		const result = tagSchema.safeParse({ name: name() });
+		if (!result.success) return;
+		props.onCreate(result.data.name, color());
 		close();
 	};
 

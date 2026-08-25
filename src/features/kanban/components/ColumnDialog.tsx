@@ -1,6 +1,7 @@
 import { createSignal } from "solid-js";
 import DeleteButton from "#/features/ui/DeleteButton";
 import { useDialog } from "#/utils/useDialog";
+import { columnSchema } from "../schemas";
 import type { Column } from "../types";
 import * as styles from "./board.css";
 
@@ -16,11 +17,18 @@ const ColumnDialog = (props: ColumnDialogProps) => {
 
 	const [title, setTitle] = createSignal(props.column.title);
 	const [color, setColor] = createSignal(props.column.color);
+	const [error, setError] = createSignal<string | null>(null);
 
 	const handleSave = () => {
+		const result = columnSchema.safeParse({ title: title() });
+		if (!result.success) {
+			setError(result.error.issues[0].message);
+			return;
+		}
+		setError(null);
 		props.onSave({
 			...props.column,
-			title: title(),
+			title: result.data.title,
 			color: color(),
 		});
 		dialog.close();
@@ -44,8 +52,16 @@ const ColumnDialog = (props: ColumnDialogProps) => {
 				<wa-input
 					label="Column name"
 					value={props.column.title}
-					onInput={(e) => setTitle((e.currentTarget as HTMLInputElement).value)}
+					onInput={(e) => {
+						setTitle((e.currentTarget as HTMLInputElement).value);
+						setError(null);
+					}}
 				></wa-input>
+				{error() && (
+					<p style={{ color: "var(--wa-color-danger)", margin: 0 }}>
+						{error()}
+					</p>
+				)}
 
 				<div class={styles.dialogRow}>
 					<span class={styles.dialogLabel}>Accent color</span>
