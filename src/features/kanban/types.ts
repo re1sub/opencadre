@@ -8,6 +8,8 @@ export interface Card {
 	description: string;
 	comments?: Comment[];
 	tagIds?: string[];
+	dueDate?: string | null;
+	assigneeIds?: string[];
 }
 
 export interface Column {
@@ -20,6 +22,7 @@ export interface Column {
 export interface CardDialogState {
 	columnId: string;
 	card: Card;
+	isNew?: boolean;
 }
 
 export type ConfirmDialogState =
