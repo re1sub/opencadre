@@ -1,14 +1,14 @@
 import { DragDropProvider } from "@dnd-kit/solid";
 import { useSearchParams } from "@solidjs/router";
 import { createEffect, For, Show } from "solid-js";
-import { useWorkspaceTags } from "#/features/tags/hooks/useWorkspaceTags";
+import { useWorkspaceTagsAdapter } from "#/features/tags/hooks/useWorkspaceTagsAdapter";
 import ConfirmDialog from "#/features/ui/ConfirmDialog";
-import { useWorkspaceMembers } from "#/features/workspace/hooks/useWorkspaceMembers";
+import { useWorkspaceMembersAdapter } from "#/features/workspace/hooks/useWorkspaceMembersAdapter";
 import BoardColumn from "./components/BoardColumn";
 import * as styles from "./components/board.css";
 import CardDialog from "./components/CardDialog";
 import ColumnDialog from "./components/ColumnDialog";
-import { useKanbanBoard } from "./hooks/useKanbanBoard";
+import { useKanbanBoardAdapter } from "./hooks/useKanbanBoardAdapter";
 
 import type { Card, Column } from "./types";
 
@@ -19,31 +19,19 @@ interface KanbanBoardProps {
 	onChangeContent?: (content: string) => void;
 }
 
-const parseColumns = (content: string): Column[] | null => {
-	if (!content) return null;
-	try {
-		const parsed = JSON.parse(content);
-		if (Array.isArray(parsed)) return parsed;
-		return null;
-	} catch {
-		return null;
-	}
-};
-
 const KanbanBoard = (props: KanbanBoardProps) => {
 	const [searchParams, setSearchParams] = useSearchParams<{ c?: string }>();
 	const clearCardParam = () =>
 		setSearchParams({ c: undefined }, { replace: true });
 
-	const initialColumns = () => parseColumns(props.content ?? "") ?? undefined;
-	const board = useKanbanBoard({
-		initialColumns: initialColumns(),
+	const board = useKanbanBoardAdapter({
+		pageId: props.pageId ?? "",
 		onChange: (columns) => {
 			props.onChangeContent?.(JSON.stringify(columns));
 		},
 	});
-	const { tags } = useWorkspaceTags(props.workspaceId ?? "");
-	const { members } = useWorkspaceMembers(props.workspaceId ?? "");
+	const { tags } = useWorkspaceTagsAdapter(() => props.workspaceId ?? "");
+	const { members } = useWorkspaceMembersAdapter(() => props.workspaceId ?? "");
 
 	let openedCardParam: string | undefined;
 

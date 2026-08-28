@@ -1,9 +1,9 @@
 import { type Editor, posToDOMRect } from "@tiptap/core";
 import { createSignal } from "solid-js";
-import type { usePageComments } from "#/features/comments/hooks/usePageComments";
+import type { usePageCommentsAdapter } from "#/features/comments/hooks/usePageCommentsAdapter";
 import { COMMENT_MARK_NAME } from "#/features/comments/mark/CommentMark";
 
-type PageCommentsReturn = ReturnType<typeof usePageComments>;
+type PageCommentsReturn = ReturnType<typeof usePageCommentsAdapter>;
 
 export function useEditorComments(pageComments: PageCommentsReturn) {
 	const [activeThreadId, setActiveThreadId] = createSignal<string | null>(null);

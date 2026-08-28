@@ -4,7 +4,7 @@ import type { Comment } from "#/features/comments/types";
 import MarkdownField from "#/features/markdown/components/MarkdownField";
 import TagEditor from "#/features/tags/components/TagEditor";
 import TagPicker from "#/features/tags/components/TagPicker";
-import { useWorkspaceTags } from "#/features/tags/hooks/useWorkspaceTags";
+import { useWorkspaceTagsAdapter } from "#/features/tags/hooks/useWorkspaceTagsAdapter";
 import type { Tag } from "#/features/tags/types";
 import DeleteButton from "#/features/ui/DeleteButton";
 import EditableText from "#/features/ui/EditableText";
@@ -44,7 +44,7 @@ const CardDialog = (props: CardDialogProps) => {
 		tags,
 		addTag: addWorkspaceTag,
 		updateTag: updateWorkspaceTag,
-	} = useWorkspaceTags(props.workspaceId);
+	} = useWorkspaceTagsAdapter(() => props.workspaceId);
 
 	const [card, setCard] = createSignal<Card>(props.card);
 
@@ -83,8 +83,8 @@ const CardDialog = (props: CardDialogProps) => {
 		}
 	};
 
-	const createTag = (tagName: string, color: string) => {
-		const tag = addWorkspaceTag(tagName, color);
+	const createTag = async (tagName: string, color: string) => {
+		const tag = await addWorkspaceTag(tagName, color);
 		const current = card().tagIds ?? [];
 		updateAndSaveCard({ tagIds: [...current, tag.id] });
 	};

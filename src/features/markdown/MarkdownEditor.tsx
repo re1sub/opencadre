@@ -8,7 +8,7 @@ import StarterKit from "@tiptap/starter-kit";
 import { createSignal, onCleanup, onMount, splitProps } from "solid-js";
 import { Motion } from "solid-motionone";
 import { useAuth } from "#/features/auth/AuthContext";
-import { usePageComments } from "#/features/comments/hooks/usePageComments";
+import { usePageCommentsAdapter } from "#/features/comments/hooks/usePageCommentsAdapter";
 import {
 	COMMENT_MARK_NAME,
 	CommentMark,
@@ -34,10 +34,6 @@ interface MarkdownEditorProps {
 	onUpdate?: (markdown: string) => void;
 }
 
-const CustomDocument = Document.extend({
-	content: "heading block*",
-});
-
 const MarkdownEditor = (props: MarkdownEditorProps) => {
 	const [local, rest] = splitProps(props, [
 		"class",
@@ -47,7 +43,7 @@ const MarkdownEditor = (props: MarkdownEditorProps) => {
 		"onUpdate",
 	]);
 	const { user } = useAuth();
-	const pageComments = usePageComments(props.pageId ?? "");
+	const pageComments = usePageCommentsAdapter(() => props.pageId ?? "");
 
 	let instance: Editor | undefined;
 	const slashCommand = useSlashCommand(() => instance);
@@ -90,6 +86,14 @@ const MarkdownEditor = (props: MarkdownEditorProps) => {
 			shift: { boundary: editorRef },
 		};
 
+		const CustomDocument = Document.extend({
+			content: "heading block*",
+		});
+
+		// Fixes 'Duplicate extension names found' warning
+		const selectBubbleMenu = BubbleMenu.extend({ name: "editorBubbleMenu" });
+		const slashCommandMenu = BubbleMenu.extend({ name: "editorCommandMenu" });
+
 		instance = new Editor({
 			element: editorRef,
 			extensions: [
@@ -98,11 +102,11 @@ const MarkdownEditor = (props: MarkdownEditorProps) => {
 					document: false,
 					trailingNode: false,
 					heading: false,
-					link: {
-						HTMLAttributes: {
-							title: "my-custom-title",
-						},
-					},
+					// link: {
+					// 	HTMLAttributes: {
+					// 		title: "my-custom-title",
+					// 	},
+					// },
 				}),
 				Placeholder.configure({
 					placeholder: ({ node, pos }) => {
@@ -115,7 +119,7 @@ const MarkdownEditor = (props: MarkdownEditorProps) => {
 				Markdown.configure({ markedOptions: { gfm: true } }),
 				Heading.configure({ levels: [2, 3, 4, 5, 6] }),
 				CommentMark,
-				BubbleMenu.configure({
+				selectBubbleMenu.configure({
 					element: menuRef,
 					pluginKey: "editorBubbleMenu",
 					appendTo: () => document.body,
@@ -125,7 +129,7 @@ const MarkdownEditor = (props: MarkdownEditorProps) => {
 						onHide: () => setBubbleVisible(false),
 					},
 				}),
-				BubbleMenu.configure({
+				slashCommandMenu.configure({
 					element: commandMenuRef,
 					pluginKey: "editorCommandMenu",
 					appendTo: () => document.body,
