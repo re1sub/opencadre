@@ -4,9 +4,12 @@ import { addPageGroup } from "./workspace.css";
 
 interface AddPageButtonProps {
 	onAddPage: (kind: PageKind) => void;
+	defaultKind?: PageKind;
 }
 
 const AddPageButton = (props: AddPageButtonProps) => {
+	const defaultKind = () => props.defaultKind ?? "markdown";
+
 	const handleTemplateSelect = (event: Event) => {
 		const selectEvent = event as unknown as {
 			detail: { item: { value?: string } | null };
@@ -25,10 +28,11 @@ const AddPageButton = (props: AddPageButtonProps) => {
 				type="button"
 				variant="neutral"
 				appearance="plain"
-				onClick={() => props.onAddPage("markdown")}
+				onClick={() => props.onAddPage(defaultKind())}
+				title={`Add ${PAGE_KIND_META[defaultKind()].label}`}
 				style={{ width: "100%" }}
 			>
-				<wa-icon slot="start" name="plus"></wa-icon>
+				<wa-icon slot="start" name="plus" label="Add page"></wa-icon>
 				Add Page
 			</wa-button>
 

@@ -1,6 +1,8 @@
 import type { User } from "@supabase/supabase-js";
 import { createSignal, Show } from "solid-js";
+import { getInitials } from "#/utils/initials";
 import { useProfile } from "../hooks/useProfile";
+import type { PageKind, Workspace } from "../types";
 import AddAccountDialog from "./AddAccountDialog";
 import type { SettingsSection } from "./SettingsDialog";
 import SettingsDialog from "./SettingsDialog";
@@ -9,9 +11,19 @@ import { navFooter, userMenuName, userMenuTrigger } from "./workspace.css";
 interface WorkspaceFooterProps {
 	user: () => User | null;
 	error: () => string | null;
-	activeWorkspaceId: () => string;
+	workspace: () => Workspace | null;
 	onSignOut: () => void;
 	onOpenTrash: () => void;
+	onUpdateWorkspace: (
+		id: string,
+		fields: {
+			name?: string;
+			description?: string | null;
+			defaultPageKind?: PageKind;
+		},
+	) => void;
+	onDeleteWorkspace: (id: string) => void;
+	onLeaveWorkspace: (id: string) => void;
 }
 
 const WorkspaceFooter = (props: WorkspaceFooterProps) => {
@@ -19,14 +31,11 @@ const WorkspaceFooter = (props: WorkspaceFooterProps) => {
 	const [settingsSection, setSettingsSection] = createSignal<SettingsSection>();
 	const [showAddAccount, setShowAddAccount] = createSignal(false);
 
-	const { name } = useProfile(() => props.user()?.email);
+	const { name } = useProfile(props.user);
 
 	const displayName = () => name();
 
-	const initials = () => {
-		const value = displayName();
-		return value ? value.slice(0, 2).toUpperCase() : "?";
-	};
+	const initials = () => getInitials(displayName()) || "?";
 
 	const openSettings = (section?: SettingsSection) => {
 		setSettingsSection(section);
@@ -105,8 +114,12 @@ const WorkspaceFooter = (props: WorkspaceFooterProps) => {
 
 			<Show when={showSettings()}>
 				<SettingsDialog
-					workspaceId={props.activeWorkspaceId()}
+					workspace={props.workspace}
+					workspaceId={props.workspace()?.id ?? ""}
 					initialSection={settingsSection()}
+					onUpdateWorkspace={props.onUpdateWorkspace}
+					onDeleteWorkspace={props.onDeleteWorkspace}
+					onLeaveWorkspace={props.onLeaveWorkspace}
 					onClose={() => {
 						setShowSettings(false);
 						setSettingsSection(undefined);

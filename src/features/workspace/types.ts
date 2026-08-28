@@ -13,6 +13,8 @@ export interface WorkspaceMember {
 export interface Workspace {
 	id: string;
 	name: string;
+	description?: string;
+	defaultPageKind?: PageKind;
 	createdAt: string;
 	updatedAt: string;
 }

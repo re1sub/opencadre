@@ -213,6 +213,10 @@ export const pageTitleStyle = style({
 	},
 });
 
+export const pageTitlePlaceholder = style({
+	opacity: 0.55,
+});
+
 // Sidebar footer user menu
 export const userMenuTrigger = style({
 	width: "100%",
@@ -243,6 +247,8 @@ export const dialogBody = style({
 	flexDirection: "column",
 	gap: "var(--wa-space-s)",
 	marginTop: "var(--wa-space-l)",
+	minHeight: 0,
+	flex: 1,
 });
 
 export const dialogActions = style({
@@ -279,6 +285,7 @@ export const settingsNav = style({
 	gap: "var(--wa-space-2xs)",
 	flexShrink: 0,
 	width: "10rem",
+	borderRight: "1px solid var(--wa-color-surface-border)",
 	"@media": {
 		"(max-width: 767px)": {
 			width: "100%",
@@ -324,6 +331,11 @@ export const settingsPanel = style({
 	display: "flex",
 	flexDirection: "column",
 	transition: "transform 0.25s ease-in-out, opacity 0.2s ease-in-out",
+	height: "60vh",
+	overflow: "auto",
+	paddingRight: "var(--wa-space-xs)",
+	marginBottom: "var(--wa-space-xs)",
+
 	"@media": {
 		"(max-width: 767px)": {
 			position: "absolute",
@@ -334,7 +346,7 @@ export const settingsPanel = style({
 			backgroundColor: "var(--wa-color-surface-raised)",
 			padding: "var(--wa-space-m)",
 			boxShadow: "var(--wa-shadow-l)",
-			overflowY: "auto",
+			height: "100%",
 		},
 	},
 });
@@ -516,9 +528,10 @@ export const settingsDialogContainer = style({
 	vars: {
 		"--width": "auto",
 	},
+
 	selectors: {
 		"&::part(body)": {
-			height: "65vh",
+			padding: "0",
 		},
 		"&::part(dialog)": {
 			marginLeft: "15%",
@@ -554,4 +567,18 @@ export const settingsFooter = style({
 
 export const settingsFooterSpacer = style({
 	flex: 1,
+});
+
+export const dangerZone = style({
+	border: "1px solid var(--wa-color-danger)",
+	borderRadius: "var(--wa-border-radius-m)",
+	padding: "var(--wa-space-s)",
+});
+
+export const workspaceDangerRow = style({
+	display: "flex",
+	alignItems: "center",
+	justifyContent: "space-between",
+	gap: "var(--wa-space-s)",
+	padding: "var(--wa-space-xs) 0",
 });

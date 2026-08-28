@@ -15,15 +15,7 @@ const PageView = (props: PageViewProps) => {
 	const activeId = () => props.page?.id ?? null;
 
 	return (
-		<Show
-			when={activeId()}
-			keyed
-			fallback={
-				<Suspense fallback={<Skeleton />}>
-					<MarkdownEditor content="" />
-				</Suspense>
-			}
-		>
+		<Show when={activeId()} keyed fallback={null}>
 			{(id) => {
 				const page = props.page;
 				if (!page || page.id !== id) return null;
@@ -31,12 +23,14 @@ const PageView = (props: PageViewProps) => {
 				return (
 					<Switch
 						fallback={
-							<MarkdownEditor
-								content={page.content}
-								onUpdate={(content) =>
-									props.onChangeContent?.(page.id, content)
-								}
-							/>
+							<Suspense fallback={<Skeleton />}>
+								<MarkdownEditor
+									content={page.content}
+									onUpdate={(content) =>
+										props.onChangeContent?.(page.id, content)
+									}
+								/>
+							</Suspense>
 						}
 					>
 						<Match when={page.kind === "kanban"}>

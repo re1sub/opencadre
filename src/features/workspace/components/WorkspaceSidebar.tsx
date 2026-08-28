@@ -6,6 +6,7 @@ import { sidebar } from "./workspace.css";
 interface WorkspaceSidebarProps {
 	pages: Page[];
 	activePageId: () => string | null;
+	defaultKind?: PageKind;
 	onAddPage: (kind: PageKind) => void;
 	onRequestDeletePage: (id: string) => void;
 	onReorder: (pageId: string, newIndex: number) => void;
@@ -14,7 +15,10 @@ interface WorkspaceSidebarProps {
 const WorkspaceSidebar = (props: WorkspaceSidebarProps) => {
 	return (
 		<nav slot="navigation" class={sidebar}>
-			<AddPageButton onAddPage={props.onAddPage} />
+			<AddPageButton
+				onAddPage={props.onAddPage}
+				defaultKind={props.defaultKind}
+			/>
 
 			<PageList
 				pages={props.pages}

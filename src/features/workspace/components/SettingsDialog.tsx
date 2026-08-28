@@ -1,21 +1,32 @@
 import { createSignal, For, Show } from "solid-js";
 import { useAuth } from "#/features/auth/AuthContext";
+import ConfirmDialog from "#/features/ui/ConfirmDialog";
 import DeleteButton from "#/features/ui/DeleteButton";
+import { getInitials } from "#/utils/initials";
+import { supabase } from "#/utils/supabase";
 import { useDialog } from "#/utils/useDialog";
 import { type ThemePreference, useTheme } from "#theme/ThemeProvider";
 import { CURRENT_MEMBER_ID } from "../constants/members";
 import {
 	ASSIGNABLE_ROLES,
+	canDeleteWorkspace,
 	canManageMembers,
 	canModifyMember,
+	canRenameWorkspace,
 	isWorkspaceRole,
 	ROLE_META,
 } from "../constants/roles";
 import { useProfile } from "../hooks/useProfile";
-import { useWorkspaceMembers } from "../hooks/useWorkspaceMembers";
+import { useWorkspaceMembersAdapter } from "../hooks/useWorkspaceMembersAdapter";
 import { addMemberSchema } from "../schemas";
-import type { WorkspaceRole } from "../types";
 import {
+	PAGE_KIND_META,
+	type PageKind,
+	type Workspace,
+	type WorkspaceRole,
+} from "../types";
+import {
+	dangerZone,
 	dialogBody,
 	dialogLabel,
 	kbd,
@@ -38,17 +49,30 @@ import {
 	settingsSectionTitle,
 	shortcutKeys,
 	shortcutRow,
+	workspaceDangerRow,
 } from "./workspace.css";
 
 export type SettingsSection =
 	| "general"
+	| "workspace"
 	| "members"
 	| "keyboard"
 	| "notifications";
 
 interface SettingsDialogProps {
 	workspaceId: string;
+	workspace: () => Workspace | null;
 	initialSection?: SettingsSection;
+	onUpdateWorkspace: (
+		id: string,
+		fields: {
+			name?: string;
+			description?: string | null;
+			defaultPageKind?: PageKind;
+		},
+	) => void;
+	onDeleteWorkspace: (id: string) => void;
+	onLeaveWorkspace: (id: string) => void;
 	onClose: () => void;
 }
 
@@ -58,6 +82,7 @@ const SECTIONS: {
 	icon: string;
 }[] = [
 	{ value: "general", label: "General", icon: "settings" },
+	{ value: "workspace", label: "Workspace", icon: "briefcase" },
 	{ value: "members", label: "Members", icon: "users" },
 	{ value: "keyboard", label: "Keyboard", icon: "keyboard" },
 	{ value: "notifications", label: "Notifications", icon: "bell" },
@@ -84,8 +109,6 @@ const isThemePreference = (
 ): value is ThemePreference =>
 	value === "system" || value === "light" || value === "dark";
 
-const initialsOf = (name: string) => name.slice(0, 2).toUpperCase();
-
 const dropdownItemValue = (e: Event) => {
 	const selectEvent = e as unknown as {
 		detail: { item: { value?: string } | null };
@@ -97,22 +120,26 @@ const SettingsDialog = (props: SettingsDialogProps) => {
 	const dialog = useDialog(props.onClose);
 	const { user } = useAuth();
 	const { themePreference, setThemePreference } = useTheme();
-	const {
-		name: profileName,
-		customName,
-		setCustomName,
-	} = useProfile(() => user()?.email);
+	const { name: profileName, setCustomName } = useProfile(user);
 	const { members, myRole, addMember, updateRole, removeMember } =
-		useWorkspaceMembers(props.workspaceId);
+		useWorkspaceMembersAdapter(() => props.workspaceId);
 
 	const [section, setSection] = createSignal<SettingsSection>(
 		props.initialSection ?? "general",
 	);
 	const [panelOpen, setPanelOpen] = createSignal(Boolean(props.initialSection));
 
+	const [nameDraft, setNameDraft] = createSignal<string | null>(null);
 	const [newEmail, setNewEmail] = createSignal("");
 	const [newRole, setNewRole] = createSignal<WorkspaceRole>("member");
 	const [memberError, setMemberError] = createSignal<string | null>(null);
+	const [wsNameDraft, setWsNameDraft] = createSignal<string | null>(null);
+	const [wsDescriptionDraft, setWsDescriptionDraft] = createSignal<
+		string | null
+	>(null);
+	const [confirmAction, setConfirmAction] = createSignal<
+		"delete" | "leave" | null
+	>(null);
 
 	const currentTheme = () =>
 		THEME_PREFERENCES.find((option) => option.value === themePreference()) ??
@@ -121,6 +148,66 @@ const SettingsDialog = (props: SettingsDialogProps) => {
 	const emailPrefix = () => {
 		const email = user()?.email;
 		return email ? email.split("@")[0] : "";
+	};
+
+	const displayNameValue = () => nameDraft() ?? profileName();
+
+	const handleDisplayNameInput = (e: Event) => {
+		const value = (e.currentTarget as HTMLInputElement).value || null;
+		setNameDraft(value);
+		setCustomName(value);
+	};
+
+	const handleDisplayNameCommit = () => {
+		const next = (nameDraft() ?? "").trim();
+		setCustomName(next || null);
+		setNameDraft(null);
+		void supabase.auth.updateUser({
+			data: { display_name: next || null },
+		});
+	};
+
+	const wsNameValue = () => wsNameDraft() ?? props.workspace()?.name ?? "";
+
+	const wsDescriptionValue = () =>
+		wsDescriptionDraft() ?? props.workspace()?.description ?? "";
+
+	const currentDefaultKind = () => {
+		const kind = props.workspace()?.defaultPageKind ?? "markdown";
+		return PAGE_KIND_META[kind];
+	};
+
+	const handleWsNameInput = (e: Event) => {
+		setWsNameDraft((e.currentTarget as HTMLInputElement).value);
+	};
+
+	const handleWsNameCommit = () => {
+		const ws = props.workspace();
+		const next = (wsNameDraft() ?? "").trim();
+		setWsNameDraft(null);
+		if (ws && next && next !== ws.name)
+			props.onUpdateWorkspace(ws.id, { name: next });
+	};
+
+	const handleWsDescriptionInput = (e: Event) => {
+		setWsDescriptionDraft((e.currentTarget as HTMLInputElement).value);
+	};
+
+	const handleWsDescriptionCommit = () => {
+		const ws = props.workspace();
+		const next = (wsDescriptionDraft() ?? "").trim();
+		setWsDescriptionDraft(null);
+		if (ws && next !== (ws.description ?? "")) {
+			props.onUpdateWorkspace(ws.id, { description: next || null });
+		}
+	};
+
+	const handleDefaultKindSelect = (e: Event) => {
+		const ws = props.workspace();
+		const value = dropdownItemValue(e) as PageKind | undefined;
+		if (ws && value && PAGE_KIND_META[value]) {
+			props.onUpdateWorkspace(ws.id, { defaultPageKind: value });
+		}
 	};
 
 	const selectSection = (value: SettingsSection) => {
@@ -284,18 +371,15 @@ const SettingsDialog = (props: SettingsDialogProps) => {
 												"var(--wa-color-brand-fill-loud, var(--wa-color-brand))",
 										}}
 									>
-										{profileName() ? initialsOf(profileName()) : "?"}
+										{profileName() ? getInitials(profileName()) : "?"}
 									</span>
 									<wa-input
 										style={{ "flex-grow": "1" }}
 										label="Display name"
 										placeholder={emailPrefix() || "Your name"}
-										value={customName() ?? ""}
-										onInput={(e) =>
-											setCustomName(
-												(e.currentTarget as HTMLInputElement).value || null,
-											)
-										}
+										value={displayNameValue()}
+										onInput={handleDisplayNameInput}
+										onChange={handleDisplayNameCommit}
 									></wa-input>
 								</div>
 								<wa-input
@@ -309,6 +393,192 @@ const SettingsDialog = (props: SettingsDialogProps) => {
 								</p>
 							</div>
 						</div>
+					</Show>
+
+					<Show when={section() === "workspace"}>
+						<Show
+							when={props.workspace()}
+							fallback={
+								<div class={dialogBody}>
+									<p class={dialogLabel}>
+										Open a workspace to manage its settings.
+									</p>
+								</div>
+							}
+						>
+							<div class={dialogBody}>
+								<h3 class={settingsSectionTitle}>Workspace</h3>
+								<wa-divider style={{ "--spacing": "0" }}></wa-divider>
+								<div class={settingsSection}>
+									<wa-input
+										label="Workspace name"
+										value={wsNameValue()}
+										onInput={handleWsNameInput}
+										onChange={handleWsNameCommit}
+										disabled={!canRenameWorkspace(myRole())}
+									></wa-input>
+									<wa-input
+										label="Description"
+										placeholder="What is this workspace for?"
+										value={wsDescriptionValue()}
+										onInput={handleWsDescriptionInput}
+										onChange={handleWsDescriptionCommit}
+										disabled={!canRenameWorkspace(myRole())}
+									></wa-input>
+									<p class={dialogLabel}>
+										Choose the page kind created by the "Add page" button in the
+										sidebar.
+									</p>
+									<wa-dropdown
+										placement="bottom-start"
+										on:wa-after-hide={(e) => e.stopPropagation()}
+										on:wa-select={handleDefaultKindSelect}
+									>
+										<wa-button
+											type="button"
+											slot="trigger"
+											variant="neutral"
+											appearance="outlined"
+											with-caret
+											style={{ width: "fit-content" }}
+											disabled={!canRenameWorkspace(myRole())}
+										>
+											<wa-icon
+												slot="start"
+												name={currentDefaultKind().icon}
+												label={currentDefaultKind().iconLabel}
+											></wa-icon>
+											{currentDefaultKind().label}
+										</wa-button>
+										<For each={Object.entries(PAGE_KIND_META)}>
+											{([kind, meta]) => (
+												<wa-dropdown-item value={kind}>
+													<wa-icon
+														slot="icon"
+														name={meta.icon}
+														label={meta.iconLabel}
+													></wa-icon>
+													{meta.label}
+												</wa-dropdown-item>
+											)}
+										</For>
+									</wa-dropdown>
+								</div>
+
+								<h3 class={settingsSectionTitle}>Export</h3>
+								<wa-divider style={{ "--spacing": "0" }}></wa-divider>
+								<div class={settingsSection}>
+									<p class={dialogLabel}>
+										Import and export are planned. Here's a preview of what's
+										coming.
+									</p>
+									<div
+										style={{
+											display: "flex",
+											"flex-wrap": "wrap",
+											gap: "var(--wa-space-s)",
+											"align-items": "center",
+										}}
+									>
+										<wa-button
+											type="button"
+											variant="neutral"
+											appearance="outlined"
+											disabled
+										>
+											<wa-icon
+												slot="start"
+												name="download"
+												label="Export"
+											></wa-icon>
+											Export as Markdown
+										</wa-button>
+										<wa-button
+											type="button"
+											variant="neutral"
+											appearance="outlined"
+											disabled
+										>
+											<wa-icon
+												slot="start"
+												name="file-json"
+												label="Export"
+											></wa-icon>
+											Export as JSON
+										</wa-button>
+										<wa-tag variant="warning">Planned</wa-tag>
+									</div>
+								</div>
+
+								<h3 class={settingsSectionTitle}>Danger zone</h3>
+								<wa-divider style={{ "--spacing": "0" }}></wa-divider>
+								<div class={`${settingsSection} ${dangerZone}`}>
+									<div class={workspaceDangerRow}>
+										<div class={memberMeta}>
+											<span class={memberName}>Delete workspace</span>
+											<span class={memberEmail}>
+												Permanently delete
+												{" " + (props.workspace()?.name ?? "this workspace")}{" "}
+												and all of its pages. This cannot be undone.
+											</span>
+										</div>
+										<wa-button
+											type="button"
+											variant="danger"
+											appearance="outlined"
+											size="s"
+											disabled={!canDeleteWorkspace(myRole())}
+											onClick={() => setConfirmAction("delete")}
+										>
+											Delete
+										</wa-button>
+									</div>
+									<div class={workspaceDangerRow}>
+										<div class={memberMeta}>
+											<span class={memberName}>Leave workspace</span>
+											<span class={memberEmail}>
+												{myRole() === "owner"
+													? "You own this workspace. Transfer ownership to another member to leave."
+													: "Remove yourself from this workspace and lose access to its pages."}
+											</span>
+										</div>
+										<wa-button
+											type="button"
+											variant="neutral"
+											appearance="outlined"
+											size="s"
+											disabled={myRole() === "owner"}
+											onClick={() => setConfirmAction("leave")}
+										>
+											Leave
+										</wa-button>
+									</div>
+								</div>
+
+								<Show when={confirmAction() === "delete"}>
+									<ConfirmDialog
+										label="Delete workspace"
+										message={`Permanently delete "${props.workspace()?.name ?? "this workspace"}" and all of its pages? This cannot be undone.`}
+										onConfirm={() => {
+											const ws = props.workspace();
+											if (ws) props.onDeleteWorkspace(ws.id);
+										}}
+										onClose={() => setConfirmAction(null)}
+									/>
+								</Show>
+								<Show when={confirmAction() === "leave"}>
+									<ConfirmDialog
+										label="Leave workspace"
+										message={`Leave "${props.workspace()?.name ?? "this workspace"}"? You will lose access to its pages.`}
+										onConfirm={() => {
+											const ws = props.workspace();
+											if (ws) props.onLeaveWorkspace(ws.id);
+										}}
+										onClose={() => setConfirmAction(null)}
+									/>
+								</Show>
+							</div>
+						</Show>
 					</Show>
 
 					<Show when={section() === "members"}>
@@ -387,7 +657,7 @@ const SettingsDialog = (props: SettingsDialogProps) => {
 												class={memberAvatar}
 												style={{ "background-color": member.color }}
 											>
-												{initialsOf(member.name)}
+												{getInitials(member.name)}
 											</span>
 											<div class={memberMeta}>
 												<span class={memberName}>

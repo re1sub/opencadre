@@ -12,15 +12,7 @@ export const routes: RouteDefinition[] = [
 	{ path: "/auth/forgot-password", component: () => <Auth view="forgot" /> },
 	{ path: "/auth/reset-password", component: () => <Auth view="reset" /> },
 	{
-		path: "/workspace",
-		component: () => (
-			<RequireAuth>
-				<Workspace />
-			</RequireAuth>
-		),
-	},
-	{
-		path: "/workspace/p/:pageId",
+		path: "/workspace/*rest",
 		component: () => (
 			<RequireAuth>
 				<Workspace />

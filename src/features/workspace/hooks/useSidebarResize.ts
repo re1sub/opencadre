@@ -1,6 +1,6 @@
 import { createSignal } from "solid-js";
 
-const SIDEBAR_MIN_WIDTH = 280;
+const SIDEBAR_MIN_WIDTH = 300;
 const SIDEBAR_MAX_WIDTH = 480;
 const SIDEBAR_DEFAULT_WIDTH = SIDEBAR_MIN_WIDTH;
 const SIDEBAR_STORAGE_KEY = "workspace.sidebarWidth";

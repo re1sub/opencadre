@@ -26,7 +26,7 @@ const nextColor = () =>
 
 export function useWorkspaceMembers(workspaceId: string) {
 	const { user } = useAuth();
-	const { name: profileName } = useProfile(() => user()?.email);
+	const { name: profileName } = useProfile(user);
 
 	let store = stores.get(workspaceId);
 	if (!store) {
