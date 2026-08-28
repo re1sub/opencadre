@@ -37,24 +37,33 @@ globalStyle("h2", {
 	fontSize: "clamp(1.8rem, 4.5vw, 3rem)",
 });
 
-globalStyle("::-webkit-scrollbar-track", {
-	boxShadow: "inset 0 0 6px rgba(0,0,0,0.3)",
-	backgroundColor: "var(--wa-color-surface-raised)",
-});
+globalStyle(
+	"::-webkit-scrollbar-track, ::part(body)::-webkit-scrollbar-track",
+	{
+		boxShadow: "inset 0 0 6px rgba(0, 0, 0, 0.3)",
+		backgroundColor: "var(--wa-color-surface-raised)",
+	},
+);
 
-globalStyle("::-webkit-scrollbar", {
+globalStyle("::-webkit-scrollbar, ::part(body)::-webkit-scrollbar", {
 	width: "8.5px",
 	height: "8.5px",
 });
 
-globalStyle("::-webkit-scrollbar-thumb", {
-	backgroundColor:
-		"color-mix(in srgb, var(--wa-color-surface-border) 80%, transparent)",
-});
+globalStyle(
+	"::-webkit-scrollbar-thumb, ::part(body)::-webkit-scrollbar-thumb",
+	{
+		backgroundColor:
+			"color-mix(in srgb, var(--wa-color-surface-border) 80%, transparent)",
+	},
+);
 
-globalStyle("::-webkit-scrollbar-thumb:hover", {
-	backgroundColor: " var(--wa-color-surface-border)",
-});
+globalStyle(
+	"::-webkit-scrollbar-thumb:hover, ::part(body)::-webkit-scrollbar-thumb:hover",
+	{
+		backgroundColor: "var(--wa-color-surface-border)",
+	},
+);
 
 globalStyle("img", {
 	maxWidth: "100%",
