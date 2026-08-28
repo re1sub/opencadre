@@ -13,7 +13,11 @@ type AuthContextType = {
 	loading: () => boolean;
 	error: () => AuthError | null;
 	login: (email: string, password: string) => Promise<User>;
-	signUp: (email: string, password: string) => Promise<User | null>;
+	signUp: (
+		email: string,
+		password: string,
+		displayName?: string,
+	) => Promise<User | null>;
 	sendPasswordReset: (email: string) => Promise<void>;
 	updatePassword: (password: string) => Promise<void>;
 	logout: () => Promise<void>;
@@ -62,12 +66,17 @@ export function AuthProvider(props: { children: JSXElement }) {
 	const signUp = async (
 		email: string,
 		password: string,
+		displayName?: string,
 	): Promise<User | null> => {
 		setError(null);
 
 		const { data, error: authError } = await supabase.auth.signUp({
 			email,
 			password,
+			options: {
+				emailRedirectTo: `${window.location.origin}/workspace`,
+				...(displayName ? { data: { display_name: displayName } } : {}),
+			},
 		});
 
 		if (authError) {

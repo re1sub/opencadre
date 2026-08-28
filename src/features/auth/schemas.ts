@@ -6,6 +6,10 @@ export const signInSchema = z.object({
 });
 
 export const signUpSchema = z.object({
+	displayName: z
+		.string()
+		.min(1, "Display name is required.")
+		.max(50, "Display name must be 50 characters or fewer."),
 	email: z.email("Enter a valid email address."),
 	password: z.string().min(6, "Password must be at least 6 characters."),
 });

@@ -39,6 +39,7 @@ const Auth = (props: { view?: "forgot" | "reset" }) => {
 	);
 	const [email, setEmail] = createSignal("");
 	const [password, setPassword] = createSignal("");
+	const [displayName, setDisplayName] = createSignal("");
 	const [newPassword, setNewPassword] = createSignal("");
 	const [error, setError] = createSignal<string | null>(null);
 	const [pending, setPending] = createSignal(false);
@@ -63,13 +64,14 @@ const Auth = (props: { view?: "forgot" | "reset" }) => {
 		email: string,
 		password: string,
 		action: "signin" | "signup",
+		displayName?: string,
 	) => {
 		setError(null);
 		setPending(true);
 
 		try {
 			if (action === "signup") {
-				const created = await signUp(email, password);
+				const created = await signUp(email, password, displayName);
 				if (!created) {
 					setView("confirm");
 					return;
@@ -102,6 +104,7 @@ const Auth = (props: { view?: "forgot" | "reset" }) => {
 		const result = schema.safeParse({
 			email: email(),
 			password: password(),
+			...(view() === "signup" ? { displayName: displayName() } : {}),
 		});
 		if (!result.success) {
 			setError(result.error.issues[0].message);
@@ -112,6 +115,7 @@ const Auth = (props: { view?: "forgot" | "reset" }) => {
 			result.data.email,
 			result.data.password,
 			view() === "signup" ? "signup" : "signin",
+			view() === "signup" ? displayName() : undefined,
 		);
 	};
 
@@ -173,7 +177,7 @@ const Auth = (props: { view?: "forgot" | "reset" }) => {
 		setError(null);
 		setPending(true);
 
-		signUp(email(), password())
+		signUp(email(), password(), displayName())
 			.catch((signUpError: unknown) => {
 				setError(
 					signUpError instanceof Error
@@ -328,6 +332,20 @@ const Auth = (props: { view?: "forgot" | "reset" }) => {
 						<h2 style={{ "font-size": "1.5rem" }}>
 							{view() === "signup" ? "Create your account" : "Sign in"}
 						</h2>
+						<Show when={view() === "signup"}>
+							<wa-input
+								type="text"
+								label="Name"
+								autocomplete="name"
+								placeholder="How should we call you?"
+								required
+								maxlength={50}
+								value={displayName()}
+								onInput={(e) =>
+									setDisplayName((e.currentTarget as HTMLInputElement).value)
+								}
+							></wa-input>
+						</Show>
 						<wa-input
 							type="email"
 							label="Email"
@@ -339,6 +357,7 @@ const Auth = (props: { view?: "forgot" | "reset" }) => {
 								setEmail((e.currentTarget as HTMLInputElement).value)
 							}
 						></wa-input>
+
 						<wa-input
 							type="password"
 							label="Password"
