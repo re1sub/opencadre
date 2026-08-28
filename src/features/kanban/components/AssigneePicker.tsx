@@ -1,14 +1,13 @@
 import { For, Show } from "solid-js";
 import TagPopup from "#/features/tags/components/TagPopup";
 import type { WorkspaceMember } from "#/features/workspace/types";
+import { getInitials } from "#/utils/initials";
 
 interface AssigneePickerProps {
 	members: WorkspaceMember[];
 	assigneeIds: string[];
 	onToggle: (memberId: string) => void;
 }
-
-const initialsOf = (name: string) => name.slice(0, 2).toUpperCase();
 
 const AssigneePicker = (props: AssigneePickerProps) => {
 	const assignable = () =>
@@ -66,7 +65,7 @@ const AssigneePicker = (props: AssigneePickerProps) => {
 									}}
 								>
 									<wa-avatar
-										initials={initialsOf(member.name)}
+										initials={getInitials(member.name)}
 										label={member.name}
 										style={{
 											"--size": "24px",

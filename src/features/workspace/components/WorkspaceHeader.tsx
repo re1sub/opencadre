@@ -1,4 +1,5 @@
 import { For, Show } from "solid-js";
+import { getInitials } from "#/utils/initials";
 import type { Workspace } from "../types";
 import {
 	closeSidebarButton,
@@ -44,7 +45,7 @@ const WorkspaceHeader = (props: WorkspaceHeaderProps) => {
 							class={workspaceTrigger}
 						>
 							<wa-avatar
-								initials={active().name.slice(0, 2).toUpperCase()}
+								initials={getInitials(active().name)}
 								label={active().name}
 								slot="start"
 								style={{ "--size": "2rem" }}
@@ -67,7 +68,7 @@ const WorkspaceHeader = (props: WorkspaceHeaderProps) => {
 									}}
 								>
 									<wa-avatar
-										initials={workspace.name.slice(0, 2).toUpperCase()}
+										initials={getInitials(workspace.name)}
 										label={workspace.name}
 										style={{ "--size": "2rem" }}
 										slot="icon"

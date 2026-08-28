@@ -3,6 +3,7 @@ import { For, Show } from "solid-js";
 import type { Tag } from "#/features/tags/types";
 import type { WorkspaceMember } from "#/features/workspace/types";
 import { formatDueDate, getDueDateStatus } from "#/utils/date";
+import { getInitials } from "#/utils/initials";
 import { useDragTilt } from "../hooks/useDragTilt";
 import type { Card } from "../types";
 import * as styles from "./board.css";
@@ -20,8 +21,6 @@ const colMixBg = (color: string, opacity: number = 30) =>
 	`color-mix(in srgb, ${color} ${opacity}%, transparent)`;
 
 const MAX_TAGS = 3;
-
-const initialsOf = (name: string) => name.slice(0, 2).toUpperCase();
 
 const SortableCard = (props: SortableCardProps) => {
 	const { ref, isDragging, isDropTarget } = useSortable({
@@ -137,7 +136,7 @@ const SortableCard = (props: SortableCardProps) => {
 									style={{ "background-color": member.color }}
 									title={member.name}
 								>
-									{initialsOf(member.name)}
+									{getInitials(member.name)}
 								</span>
 							)}
 						</For>

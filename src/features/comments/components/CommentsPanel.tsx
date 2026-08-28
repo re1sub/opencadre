@@ -2,6 +2,7 @@ import { createSignal, For, onMount, Show } from "solid-js";
 import MarkdownField from "#/features/markdown/components/MarkdownField";
 import MarkdownView from "#/features/markdown/components/MarkdownView";
 import { formatTimestamp } from "#/utils/date";
+import { getInitials } from "#/utils/initials";
 import { uid } from "#/utils/uid";
 import { REACTIONS_LIST } from "../constants/reactions";
 import { seedComments } from "../constants/seed";
@@ -113,7 +114,7 @@ const CommentsPanel = (props: CommentsPanelProps) => {
 				>
 					<For each={props.comments}>
 						{(comment) => {
-							const initials = comment.author.slice(0, 2).toUpperCase();
+							const initials = getInitials(comment.author);
 							const commentReactions = () => reactions()[comment.id] ?? [];
 
 							return (

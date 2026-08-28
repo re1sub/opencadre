@@ -1,5 +1,6 @@
 import { Index, Show } from "solid-js";
 import type { WorkspaceMember } from "#/features/workspace/types";
+import { getInitials } from "#/utils/initials";
 import { memberChipsRow } from "./cardDialog.css";
 
 interface MemberChipsProps {
@@ -7,8 +8,6 @@ interface MemberChipsProps {
 	members: WorkspaceMember[];
 	onRemove: (memberId: string) => void;
 }
-
-const initialsOf = (name: string) => name.slice(0, 2).toUpperCase();
 
 const MemberChips = (props: MemberChipsProps) => {
 	const assignedMembers = () =>
@@ -28,8 +27,8 @@ const MemberChips = (props: MemberChipsProps) => {
 							pill
 						>
 							<wa-avatar
-								initials={initialsOf(member().name)}
-								label={`Avatar with initials: ${initialsOf(member().name)}`}
+								initials={getInitials(member().name)}
+								label={`Avatar with initials: ${getInitials(member().name)}`}
 								style={{
 									"--size": "20px",
 									"background-color":
