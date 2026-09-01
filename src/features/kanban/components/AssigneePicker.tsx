@@ -1,7 +1,7 @@
 import { For, Show } from "solid-js";
 import TagPopup from "#/features/tags/components/TagPopup";
 import type { WorkspaceMember } from "#/features/workspace/types";
-import { getInitials } from "#/utils/initials";
+import { getInitials } from "#/utils/misc";
 
 interface AssigneePickerProps {
 	members: WorkspaceMember[];

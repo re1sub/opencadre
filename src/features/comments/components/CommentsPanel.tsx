@@ -2,8 +2,7 @@ import { createSignal, For, onMount, Show } from "solid-js";
 import MarkdownField from "#/features/markdown/components/MarkdownField";
 import MarkdownView from "#/features/markdown/components/MarkdownView";
 import { formatTimestamp } from "#/utils/date";
-import { getInitials } from "#/utils/initials";
-import { uid } from "#/utils/uid";
+import { dropdownItemValue, getInitials, uid } from "#/utils/misc";
 import { REACTIONS_LIST } from "../constants/reactions";
 import { seedComments } from "../constants/seed";
 import type { Comment } from "../types";
@@ -206,8 +205,7 @@ const CommentsPanel = (props: CommentsPanelProps) => {
 											<wa-dropdown
 												on:wa-after-hide={(e: Event) => e.stopPropagation()}
 												on:wa-select={(e: Event) => {
-													const selectEvent = e as CustomEvent;
-													const iconName = selectEvent.detail.item?.value ?? "";
+													const iconName = dropdownItemValue(e) ?? "";
 													if (iconName) {
 														toggleReaction(comment.id, iconName);
 													}

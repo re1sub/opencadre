@@ -11,7 +11,7 @@ import {
 	onMount,
 	Show,
 } from "solid-js";
-import { uid } from "#/utils/uid";
+import { dropdownItemValue, uid } from "#/utils/misc";
 import {
 	blockButtons,
 	createMarkdownActions,
@@ -77,10 +77,7 @@ const MarkdownField = (props: MarkdownFieldProps) => {
 	};
 
 	const handleSelect = (event: Event) => {
-		const selectEvent = event as unknown as {
-			detail: { item: { value?: string } | null };
-		};
-		const id = selectEvent.detail.item?.value ?? "";
+		const id = dropdownItemValue(event) ?? "";
 		actions[id]?.run();
 		bumpToolbar();
 	};

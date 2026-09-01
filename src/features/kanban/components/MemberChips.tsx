@@ -1,6 +1,6 @@
 import { Index, Show } from "solid-js";
 import type { WorkspaceMember } from "#/features/workspace/types";
-import { getInitials } from "#/utils/initials";
+import { getInitials } from "#/utils/misc";
 import { memberChipsRow } from "./cardDialog.css";
 
 interface MemberChipsProps {

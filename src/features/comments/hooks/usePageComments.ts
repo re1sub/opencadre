@@ -1,5 +1,5 @@
 import { createSignal } from "solid-js";
-import { uid } from "#/utils/uid";
+import { uid } from "#/utils/misc";
 import type { Comment, CommentThread } from "../types";
 
 interface PageCommentsStore {

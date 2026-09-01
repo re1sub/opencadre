@@ -1,7 +1,9 @@
 import type { User } from "@supabase/supabase-js";
 import { createSignal, Show } from "solid-js";
-import { getInitials } from "#/utils/initials";
+import { dropdownItemValue, getInitials } from "#/utils/misc";
+import { useHotkey } from "#/utils/useHotkey";
 import { useProfile } from "../hooks/useProfile";
+import { useShortcuts } from "../hooks/useShortcuts";
 import type { Page, PageKind, Workspace } from "../types";
 import AddAccountDialog from "./AddAccountDialog";
 import type { SettingsSection } from "./SettingsDialog";
@@ -47,12 +49,17 @@ const WorkspaceFooter = (props: WorkspaceFooterProps) => {
 		setShowSettings(true);
 	};
 
-	const handleSelect = (e: Event) => {
-		const selectEvent = e as unknown as {
-			detail: { item: { value?: string } | null };
-		};
+	const { shortcuts } = useShortcuts();
+	useHotkey(
+		() => {
+			const config = shortcuts()["open-settings"];
+			return config.enabled ? config.combo : null;
+		},
+		() => openSettings(),
+	);
 
-		const value = selectEvent.detail.item?.value;
+	const handleSelect = (e: Event) => {
+		const value = dropdownItemValue(e);
 
 		if (value === "__signout__") props.onSignOut();
 		else if (value === "__settings__") openSettings();

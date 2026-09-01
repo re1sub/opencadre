@@ -3,7 +3,7 @@ import { For, Show } from "solid-js";
 import type { Tag } from "#/features/tags/types";
 import type { WorkspaceMember } from "#/features/workspace/types";
 import { formatDueDate, getDueDateStatus } from "#/utils/date";
-import { getInitials } from "#/utils/initials";
+import { getInitials } from "#/utils/misc";
 import { useDragTilt } from "../hooks/useDragTilt";
 import type { Card } from "../types";
 import * as styles from "./board.css";

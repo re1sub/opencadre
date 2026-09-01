@@ -3,8 +3,8 @@ import type { DragDropProviderProps } from "@dnd-kit/solid";
 import { isSortable } from "@dnd-kit/solid/sortable";
 import { createEffect, createSignal } from "solid-js";
 import type { Tables } from "#/types/database";
+import { uid } from "#/utils/misc";
 import { supabase } from "#/utils/supabase";
-import { uid } from "#/utils/uid";
 import { useDragReorder } from "#/utils/useDragReorder";
 import { cardDraftSchema } from "../schemas";
 import type {

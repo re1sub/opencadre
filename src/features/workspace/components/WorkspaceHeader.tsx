@@ -1,5 +1,5 @@
 import { For, Show } from "solid-js";
-import { getInitials } from "#/utils/initials";
+import { dropdownItemValue, getInitials } from "#/utils/misc";
 import type { Workspace } from "../types";
 import {
 	closeSidebarButton,
@@ -21,11 +21,7 @@ interface WorkspaceHeaderProps {
 
 const WorkspaceHeader = (props: WorkspaceHeaderProps) => {
 	const handleSelect = (e: Event) => {
-		const selectEvent = e as unknown as {
-			detail: { item: { value?: string } | null };
-		};
-
-		const value = selectEvent.detail.item?.value;
+		const value = dropdownItemValue(e);
 
 		if (value === "__add__") props.onAddWorkspace();
 		else if (value) props.onSelectWorkspace(value);

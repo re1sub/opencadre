@@ -1,4 +1,5 @@
 import { For } from "solid-js";
+import { dropdownItemValue } from "#/utils/misc";
 import { PAGE_KIND_META, type PageKind } from "../types";
 import { addPageGroup } from "./workspace.css";
 
@@ -11,11 +12,7 @@ const AddPageButton = (props: AddPageButtonProps) => {
 	const defaultKind = () => props.defaultKind ?? "markdown";
 
 	const handleTemplateSelect = (event: Event) => {
-		const selectEvent = event as unknown as {
-			detail: { item: { value?: string } | null };
-		};
-
-		const kind = selectEvent.detail.item?.value as PageKind | undefined;
+		const kind = dropdownItemValue(event) as PageKind | undefined;
 
 		if (kind && PAGE_KIND_META[kind]) {
 			props.onAddPage(kind);

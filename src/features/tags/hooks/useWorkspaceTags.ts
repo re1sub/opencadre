@@ -1,5 +1,5 @@
 import { createSignal } from "solid-js";
-import { uid } from "#/utils/uid";
+import { uid } from "#/utils/misc";
 import type { Tag } from "../types";
 
 interface WorkspaceTagStore {

@@ -1,5 +1,5 @@
 import type { SolidColumnDef, TableAPI } from "@simple-table/solid";
-import { parseCsv } from "#/utils/csv";
+import { parseCsv } from "#/utils/misc";
 import type { GridRow } from "../types";
 
 export const useCsv = (

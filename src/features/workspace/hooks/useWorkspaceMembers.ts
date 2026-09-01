@@ -1,6 +1,6 @@
 import { createSignal } from "solid-js";
 import { useAuth } from "#/features/auth/AuthContext";
-import { uid } from "#/utils/uid";
+import { uid } from "#/utils/misc";
 import {
 	CURRENT_MEMBER_ID,
 	MEMBER_COLOR_POOL,

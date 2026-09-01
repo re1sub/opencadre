@@ -1,6 +1,6 @@
 import { CURRENT_MEMBER_ID } from "#/features/workspace/constants/members";
 import { toIsoDate } from "#/utils/date";
-import { uid } from "#/utils/uid";
+import { uid } from "#/utils/misc";
 import type { Column } from "../types";
 
 const isoFromToday = (offsetDays: number) => {

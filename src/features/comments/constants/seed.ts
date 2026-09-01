@@ -1,4 +1,4 @@
-import { uid } from "#/utils/uid";
+import { uid } from "#/utils/misc";
 import type { Comment } from "../types";
 
 export const seedComments = (parentId: string): Comment[] => [

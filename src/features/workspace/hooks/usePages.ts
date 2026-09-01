@@ -2,7 +2,7 @@ import { useNavigate, useParams } from "@solidjs/router";
 import { createEffect, createSignal } from "solid-js";
 import { KANBAN_EMPTY_COLUMNS } from "#/features/kanban/constants/data";
 import { TABLE_EMPTY_ROWS } from "#/features/table/constants/data";
-import { uid } from "#/utils/uid";
+import { uid } from "#/utils/misc";
 import type { Page, PageKind } from "../types";
 
 export const usePages = (

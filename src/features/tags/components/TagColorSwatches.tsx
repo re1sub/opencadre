@@ -1,5 +1,5 @@
 import { For, Show } from "solid-js";
-import { colorMix } from "#/utils/color";
+import { colorMix } from "#/utils/misc";
 import { TAG_COLORS } from "../constants/colors";
 import * as styles from "./tagPopup.css";
 

@@ -1,5 +1,5 @@
 import { createEffect } from "solid-js";
-import { colorMix } from "#/utils/color";
+import { colorMix } from "#/utils/misc";
 import type { Tag } from "../types";
 import TagColorSwatches from "./TagColorSwatches";
 import TagPopup from "./TagPopup";

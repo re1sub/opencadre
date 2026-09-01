@@ -2,7 +2,7 @@ import { move } from "@dnd-kit/helpers";
 import type { DragDropProviderProps } from "@dnd-kit/solid";
 import { isSortable } from "@dnd-kit/solid/sortable";
 import { createSignal } from "solid-js";
-import { uid } from "#/utils/uid";
+import { uid } from "#/utils/misc";
 import { useDragReorder } from "#/utils/useDragReorder";
 import { INITIAL_COLUMNS } from "../constants/data";
 import { cardDraftSchema } from "../schemas";
