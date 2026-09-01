@@ -80,7 +80,7 @@ const MarkdownEditor = (props: MarkdownEditorProps) => {
 
 		const commonMenuOptions = {
 			strategy: "fixed" as const,
-			placement: "top" as const,
+			placement: "bottom-start" as const,
 			offset: 8,
 			flip: { boundary: editorRef, padding: -50 },
 			shift: { boundary: editorRef },
@@ -136,7 +136,6 @@ const MarkdownEditor = (props: MarkdownEditorProps) => {
 					shouldShow: () => slashCommand.commandVisible(),
 					options: {
 						...commonMenuOptions,
-						placement: "bottom",
 						onShow: () => slashCommand.setCommandVisible(true),
 						onHide: () => slashCommand.setCommandVisible(false),
 					},
