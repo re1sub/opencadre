@@ -49,6 +49,7 @@ const PageView = (props: PageViewProps) => {
 							<Suspense fallback={<Skeleton />}>
 								<TablePage
 									content={page.content}
+									title={page.title}
 									onChangeContent={(content) =>
 										props.onChangeContent?.(page.id, content)
 									}

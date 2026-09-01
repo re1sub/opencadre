@@ -5,7 +5,7 @@ export const tablePage = style({
 	display: "flex",
 	flexDirection: "column",
 	gap: "8px",
-	paddingLeft: "15px",
+	paddingLeft: "3rem",
 	"@media": {
 		"(max-width: 768px)": {
 			paddingLeft: "0",
@@ -36,15 +36,30 @@ export const headerSortFilterWrapper = style({
 	gap: "8px",
 });
 
+export const columnActions = style({
+	display: "flex",
+	alignItems: "center",
+	opacity: 0,
+	transition: "opacity 0.15s ease-in-out, visibility 0.15s ease-in-out",
+});
+
+globalStyle(
+	`.st-header-label:hover .${columnActions}, .st-header-label:focus-within .${columnActions}`,
+	{
+		opacity: 1,
+	},
+);
+
 export const floatingAddRowBtn = style({
 	position: "absolute",
-	left: "-45px",
+	left: "-78px",
 	top: "50%",
 	transform: "translateY(-50%)",
 	zIndex: 10,
 	display: "flex",
 	alignItems: "center",
 	justifyContent: "center",
+	gap: "2px",
 	opacity: 0,
 	transition: "opacity 0.15s ease-in-out, visibility 0.15s ease-in-out",
 	"@media": {
@@ -62,7 +77,7 @@ globalStyle(
 );
 
 globalStyle(
-	".st-row, .st-cell, .st-row-button-container, .st-content-wrapper, .st-content, .st-body-container, .st-body-pinned-left",
+	".st-body-pinned-left, .st-body-pinned-left .st-cell, .st-body-container ",
 	{
 		overflow: "visible !important",
 	},
@@ -117,7 +132,7 @@ export const tableHeaderInputStyle = style({
 	backgroundColor:
 		"color-mix(in srgb, var(--st-header-background-color) 10%, black 10%)",
 	borderRadius: "var(--wa-border-radius-l)",
-	marginLeft: "0.2rem",
+	marginLeft: "0.5rem",
 	padding: "0.2rem",
 	border: "2px solid transparent",
 	transition: "background-color 0.1s ease-in, border 0.2s ease-in",
@@ -142,3 +157,15 @@ export const tableHeaderInputStyle = style({
 globalStyle(`.st-dragging ${tableHeaderInputStyle}`, {
 	backgroundColor: "transparent",
 });
+
+globalStyle(
+	`.st-header-cell:hover,
+	 .st-header-cell:active,
+	 .st-header-cell:focus-within,
+	 .st-header-cell:focus-visible,
+	 .st-header-cell:has(wa-popup[active])`,
+	{
+		cursor: "pointer",
+		backgroundColor: "var(--st-hover-row-background-color)",
+	},
+);

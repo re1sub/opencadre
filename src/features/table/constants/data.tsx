@@ -8,24 +8,52 @@ import EditableHeader from "../components/EditableHeader";
 
 type GridRow = { id: string } & Record<string, CellValue>;
 
+type OnColumnAction = (header: ColumnDef<GridRow, CellValue>) => void;
+
+const makeHeaderRenderer =
+	(
+		onHeaderEdit: (
+			header: ColumnDef<GridRow, CellValue>,
+			newLabel: string,
+		) => void,
+		onColumnDelete: OnColumnAction,
+		onColumnDuplicate: OnColumnAction,
+	) =>
+	(props: {
+		header: ColumnDef<GridRow, CellValue>;
+		components?: HeaderRendererComponents;
+	}) => (
+		<EditableHeader
+			header={props.header}
+			components={props.components}
+			onHeaderEdit={onHeaderEdit}
+			onColumnDelete={onColumnDelete}
+			onColumnDuplicate={onColumnDuplicate}
+		/>
+	);
+
 export const INITIAL_COLUMNS: (
 	onHeaderEdit: (
 		header: ColumnDef<GridRow, CellValue>,
 		newLabel: string,
 	) => void,
-) => SolidColumnDef<GridRow>[] = (onHeaderEdit) => [
+	onColumnDelete: OnColumnAction,
+	onColumnDuplicate: OnColumnAction,
+) => SolidColumnDef<GridRow>[] = (
+	onHeaderEdit,
+	onColumnDelete,
+	onColumnDuplicate,
+) => [
 	{
 		accessor: "col_name",
 		label: "Name",
 		width: 180,
 		sortable: true,
 		editable: true,
-		headerRenderer: (props) => (
-			<EditableHeader
-				header={props.header}
-				components={props.components}
-				onHeaderEdit={onHeaderEdit}
-			/>
+		headerRenderer: makeHeaderRenderer(
+			onHeaderEdit,
+			onColumnDelete,
+			onColumnDuplicate,
 		),
 	},
 	{
@@ -34,12 +62,10 @@ export const INITIAL_COLUMNS: (
 		width: 180,
 		sortable: true,
 		editable: true,
-		headerRenderer: (props) => (
-			<EditableHeader
-				header={props.header}
-				components={props.components}
-				onHeaderEdit={onHeaderEdit}
-			/>
+		headerRenderer: makeHeaderRenderer(
+			onHeaderEdit,
+			onColumnDelete,
+			onColumnDuplicate,
 		),
 	},
 	{
@@ -48,12 +74,10 @@ export const INITIAL_COLUMNS: (
 		width: 160,
 		sortable: true,
 		editable: true,
-		headerRenderer: (props) => (
-			<EditableHeader
-				header={props.header}
-				components={props.components}
-				onHeaderEdit={onHeaderEdit}
-			/>
+		headerRenderer: makeHeaderRenderer(
+			onHeaderEdit,
+			onColumnDelete,
+			onColumnDuplicate,
 		),
 	},
 	{
@@ -62,12 +86,10 @@ export const INITIAL_COLUMNS: (
 		width: 240,
 		sortable: true,
 		editable: true,
-		headerRenderer: (props) => (
-			<EditableHeader
-				header={props.header}
-				components={props.components}
-				onHeaderEdit={onHeaderEdit}
-			/>
+		headerRenderer: makeHeaderRenderer(
+			onHeaderEdit,
+			onColumnDelete,
+			onColumnDuplicate,
 		),
 	},
 	{
@@ -76,12 +98,10 @@ export const INITIAL_COLUMNS: (
 		width: 160,
 		sortable: true,
 		editable: true,
-		headerRenderer: (props) => (
-			<EditableHeader
-				header={props.header}
-				components={props.components}
-				onHeaderEdit={onHeaderEdit}
-			/>
+		headerRenderer: makeHeaderRenderer(
+			onHeaderEdit,
+			onColumnDelete,
+			onColumnDuplicate,
 		),
 	},
 	{
@@ -90,12 +110,10 @@ export const INITIAL_COLUMNS: (
 		width: 100,
 		sortable: true,
 		editable: true,
-		headerRenderer: (props) => (
-			<EditableHeader
-				header={props.header}
-				components={props.components}
-				onHeaderEdit={onHeaderEdit}
-			/>
+		headerRenderer: makeHeaderRenderer(
+			onHeaderEdit,
+			onColumnDelete,
+			onColumnDuplicate,
 		),
 	},
 ];
@@ -166,37 +184,29 @@ export const INITIAL_ROWS: GridRow[] = [
 	},
 ];
 
-const makeHeaderRenderer =
-	(
-		onHeaderEdit: (
-			header: ColumnDef<GridRow, CellValue>,
-			newLabel: string,
-		) => void,
-	) =>
-	(props: {
-		header: ColumnDef<GridRow, CellValue>;
-		components?: HeaderRendererComponents;
-	}) => (
-		<EditableHeader
-			header={props.header}
-			components={props.components}
-			onHeaderEdit={onHeaderEdit}
-		/>
-	);
-
 export const TABLE_EMPTY_COLUMNS: (
 	onHeaderEdit: (
 		header: ColumnDef<GridRow, CellValue>,
 		newLabel: string,
 	) => void,
-) => SolidColumnDef<GridRow>[] = (onHeaderEdit) =>
+	onColumnDelete: OnColumnAction,
+	onColumnDuplicate: OnColumnAction,
+) => SolidColumnDef<GridRow>[] = (
+	onHeaderEdit,
+	onColumnDelete,
+	onColumnDuplicate,
+) =>
 	[1, 2, 3].map((i) => ({
 		accessor: `col_${i}`,
 		label: `Column ${i}`,
 		width: 200,
 		sortable: true,
 		editable: true,
-		headerRenderer: makeHeaderRenderer(onHeaderEdit),
+		headerRenderer: makeHeaderRenderer(
+			onHeaderEdit,
+			onColumnDelete,
+			onColumnDuplicate,
+		),
 	}));
 
 export const TABLE_EMPTY_ROWS: GridRow[] = [

@@ -1,39 +1,35 @@
 import type {
-	CellChangeProps,
 	CellValue,
 	ColumnDef,
-	ComparatorProps,
-	HeaderRendererComponents,
+	RowSelectionChangeProps,
 	SolidColumnDef,
 	TableAPI,
 } from "@simple-table/solid";
 import { SimpleTable } from "@simple-table/solid";
-import { createMemo, createSignal, onMount } from "solid-js";
+import { createMemo, createSignal, onMount, Show } from "solid-js";
 import "@simple-table/solid/styles.css";
 import EditableHeader from "#/features/table/components/EditableHeader";
+import { RowActions } from "#/features/table/components/RowActions";
+import { TableToolbar } from "#/features/table/components/TableToolbar";
 import { TABLE_ICONS } from "#/features/table/constants/constants";
 import { INITIAL_COLUMNS, INITIAL_ROWS } from "#/features/table/constants/data";
-import { floatingAddRowBtn, tablePage } from "#/features/table/tablePage.css";
+import { useCsv } from "#/features/table/hooks/useCsv";
+import { useTableActions } from "#/features/table/hooks/useTableActions";
+import { tablePage } from "#/features/table/tablePage.css";
+import type {
+	GridRow,
+	SerializedColumn,
+	SerializedTable,
+} from "#/features/table/types";
+import ConfirmDialog from "#/features/ui/ConfirmDialog";
 import { useTheme } from "#/theme/ThemeProvider";
-
-type GridRow = { id: string } & Record<string, CellValue>;
 
 const ADD_COL_ACCESSOR = "__add_column__";
 
 interface TablePageProps {
 	content?: string;
 	onChangeContent?: (content: string) => void;
-}
-
-interface SerializedColumn {
-	accessor: string;
-	label: string;
-	width: number;
-}
-
-interface SerializedTable {
-	columns: SerializedColumn[];
-	rows: GridRow[];
+	title?: string;
 }
 
 const parseTableContent = (content: string): SerializedTable | null => {
@@ -49,22 +45,19 @@ const parseTableContent = (content: string): SerializedTable | null => {
 	}
 };
 
-const makeEmptyLastComparator = () => {
-	return (props: ComparatorProps<GridRow, CellValue>) => {
-		const aEmpty = props.valueA == null || props.valueA === "";
-		const bEmpty = props.valueB == null || props.valueB === "";
-		if (aEmpty && bEmpty) return 0;
-		if (aEmpty) return props.direction === "asc" ? 1 : -1;
-		if (bEmpty) return props.direction === "asc" ? -1 : 1;
-		return String(props.valueA).localeCompare(String(props.valueB));
-	};
-};
-
 const TablePage = (props: TablePageProps) => {
 	const { theme } = useTheme();
 	const [columns, setColumns] = createSignal<SolidColumnDef<GridRow>[]>([]);
 	const [rows, setRows] = createSignal<GridRow[]>([]);
+	const [selectedRows, setSelectedRows] = createSignal<Set<string>>(new Set());
+	const [pendingAction, setPendingAction] = createSignal<{
+		label: string;
+		message: string;
+		onConfirm: () => void;
+	} | null>(null);
+
 	let containerRef!: HTMLDivElement;
+	let fileInputRef!: HTMLInputElement;
 
 	let tableApi: TableAPI<GridRow> | undefined;
 
@@ -80,116 +73,81 @@ const TablePage = (props: TablePageProps) => {
 		props.onChangeContent?.(JSON.stringify(serialized));
 	};
 
-	const addRow = (targetRowId?: string, e?: MouseEvent) => {
-		const nextIndex = rows().length;
-		const newRow: GridRow = {
-			id: `row_${Date.now()}_${nextIndex + 1}`,
-			...Object.fromEntries(columns().map((column) => [column.accessor, ""])),
-		};
+	const makeColumnDef = (
+		accessor: string,
+		label: string,
+		width = 200,
+	): SolidColumnDef<GridRow> => ({
+		accessor,
+		label,
+		width,
+		sortable: false,
+		editable: true,
+		headerRenderer: (props) => (
+			<EditableHeader
+				header={props.header}
+				components={props.components}
+				onHeaderEdit={actions.handleHeaderEdit}
+				onColumnDelete={handleColumnDelete}
+				onColumnDuplicate={actions.handleColumnDuplicate}
+			/>
+		),
+	});
 
-		if (!targetRowId) {
-			setRows((current) => [...current, newRow]);
-			emitChange();
-			return;
-		}
+	const actions = useTableActions(
+		columns,
+		rows,
+		setColumns,
+		setRows,
+		setSelectedRows,
+		emitChange,
+		makeColumnDef,
+		() => tableApi,
+	);
+	const csv = useCsv(
+		columns,
+		rows,
+		setColumns,
+		setRows,
+		makeColumnDef,
+		emitChange,
+		props.title,
+		() => tableApi,
+	);
 
-		setRows((current) => {
-			const index = current.findIndex((r) => r.id === targetRowId);
-			if (index === -1) return [...current, newRow];
-
-			const isShift = e?.shiftKey ?? false;
-			const insertIndex = isShift ? index : index + 1; // Shift = above, Click = below
-
-			const updated = [...current];
-			updated.splice(insertIndex, 0, newRow);
-			return updated;
+	const exportCsv = () => {
+		tableApi?.exportToCSV({
+			filename: `${(props.title ?? "table")
+				.toLowerCase()
+				.replace(/[^a-z0-9]+/g, "-")
+				.replace(/^-+|-+$/g, "")}.csv`,
 		});
-		emitChange();
+	};
+
+	const handleColumnDelete = (header: ColumnDef<GridRow, CellValue>) => {
+		const col = columns().find((c) => c.accessor === header.accessor);
+		if (!col) return;
+		setPendingAction({
+			label: "Delete column",
+			message: `Delete column "${col.label ?? col.accessor}"? Its values are removed from every row.`,
+			onConfirm: () => actions.deleteColumnDef(col),
+		});
 	};
 
 	const addColumn = () => {
 		const nextColumnNumber = columns().length + 1;
 		const accessor = `col_${nextColumnNumber}`;
 
-		const column: SolidColumnDef<GridRow> = {
-			accessor,
-			label: `Column ${nextColumnNumber}`,
-			width: 200,
-			sortable: true,
-			editable: true,
-			comparator: makeEmptyLastComparator(),
-			headerRenderer: (props) => (
-				<EditableHeader
-					header={props.header}
-					components={props.components}
-					onHeaderEdit={handleHeaderEdit}
-				/>
-			),
-		};
-
-		setColumns((current) => [...current, column]);
+		setColumns((current) => [
+			...current,
+			makeColumnDef(accessor, `Column ${nextColumnNumber}`),
+		]);
 		setRows((current) => current.map((row) => ({ ...row, [accessor]: "" })));
 		emitChange();
 	};
 
-	const handleCellEdit = ({ accessor, newValue, row }: CellChangeProps) => {
-		if (accessor === ADD_COL_ACCESSOR) return;
-
-		setRows((current) => {
-			const index = current.findIndex((r) => r.id === row.id);
-			if (index === -1) return current;
-
-			const next = [...current];
-			next[index] = { ...next[index], [accessor]: newValue };
-
-			if (tableApi) {
-				tableApi.updateData({ rowIndex: index, accessor, newValue });
-			}
-
-			return next;
-		});
-		emitChange();
-	};
-
-	const handleHeaderEdit = (
-		header: ColumnDef<GridRow, CellValue>,
-		newLabel: string,
-	) => {
-		setColumns((current) =>
-			current.map((column) =>
-				column.accessor === header.accessor
-					? { ...column, label: newLabel }
-					: column,
-			),
-		);
-		emitChange();
-	};
-
-	const buildColumns = (
-		saved: SerializedColumn[],
-		onHeaderEdit: (
-			header: ColumnDef<GridRow, CellValue>,
-			newLabel: string,
-		) => void,
-	): SolidColumnDef<GridRow>[] =>
-		saved.map((col) => ({
-			accessor: col.accessor,
-			label: col.label,
-			width: col.width,
-			sortable: true,
-			editable: true,
-			comparator: makeEmptyLastComparator(),
-			headerRenderer: (props: {
-				header: ColumnDef<GridRow, CellValue>;
-				components?: HeaderRendererComponents;
-			}) => (
-				<EditableHeader
-					header={props.header}
-					components={props.components}
-					onHeaderEdit={onHeaderEdit}
-				/>
-			),
-		}));
+	const buildColumns = (saved: SerializedColumn[]): SolidColumnDef<GridRow>[] =>
+		saved.map((col) => makeColumnDef(col.accessor, col.label, col.width));
 
 	const finalColumns = createMemo(() => {
 		const addColumnDef: SolidColumnDef<GridRow> = {
@@ -223,16 +181,35 @@ const TablePage = (props: TablePageProps) => {
 
 		const parsed = parseTableContent(props.content ?? "");
 		if (parsed) {
-			setColumns(buildColumns(parsed.columns, handleHeaderEdit));
+			setColumns(buildColumns(parsed.columns));
 			setRows(parsed.rows);
 		} else {
-			setColumns(INITIAL_COLUMNS(handleHeaderEdit));
+			setColumns(
+				INITIAL_COLUMNS(
+					actions.handleHeaderEdit,
+					handleColumnDelete,
+					actions.handleColumnDuplicate,
+				),
+			);
 			setRows(INITIAL_ROWS);
 		}
 	});
 
 	return (
 		<div ref={containerRef} class={tablePage}>
+			<TableToolbar
+				selectedRowsSize={selectedRows().size}
+				setBulkDeleteOpen={() =>
+					setPendingAction({
+						label: "Delete rows",
+						message: `Delete ${selectedRows().size} selected ${selectedRows().size === 1 ? "row" : "rows"}? This cannot be undone.`,
+						onConfirm: () => actions.deleteRows(selectedRows()),
+					})
+				}
+				triggerImport={() => fileInputRef?.click()}
+				exportCsv={exportCsv}
+			/>
+
 			<SimpleTable
 				ref={(api) => (tableApi = api)}
 				columns={finalColumns()}
@@ -244,25 +221,39 @@ const TablePage = (props: TablePageProps) => {
 				}}
 				rowButtons={[
 					({ row }) => (
-						<div class={floatingAddRowBtn}>
-							<wa-button
-								size="s"
-								appearance="plain"
-								onClick={(e: MouseEvent) => {
-									e.stopPropagation();
-									addRow(row.id, e);
-								}}
-							>
-								<wa-icon name="plus" label="Add row"></wa-icon>
-							</wa-button>
-						</div>
+						<RowActions
+							row={row}
+							addRow={actions.addRow}
+							setRowToDelete={(row) =>
+								setPendingAction({
+									label: "Delete row",
+									message: "Delete this row? This cannot be undone.",
+									onConfirm: () => actions.deleteRows([row.id]),
+								})
+							}
+						/>
 					),
 				]}
 				columnReordering
 				columnResizing
 				enableRowSelection
-				getRowId={({ row }) => row.id}
-				onCellEdit={handleCellEdit}
+				getRowId={({ row }) => String(row.id)}
+				onCellEdit={actions.handleCellEdit}
+				onRowSelectionChange={(props: RowSelectionChangeProps<GridRow>) => {
+					const extractedIds = new Set<string>();
+					if (props?.selectedRows) {
+						const values =
+							props.selectedRows instanceof Set ||
+							Array.isArray(props.selectedRows)
+								? Array.from(props.selectedRows)
+								: [props.selectedRows];
+						values.forEach((item: string) => {
+							const cleanId = item.replace(/^\d+-/, "");
+							extractedIds.add(cleanId);
+						});
+					}
+					setSelectedRows(extractedIds);
+				}}
 				theme={theme()}
 				icons={TABLE_ICONS}
 				scrollParent={() => document.querySelector("wa-page")}
@@ -273,7 +264,7 @@ const TablePage = (props: TablePageProps) => {
 				variant="neutral"
 				appearance="plain"
 				size="s"
-				onClick={(e: MouseEvent) => addRow(undefined, e)}
+				onClick={(e: MouseEvent) => actions.addRow(undefined, e)}
 				style={{
 					width: "fit-content",
 					"margin-top": "8px",
@@ -283,6 +274,41 @@ const TablePage = (props: TablePageProps) => {
 				<wa-icon slot="start" name="plus"></wa-icon>
 				Add row
 			</wa-button>
+
+			<input
+				ref={fileInputRef}
+				type="file"
+				accept=".csv,text/csv"
+				style={{ display: "none" }}
+				onChange={(e) => {
+					const input = e.currentTarget;
+					const file = input.files?.[0];
+					if (file) {
+						const reader = new FileReader();
+						reader.onload = () => {
+							const text =
+								typeof reader.result === "string" ? reader.result : "";
+							if (text.trim()) csv.importCsv(text);
+							input.value = "";
+						};
+						reader.readAsText(file);
+					}
+				}}
+			/>
+
+			<Show when={pendingAction()}>
+				{(action) => (
+					<ConfirmDialog
+						label={action().label}
+						message={action().message}
+						onConfirm={() => {
+							action().onConfirm();
+							setPendingAction(null);
+						}}
+						onClose={() => setPendingAction(null)}
+					/>
+				)}
+			</Show>
 		</div>
 	);
 };
