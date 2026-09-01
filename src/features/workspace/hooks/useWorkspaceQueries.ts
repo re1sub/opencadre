@@ -1,5 +1,5 @@
 import { createMutation, createQuery } from "@tanstack/solid-query";
-import type { Tables, TablesInsert, TablesUpdate } from "#/types/database";
+import type { Tables } from "#/types/database";
 import { supabase } from "#/utils/supabase";
 
 export type WorkspaceRow = Tables<"workspaces">;

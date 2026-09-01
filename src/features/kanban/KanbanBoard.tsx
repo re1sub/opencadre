@@ -10,7 +10,7 @@ import CardDialog from "./components/CardDialog";
 import ColumnDialog from "./components/ColumnDialog";
 import { useKanbanBoardAdapter } from "./hooks/useKanbanBoardAdapter";
 
-import type { Card, Column } from "./types";
+import type { Card } from "./types";
 
 interface KanbanBoardProps {
 	pageId?: string;

@@ -16,7 +16,7 @@ const toWorkspace = (row: WorkspaceRow) => ({
 });
 
 export function useWorkspaceAdapter() {
-	const queryClient = useQueryClient();
+	const _queryClient = useQueryClient();
 	const [workspaces, setWorkspaces] = createSignal<Workspace[]>([]);
 	const [activeWorkspaceId, setActiveWorkspaceId] = createSignal<string>("");
 	const [loaded, setLoaded] = createSignal(false);

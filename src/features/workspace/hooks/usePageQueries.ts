@@ -1,5 +1,5 @@
 import { createMutation, createQuery } from "@tanstack/solid-query";
-import type { Json, Tables, TablesInsert } from "#/types/database";
+import type { Json, Tables } from "#/types/database";
 import { supabase } from "#/utils/supabase";
 
 export type PageRow = Tables<"pages">;
