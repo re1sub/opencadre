@@ -534,6 +534,35 @@ export type Database = {
 				};
 				Relationships: [];
 			};
+			user_settings: {
+				Row: {
+					created_at: string;
+					shortcuts: Json;
+					updated_at: string;
+					user_id: string;
+				};
+				Insert: {
+					created_at?: string;
+					shortcuts?: Json;
+					updated_at?: string;
+					user_id: string;
+				};
+				Update: {
+					created_at?: string;
+					shortcuts?: Json;
+					updated_at?: string;
+					user_id?: string;
+				};
+				Relationships: [
+					{
+						foreignKeyName: "user_settings_user_id_fkey";
+						columns: ["user_id"];
+						isOneToOne: true;
+						referencedRelation: "users";
+						referencedColumns: ["id"];
+					},
+				];
+			};
 			workspace_members: {
 				Row: {
 					created_at: string;
