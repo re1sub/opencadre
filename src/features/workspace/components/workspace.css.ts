@@ -397,8 +397,8 @@ export const settingsSectionTitle = style({
 });
 
 export const shortcutRow = style({
-	display: "grid",
-	gridTemplateColumns: "1fr auto 1fr",
+	display: "flex",
+	flexWrap: "wrap",
 	alignItems: "center",
 	gap: "var(--wa-space-s)",
 	padding: "var(--wa-space-xs) var(--wa-space-s)",
@@ -408,21 +408,40 @@ export const shortcutRow = style({
 	border: "1px solid var(--wa-color-surface-border)",
 });
 
+export const shortcutMeta = style({
+	flexGrow: 1,
+	minWidth: 0,
+	display: "flex",
+	flexDirection: "column",
+	gap: "var(--wa-space-3xs)",
+});
+
+export const shortcutName = style({
+	margin: 0,
+	fontSize: "0.9rem",
+	fontWeight: 600,
+	color: "var(--wa-color-text-normal)",
+	whiteSpace: "nowrap",
+	overflow: "hidden",
+	textOverflow: "ellipsis",
+});
+
+export const shortcutDesc = style({
+	margin: 0,
+	fontSize: "0.75rem",
+	color: "var(--wa-color-text-quiet)",
+});
+
+export const shortcutActions = style({
+	display: "flex",
+	alignItems: "center",
+	gap: "var(--wa-space-2xs)",
+});
+
 export const shortcutKeys = style({
 	display: "flex",
 	gap: "var(--wa-space-3xs)",
 	justifyContent: "flex-end",
-});
-
-export const kbd = style({
-	fontFamily: "var(--wa-font-family-code)",
-	fontSize: "0.8rem",
-	padding: "0.125rem 0.375rem",
-	borderRadius: "var(--wa-border-radius-s)",
-	border:
-		"var(--wa-border-width-s) var(--wa-border-style) var(--wa-color-surface-border)",
-	backgroundColor: "var(--wa-color-surface-raised)",
-	color: "var(--wa-color-text-quiet)",
 });
 
 // Trash dialog
