@@ -6,6 +6,7 @@ import {
 	onCleanup,
 	useContext,
 } from "solid-js";
+import { useShortcuts } from "#/features/workspace/hooks/useShortcuts";
 import { useHotkey } from "#/utils/useHotkey";
 
 export type Theme = "light" | "dark";
@@ -73,7 +74,11 @@ const ThemeProvider = (props: { children: JSX.Element }) => {
 	const toggleTheme = () =>
 		setPreference(theme() === "light" ? "dark" : "light");
 
-	useHotkey("mod+l", toggleTheme);
+	const { shortcuts } = useShortcuts();
+	useHotkey(() => {
+		const config = shortcuts()["toggle-theme"];
+		return config.enabled ? config.combo : null;
+	}, toggleTheme);
 
 	return (
 		<ThemeContext.Provider

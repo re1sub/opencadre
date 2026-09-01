@@ -4,6 +4,7 @@ import { createSignal, Show } from "solid-js";
 import { useAuth } from "#/features/auth/AuthContext";
 import ConfirmDialog from "#/features/ui/ConfirmDialog";
 import EditableText from "#/features/ui/EditableText";
+import { useHotkey } from "#/utils/useHotkey";
 import LoadingSpinner from "../ui/LoadingSpinner";
 import CreateWorkspace from "./components/CreateWorkspace";
 import NewWorkspaceDialog from "./components/NewWorkspaceDialog";
@@ -26,6 +27,7 @@ import { PAGE_KIND_LOADERS } from "./constants/pageViewLoaders";
 import { PAGE_TEMPLATES } from "./constants/templates";
 import type { AddPageOptions } from "./hooks/usePagesAdapter";
 import { usePagesAdapter } from "./hooks/usePagesAdapter";
+import { useShortcuts } from "./hooks/useShortcuts";
 import { useSidebarResize } from "./hooks/useSidebarResize";
 import { useSwipeDrawer } from "./hooks/useSwipeDrawer";
 import { useTrash } from "./hooks/useTrash";
@@ -186,6 +188,26 @@ const Workspace = () => {
 		edgeThreshold: 50,
 		swipeDistance: 20,
 	});
+
+	const { shortcuts } = useShortcuts();
+	useHotkey(
+		() => {
+			const config = shortcuts()["toggle-sidebar"];
+			return config.enabled ? config.combo : null;
+		},
+		() => setSidebarCollapsed((v) => !v),
+	);
+	useHotkey(
+		() => {
+			const config = shortcuts()["new-page"];
+			return config.enabled ? config.combo : null;
+		},
+		() => {
+			if (!wsHook.activeWorkspace()) return;
+			const kind = wsHook.activeWorkspace()?.defaultPageKind ?? "markdown";
+			void handleAddPage(kind);
+		},
+	);
 
 	return (
 		<Show when={wsHook.loaded()} fallback={<LoadingSpinner fullscreen />}>
