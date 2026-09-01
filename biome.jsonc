@@ -33,6 +33,9 @@
 			"a11y": {
 				"noStaticElementInteractions": "off",
 				"useKeyWithClickEvents": "off"
+			},
+			"suspicious": {
+				"noExplicitAny": "error"
 			}
 		}
 	},
