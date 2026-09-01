@@ -248,14 +248,12 @@ const Workspace = () => {
 						ref={(el) => {
 							requestAnimationFrame(() => {
 								const height = el.getBoundingClientRect().height;
-								const value = `${height}px`;
+								const finalHeight = height > 1 ? height : 44;
 
-								if (
-									pageRef?.style.getPropertyValue("--main-header-height") !==
-									value
-								) {
-									pageRef?.style.setProperty("--main-header-height", value);
-								}
+								pageRef?.style.setProperty(
+									"--main-header-height",
+									`${finalHeight}px`,
+								);
 							});
 						}}
 					>
@@ -369,13 +367,18 @@ const Workspace = () => {
 									sidebarCollapsed() && !sidebarHovered()
 										? "var(--wa-color-surface-border)"
 										: "",
-								height: sidebarCollapsed() ? "50vh" : "auto",
-								top: sidebarCollapsed() ? "50%" : 0,
+								height: sidebarCollapsed() ? "50vh" : "100vh",
+								top: sidebarCollapsed()
+									? "50%"
+									: pagesHook.activePage()
+										? "calc(var(--main-header-height) * -1)"
+										: 0,
 								width: sidebarCollapsed() ? "6px" : "3px",
 								"border-radius": sidebarCollapsed() ? "0 5px 5px 0" : "",
 								transform: sidebarCollapsed() ? "translateY(-50%)" : "",
 								position: sidebarCollapsed() ? "fixed" : "absolute",
 								cursor: sidebarCollapsed() ? "auto" : "col-resize",
+								"z-index": sidebarCollapsed() ? 1 : 100,
 							}}
 							onPointerEnter={() => {
 								if (sidebarCollapsed()) setSidebarHovered(true);
