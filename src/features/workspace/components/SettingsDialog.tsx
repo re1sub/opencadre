@@ -21,10 +21,12 @@ import { useWorkspaceMembersAdapter } from "../hooks/useWorkspaceMembersAdapter"
 import { addMemberSchema } from "../schemas";
 import {
 	PAGE_KIND_META,
+	type Page,
 	type PageKind,
 	type Workspace,
 	type WorkspaceRole,
 } from "../types";
+import { exportAllPages, importAllPages } from "../utils/transfer";
 import {
 	dangerZone,
 	dialogBody,
@@ -62,6 +64,7 @@ export type SettingsSection =
 interface SettingsDialogProps {
 	workspaceId: string;
 	workspace: () => Workspace | null;
+	pages: () => Page[];
 	initialSection?: SettingsSection;
 	onUpdateWorkspace: (
 		id: string,
@@ -71,6 +74,10 @@ interface SettingsDialogProps {
 			defaultPageKind?: PageKind;
 		},
 	) => void;
+	onAddPage: (
+		kind: PageKind,
+		opts?: { title?: string; content?: string },
+	) => Promise<Page>;
 	onDeleteWorkspace: (id: string) => void;
 	onLeaveWorkspace: (id: string) => void;
 	onClose: () => void;
@@ -123,6 +130,40 @@ const SettingsDialog = (props: SettingsDialogProps) => {
 	const { name: profileName, setCustomName } = useProfile(user);
 	const { members, myRole, addMember, updateRole, removeMember } =
 		useWorkspaceMembersAdapter(() => props.workspaceId);
+
+	const handleExport = async () => {
+		const ws = props.workspace();
+		if (!ws) return;
+		await exportAllPages(ws, props.pages());
+	};
+
+	const [importError, setImportError] = createSignal<string | null>(null);
+	const [importedCount, setImportedCount] = createSignal<number | null>(null);
+	let importInput!: HTMLInputElement;
+
+	const handleImportFile = async (e: Event) => {
+		const target = e.target as HTMLInputElement;
+		const file = target.files?.[0];
+		target.value = "";
+		if (!file) return;
+
+		const ws = props.workspace();
+		if (!ws) return;
+		setImportError(null);
+		setImportedCount(null);
+
+		try {
+			const count = await importAllPages(file, {
+				workspaceId: ws.id,
+				addPage: props.onAddPage,
+			});
+			setImportedCount(count);
+		} catch (err) {
+			setImportError(
+				err instanceof Error ? err.message : "Import failed unexpectedly.",
+			);
+		}
+	};
 
 	const [section, setSection] = createSignal<SettingsSection>(
 		props.initialSection ?? "general",
@@ -465,12 +506,13 @@ const SettingsDialog = (props: SettingsDialogProps) => {
 									</wa-dropdown>
 								</div>
 
-								<h3 class={settingsSectionTitle}>Export</h3>
+								<h3 class={settingsSectionTitle}>Export / Import</h3>
 								<wa-divider style={{ "--spacing": "0" }}></wa-divider>
 								<div class={settingsSection}>
 									<p class={dialogLabel}>
-										Import and export are planned. Here's a preview of what's
-										coming.
+										Download all pages in this workspace as a .zip file, or
+										restore pages from a previously exported archive into this
+										workspace.
 									</p>
 									<div
 										style={{
@@ -484,30 +526,52 @@ const SettingsDialog = (props: SettingsDialogProps) => {
 											type="button"
 											variant="neutral"
 											appearance="outlined"
-											disabled
+											onClick={handleExport}
 										>
 											<wa-icon
 												slot="start"
 												name="download"
 												label="Export"
 											></wa-icon>
-											Export as Markdown
+											Export all pages
 										</wa-button>
 										<wa-button
 											type="button"
 											variant="neutral"
 											appearance="outlined"
-											disabled
+											onClick={() => importInput?.click()}
 										>
 											<wa-icon
 												slot="start"
-												name="file-json"
-												label="Export"
+												name="upload"
+												label="Import"
 											></wa-icon>
-											Export as JSON
+											Import pages
 										</wa-button>
-										<wa-tag variant="warning">Planned</wa-tag>
+										<input
+											ref={importInput}
+											type="file"
+											accept=".zip,application/zip"
+											style={{ display: "none" }}
+											onChange={handleImportFile}
+										/>
 									</div>
+									<Show when={importError()}>
+										<p style={{ color: "var(--wa-color-danger)" }}>
+											{importError()}
+										</p>
+									</Show>
+									<Show when={importedCount() !== null}>
+										<p
+											style={{
+												color: "var(--wa-color-success)",
+												margin: "var(--wa-space-s) 0 0",
+											}}
+										>
+											Imported {importedCount()} page
+											{importedCount() === 1 ? "" : "s"}.
+										</p>
+									</Show>
 								</div>
 
 								<h3 class={settingsSectionTitle}>Danger zone</h3>
@@ -518,8 +582,8 @@ const SettingsDialog = (props: SettingsDialogProps) => {
 											<span class={memberName}>Delete workspace</span>
 											<span class={memberEmail}>
 												Permanently delete
-												{" " + (props.workspace()?.name ?? "this workspace")}{" "}
-												and all of its pages. This cannot be undone.
+												{` ${props.workspace()?.name ?? "this workspace"}`} and
+												all of its pages. This cannot be undone.
 											</span>
 										</div>
 										<wa-button

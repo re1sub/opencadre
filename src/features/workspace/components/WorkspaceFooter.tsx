@@ -2,7 +2,7 @@ import type { User } from "@supabase/supabase-js";
 import { createSignal, Show } from "solid-js";
 import { getInitials } from "#/utils/initials";
 import { useProfile } from "../hooks/useProfile";
-import type { PageKind, Workspace } from "../types";
+import type { Page, PageKind, Workspace } from "../types";
 import AddAccountDialog from "./AddAccountDialog";
 import type { SettingsSection } from "./SettingsDialog";
 import SettingsDialog from "./SettingsDialog";
@@ -22,8 +22,13 @@ interface WorkspaceFooterProps {
 			defaultPageKind?: PageKind;
 		},
 	) => void;
+	onAddPage: (
+		kind: PageKind,
+		opts?: { title?: string; content?: string },
+	) => Promise<Page>;
 	onDeleteWorkspace: (id: string) => void;
 	onLeaveWorkspace: (id: string) => void;
+	pages: () => Page[];
 }
 
 const WorkspaceFooter = (props: WorkspaceFooterProps) => {
@@ -116,8 +121,10 @@ const WorkspaceFooter = (props: WorkspaceFooterProps) => {
 				<SettingsDialog
 					workspace={props.workspace}
 					workspaceId={props.workspace()?.id ?? ""}
+					pages={props.pages}
 					initialSection={settingsSection()}
 					onUpdateWorkspace={props.onUpdateWorkspace}
+					onAddPage={props.onAddPage}
 					onDeleteWorkspace={props.onDeleteWorkspace}
 					onLeaveWorkspace={props.onLeaveWorkspace}
 					onClose={() => {

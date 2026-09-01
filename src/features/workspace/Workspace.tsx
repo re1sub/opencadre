@@ -4,7 +4,6 @@ import { createSignal, Show } from "solid-js";
 import { useAuth } from "#/features/auth/AuthContext";
 import ConfirmDialog from "#/features/ui/ConfirmDialog";
 import EditableText from "#/features/ui/EditableText";
-import Skeleton from "#/features/ui/Skeleton";
 import LoadingSpinner from "../ui/LoadingSpinner";
 import CreateWorkspace from "./components/CreateWorkspace";
 import NewWorkspaceDialog from "./components/NewWorkspaceDialog";
@@ -334,8 +333,10 @@ const Workspace = () => {
 						onSignOut={handleSignOut}
 						onOpenTrash={() => setIsTrashOpen(true)}
 						onUpdateWorkspace={handleEditWorkspace}
+						onAddPage={pagesHook.addPage}
 						onDeleteWorkspace={handlePermanentDeleteWorkspace}
 						onLeaveWorkspace={handleLeaveWorkspace}
+						pages={pagesHook.activePages}
 					/>
 
 					<main class={mainContent}>
