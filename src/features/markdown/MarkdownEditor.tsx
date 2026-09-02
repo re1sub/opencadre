@@ -1,4 +1,4 @@
-import { Editor } from "@tiptap/core";
+import { Editor, posToDOMRect } from "@tiptap/core";
 import BubbleMenu from "@tiptap/extension-bubble-menu";
 import Document from "@tiptap/extension-document";
 import Heading from "@tiptap/extension-heading";
@@ -7,6 +7,7 @@ import { Markdown } from "@tiptap/markdown";
 import StarterKit from "@tiptap/starter-kit";
 import { createSignal, onCleanup, onMount, splitProps } from "solid-js";
 import { Motion } from "solid-motionone";
+import AiPopup from "#/features/ai/components/AiPopup";
 import { useAuth } from "#/features/auth/AuthContext";
 import { usePageCommentsAdapter } from "#/features/comments/hooks/usePageCommentsAdapter";
 import {
@@ -17,6 +18,7 @@ import CommentPopup from "./components/CommentPopup";
 import { bubbleMenu, bubbleMenuContent } from "./editorBubbleMenu.css";
 import { useEditorComments } from "./hooks/useEditorComments";
 import { useSlashCommand } from "./hooks/useSlashCommand";
+import { insertMarkdown } from "./insertMarkdown";
 import { editor } from "./markdownEditor.css";
 import {
 	bubbleToolbarGroups,
@@ -51,6 +53,7 @@ const MarkdownEditor = (props: MarkdownEditorProps) => {
 
 	const [toolbarVersion, setToolbarVersion] = createSignal(0);
 	const [bubbleVisible, setBubbleVisible] = createSignal(false);
+	const [aiRect, setAiRect] = createSignal<DOMRect | null>(null);
 
 	const bumpToolbar = () => setToolbarVersion((v) => v + 1);
 	const author = () => user()?.email?.split("@")[0] ?? "You";
@@ -73,6 +76,12 @@ const MarkdownEditor = (props: MarkdownEditorProps) => {
 				.setMeta("editorBubbleMenu", "hide")
 				.setMeta("editorCommandMenu", "hide"),
 		);
+	};
+
+	const handleAiInsert = (text: string) => {
+		if (!text || !instance) return;
+		insertMarkdown(instance, text);
+		setAiRect(null);
 	};
 
 	onMount(() => {
@@ -185,6 +194,20 @@ const MarkdownEditor = (props: MarkdownEditorProps) => {
 						editorComments.handleCommentAction(instance, hideBubbleMenus);
 				},
 			},
+			ai: {
+				active: () => false,
+				run: () => {
+					if (!instance) return;
+					const { from, to } = instance.state.selection;
+					const rect = posToDOMRect(instance.view, from, to);
+					hideBubbleMenus();
+					if (aiRect()) {
+						setAiRect(null);
+					} else {
+						setAiRect(rect);
+					}
+				},
+			},
 		};
 
 		instance.on("transaction", bumpToolbar);
@@ -261,6 +284,13 @@ const MarkdownEditor = (props: MarkdownEditorProps) => {
 					/>
 				</Motion.div>
 			</div>
+
+			<AiPopup
+				open={() => Boolean(aiRect())}
+				anchorRect={aiRect}
+				onInsert={handleAiInsert}
+				onClose={() => setAiRect(null)}
+			/>
 
 			<CommentPopup
 				open={() => Boolean(editorComments.activeThreadId())}

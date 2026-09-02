@@ -1,6 +1,6 @@
 import type { Editor } from "@tiptap/core";
 import { createEffect, createSignal } from "solid-js";
-import { type MarkdownAction, toolbarGroups } from "../toolbar";
+import { type MarkdownAction, slashCommandGroups } from "../toolbar";
 
 export function useSlashCommand(getEditor: () => Editor | undefined) {
 	const [commandVisible, setCommandVisible] = createSignal(false);
@@ -9,9 +9,9 @@ export function useSlashCommand(getEditor: () => Editor | undefined) {
 
 	const filteredToolbarGroups = () => {
 		const q = commandQuery().toLowerCase().trim();
-		if (!q) return toolbarGroups;
+		if (!q) return slashCommandGroups;
 
-		return toolbarGroups
+		return slashCommandGroups
 			.map((group) =>
 				group.filter((button) => button.label.toLowerCase().includes(q)),
 			)

@@ -11,8 +11,11 @@ import {
 	onMount,
 	Show,
 } from "solid-js";
+import AiPopup from "#/features/ai/components/AiPopup";
 import { dropdownItemValue, uid } from "#/utils/misc";
+import { insertMarkdown } from "../insertMarkdown";
 import {
+	additionalButtons,
 	blockButtons,
 	createMarkdownActions,
 	headingItems,
@@ -61,6 +64,7 @@ const MarkdownField = (props: MarkdownFieldProps) => {
 	const [draftValue, setDraftValue] = createSignal(props.value);
 	const [isFocused, setIsFocused] = createSignal(false);
 	const [toolbarVersion, setToolbarVersion] = createSignal(0);
+	const [aiRect, setAiRect] = createSignal<DOMRect | null>(null);
 
 	const bumpToolbar = () => setToolbarVersion((v) => v + 1);
 
@@ -101,7 +105,7 @@ const MarkdownField = (props: MarkdownFieldProps) => {
 		instance = new Editor({
 			element: editorRef,
 			extensions: [
-				StarterKit.configure({ trailingNode: false }),
+				StarterKit.configure({ trailingNode: false, heading: false }),
 				Heading.configure({ levels: [1, 2, 3] }),
 				Placeholder.configure({
 					placeholder: props.placeholder ?? "",
@@ -126,7 +130,13 @@ const MarkdownField = (props: MarkdownFieldProps) => {
 		});
 
 		const editorInstance = instance;
-		actions = createMarkdownActions(editorInstance);
+		actions = {
+			...createMarkdownActions(editorInstance),
+			ai: {
+				active: () => false,
+				run: toggleAi,
+			},
+		};
 
 		editorInstance.on("transaction", bumpToolbar);
 		editorInstance.on("selectionUpdate", bumpToolbar);
@@ -146,6 +156,22 @@ const MarkdownField = (props: MarkdownFieldProps) => {
 	onCleanup(() => {
 		instance?.destroy();
 	});
+
+	const toggleAi = () => {
+		if (aiRect()) {
+			setAiRect(null);
+			return;
+		}
+		const el = document.getElementById(`${ns}-ai`);
+		const rect = el?.getBoundingClientRect() ?? null;
+		if (rect) setAiRect(rect);
+	};
+
+	const handleAiInsert = (text: string) => {
+		if (!text || !instance) return;
+		insertMarkdown(instance, text);
+		setAiRect(null);
+	};
 
 	return (
 		<>
@@ -228,6 +254,19 @@ const MarkdownField = (props: MarkdownFieldProps) => {
 						)}
 					</For>
 
+					<wa-divider
+						orientation="vertical"
+						style={{ "--spacing": "var(--wa-space-3xs)" }}
+					></wa-divider>
+
+					<ToolbarButton
+						button={additionalButtons[1]}
+						id={`${ns}-ai`}
+						onClick={toggleAi}
+						activeClass={activeButton}
+						active={() => Boolean(aiRect())}
+					/>
+
 					<wa-dropdown
 						placement="bottom-end"
 						size="s"
@@ -300,6 +339,12 @@ const MarkdownField = (props: MarkdownFieldProps) => {
 					}}
 				/>
 			</div>
+			<AiPopup
+				open={() => Boolean(aiRect())}
+				anchorRect={aiRect}
+				onInsert={handleAiInsert}
+				onClose={() => setAiRect(null)}
+			/>
 			<Show when={isFocused() && !props.noControlsFooter}>
 				<div
 					style={{
