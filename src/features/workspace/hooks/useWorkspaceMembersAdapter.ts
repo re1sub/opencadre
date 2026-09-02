@@ -2,6 +2,13 @@ import { createEffect, createSignal } from "solid-js";
 import { supabase } from "#/utils/supabase";
 import type { WorkspaceMember, WorkspaceRole } from "../types";
 
+interface WorkspaceMemberRow {
+	workspace_id?: string | null;
+	user_id?: string | null;
+	role: string;
+	email?: string | null;
+}
+
 export function useWorkspaceMembersAdapter(workspaceId: () => string) {
 	const [members, setMembers] = createSignal<WorkspaceMember[]>([]);
 	const [myRole, setMyRole] = createSignal<WorkspaceRole>("member");
@@ -18,8 +25,10 @@ export function useWorkspaceMembersAdapter(workspaceId: () => string) {
 			.eq("workspace_id", wsId);
 		if (error) throw error;
 
-		const mapped: WorkspaceMember[] = (data ?? []).map((m: any) => ({
-			id: m.user_id ?? m.email,
+		const rows = (data ?? []) as WorkspaceMemberRow[];
+
+		const mapped: WorkspaceMember[] = rows.map((m) => ({
+			id: m.user_id ?? m.email ?? "",
 			name: m.email || "Unknown",
 			email: m.email ?? "",
 			role: m.role as WorkspaceRole,
@@ -27,7 +36,7 @@ export function useWorkspaceMembersAdapter(workspaceId: () => string) {
 
 		setMembers(mapped);
 
-		const me = (data ?? []).find((m: any) => m.user_id === user.id);
+		const me = rows.find((m) => m.user_id === user.id);
 		if (me) setMyRole(me.role as WorkspaceRole);
 	};
 
