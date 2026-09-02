@@ -5,6 +5,7 @@ import type {
 	SolidDefaultRowData,
 } from "@simple-table/solid";
 import { createSignal, onCleanup, onMount } from "solid-js";
+import ToolbarButton from "#/features/markdown/components/ToolbarButton";
 import EditableText from "#/features/ui/EditableText";
 import { usePopup } from "#/utils/usePopup";
 import {
@@ -86,6 +87,24 @@ const EditableHeader = <TData extends SolidDefaultRowData>(
 		});
 	});
 
+	const actionsBtnDef = {
+		id: `actions-${props.header.accessor}`,
+		icon: "ellipsis-vertical",
+		label: "Column actions",
+	};
+
+	const duplicateBtnDef = {
+		id: `duplicate-${props.header.accessor}`,
+		icon: "copy",
+		label: "Duplicate column",
+	};
+
+	const deleteBtnDef = {
+		id: `delete-${props.header.accessor}`,
+		icon: "trash-2",
+		label: "Delete column",
+	};
+
 	return (
 		<div class={editableHeaderWrapper}>
 			<EditableText
@@ -102,25 +121,20 @@ const EditableHeader = <TData extends SolidDefaultRowData>(
 			>
 				{props.components?.filterIcon}
 				{props.components?.sortIcon}
-				<span class={columnActions}>
-					<wa-button
-						type="button"
-						ref={(el) => {
-							triggerEl = el;
-							popup.triggerRef(el);
-						}}
+				<span
+					class={columnActions}
+					ref={(el) => {
+						triggerEl = el;
+						popup.triggerRef(el);
+					}}
+				>
+					<ToolbarButton
+						button={actionsBtnDef}
+						id={actionsBtnDef.id}
 						onClick={togglePopup}
-						variant="neutral"
-						appearance="plain"
-						aria-label="Column actions"
-						size="xs"
-					>
-						<wa-icon
-							name="ellipsis-vertical"
-							label="Column actions"
-							style={{ "font-size": "1.1rem" }}
-						></wa-icon>
-					</wa-button>
+						active={() => popup.open()}
+						showLabels={false}
+					/>
 				</span>
 			</span>
 
@@ -149,27 +163,20 @@ const EditableHeader = <TData extends SolidDefaultRowData>(
 						"justify-content": "flex-start",
 					}}
 				>
-					<wa-button
-						variant="neutral"
-						appearance="plain"
+					<ToolbarButton
+						button={duplicateBtnDef}
+						id={duplicateBtnDef.id}
 						onClick={() => handleAction("duplicate")}
-						style={{ "justify-content": "flex-start" }}
-					>
-						<wa-icon slot="start" name="copy"></wa-icon>
-						Duplicate column
-					</wa-button>
-					<wa-button
-						variant="neutral"
-						appearance="plain"
+						active={() => false}
+						showLabels
+					/>
+					<ToolbarButton
+						button={deleteBtnDef}
+						id={deleteBtnDef.id}
 						onClick={() => handleAction("delete")}
-						style={{
-							"justify-content": "flex-start",
-							color: "var(--wa-color-danger)",
-						}}
-					>
-						<wa-icon slot="start" name="trash-2"></wa-icon>
-						Delete column
-					</wa-button>
+						active={() => false}
+						showLabels
+					/>
 				</div>
 			</wa-popup>
 		</div>

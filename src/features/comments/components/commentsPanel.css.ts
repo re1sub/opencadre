@@ -9,6 +9,7 @@ export const commentsPanel = style({
 	flexDirection: "column",
 	gap: 0,
 	width: "100%",
+	justifyContent: "space-between",
 });
 
 export const commentsHeader = style({

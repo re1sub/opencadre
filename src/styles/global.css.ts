@@ -125,7 +125,3 @@ globalStyle("wa-dialog::part(footer)", {
 	paddingBlockStart: "inherit",
 	padding: "var(--wa-space-s)",
 });
-
-globalStyle("wa-popup wa-button::part(button)", {
-	justifyContent: "flex-start",
-});

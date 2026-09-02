@@ -63,45 +63,47 @@ const CommentsPanel = (props: CommentsPanelProps) => {
 
 	return (
 		<div class={styles.commentsPanel}>
-			<div class={styles.commentsHeader}>
-				<wa-icon name="message-square-text" label="Comments"></wa-icon>
-				Comments
-			</div>
+			<div>
+				<div class={styles.commentsHeader}>
+					<wa-icon name="message-square-text" label="Comments"></wa-icon>
+					Comments
+				</div>
 
-			<div
-				style={{
-					display: "flex",
-					gap: "var(--wa-space-s)",
-				}}
-			>
-				<div class={styles.commentForm}>
-					<MarkdownField
-						value={commentDraft()}
-						onChange={setCommentDraft}
-						placeholder="Write a comment..."
-						noControlsFooter={true}
-					/>
-					<wa-button
-						type="button"
-						variant="neutral"
-						appearance="plain"
-						slot="start"
-						size="s"
-						disabled={commentDraft().trim() === ""}
-						onClick={addComment}
-						style={{
-							position: "absolute",
-							bottom: "0",
-							right: "0",
-						}}
-						tabIndex={0}
-					>
-						<wa-icon
-							name="send-horizontal"
-							label="Save comment"
-							style={{ "font-size": "1.2rem" }}
-						></wa-icon>
-					</wa-button>
+				<div
+					style={{
+						display: "flex",
+						gap: "var(--wa-space-s)",
+					}}
+				>
+					<div class={styles.commentForm}>
+						<MarkdownField
+							value={commentDraft()}
+							onChange={setCommentDraft}
+							placeholder="Write a comment..."
+							noControlsFooter={true}
+						/>
+						<wa-button
+							type="button"
+							variant="neutral"
+							appearance="plain"
+							slot="start"
+							size="s"
+							disabled={commentDraft().trim() === ""}
+							onClick={addComment}
+							style={{
+								position: "absolute",
+								bottom: "0.2rem",
+								right: "0.5rem",
+							}}
+							tabIndex={0}
+						>
+							<wa-icon
+								name="send-horizontal"
+								label="Save comment"
+								style={{ "font-size": "1.2rem" }}
+							></wa-icon>
+						</wa-button>
+					</div>
 				</div>
 			</div>
 
