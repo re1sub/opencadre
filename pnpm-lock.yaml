@@ -32,6 +32,18 @@ importers:
       '@supabase/supabase-js':
         specifier: ^2.110.8
         version: 2.111.0
+      '@tanstack/ai':
+        specifier: ^0.52.1
+        version: 0.52.1(zod@4.4.3)
+      '@tanstack/ai-client':
+        specifier: ^0.29.2
+        version: 0.29.2(zod@4.4.3)
+      '@tanstack/ai-openrouter':
+        specifier: ^0.19.6
+        version: 0.19.6(@tanstack/ai@0.52.1(zod@4.4.3))
+      '@tanstack/ai-solid':
+        specifier: ^0.19.4
+        version: 0.19.4(@tanstack/ai@0.52.1(zod@4.4.3))(solid-js@1.9.14)(zod@4.4.3)
       '@tanstack/solid-query':
         specifier: ^5.101.4
         version: 5.101.4(solid-js@1.9.14)
@@ -125,6 +137,14 @@ importers:
         version: 2.11.14(solid-js@1.9.14)(vite@8.2.0(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.6.1)(yaml@2.9.0))
 
 packages:
+
+  '@ag-ui/core@0.1.1-canary.beta.0':
+    resolution: {integrity: sha512-zcP3RH5p3HJTZ0kyQxNOL1blnVFTDpaShitR7UMS/thwFdl48V6CAG+WQBcYEu/dfa8mKonRez88N0Ok+nEI+w==}
+    peerDependencies:
+      zod: ^3.25.18 || ^4.0.0
+    peerDependenciesMeta:
+      zod:
+        optional: true
 
   '@awesome.me/webawesome@3.11.0':
     resolution: {integrity: sha512-WM8kyP+AdAT3/zwNpc/YzN3Nu5pRD6ksREFZAct/DIn6KMnQs8lPVfiPbJrOpKMk8OaSnQX19iiwFGjoswXVXw==}
@@ -658,6 +678,9 @@ packages:
   '@nothing-but/utils@0.17.0':
     resolution: {integrity: sha512-TuCHcHLOqDL0SnaAxACfuRHBNRgNJcNn9X0GiH5H3YSDBVquCr3qEIG3FOQAuMyZCbu9w8nk2CHhOsn7IvhIwQ==}
 
+  '@openrouter/sdk@0.13.20':
+    resolution: {integrity: sha512-fx4o19FHgadEldfrSOgSbXAi32hCE3O708q1nxcoxYrW6fP6/WggX3o5PmnlnObzmxrqLMkZpqg188K+Twguhg==}
+
   '@oxc-project/types@0.142.0':
     resolution: {integrity: sha512-7W+2q5AKQVU36fkaryontrHn3YDt1RyUYXatw9i5H8ocYe2sPKSFB6eS8WNPeRKiN1qAWWZUPm7gwFzJGrccqQ==}
 
@@ -1001,6 +1024,9 @@ packages:
     peerDependencies:
       solid-js: ^1.8.6
 
+  '@standard-schema/spec@1.1.0':
+    resolution: {integrity: sha512-l2aFy5jALhniG5HgqrD6jXLi/rUWrKvqN/qJx6yoJsgKhblVd+iqqU4RCXavm/jPityDo5TCvKMnpjKnOriy0w==}
+
   '@supabase/auth-js@2.111.0':
     resolution: {integrity: sha512-hbRLgyQZEX0SDyF4LYXpv94qOIQyFATfpT5SIs2V0SisHnisVRkYgiPQWzv80l4S2mO3qof78rmoH9j5zoFsYQ==}
     engines: {node: '>=22.0.0'}
@@ -1071,6 +1097,40 @@ packages:
   '@supabase/supabase-js@2.111.0':
     resolution: {integrity: sha512-9q0/AULthQnWeiDh1vGyjoJZbSY04bu6qHcWit70pqEYn5Kv/dkCPY62Ja1123jEnJbB9Vd2pjY7Kvk/lK3peA==}
     engines: {node: '>=22.0.0'}
+
+  '@tanstack/ai-client@0.29.2':
+    resolution: {integrity: sha512-SciysncXh5R5MHQ1GoF3kHfaygRFljUO1yVRvH97elR5l7Xjx9VYVB0KLnW7g11SIwxUrpODlLynlxEJSL2USg==}
+
+  '@tanstack/ai-event-client@0.11.2':
+    resolution: {integrity: sha512-SlBC0jzlsjcdwYZqbvd7Wjny7GkGJGOZepHyJShDsfaiFNFUzGSP4SjOwV49YPfKwsFmR8hX67jQtBAmsnZWqQ==}
+
+  '@tanstack/ai-openrouter@0.19.6':
+    resolution: {integrity: sha512-RoyXYuoy0AlxM6pWLIf7ZjTIJIJb8dR/eiZsaNLpbAoXSNJrOjmkzTeoc27T7ZOXG54EWYoodUuCnAiEqFd71g==}
+    peerDependencies:
+      '@tanstack/ai': ^0.52.1
+
+  '@tanstack/ai-solid@0.19.4':
+    resolution: {integrity: sha512-dtemsdqbycf1CgXO8oJW9WycujbR/ZKsuFU1KdmZ7kHb1o2udvPoLuC8Ui6psnTsVWikkRC7sZ1g0nR+nAnNCQ==}
+    peerDependencies:
+      '@tanstack/ai': ^0.52.0
+      solid-js: '>=1.9.10'
+
+  '@tanstack/ai-utils@0.4.0':
+    resolution: {integrity: sha512-xqvAgPJkIuGk1m+jZKyb7vBTQIaBmUD9EVzlPkDWWMp80n69uwL0TnBZCVk+OwL9goTQiFy648dnBfLsiJgl6A==}
+
+  '@tanstack/ai@0.52.1':
+    resolution: {integrity: sha512-x7UqFAuL9Wn6eKO5RXFPH8w69No0bbMSzC4xp+ikh2HrC3dZqyTVa+AeKWemh89TFQjp8ZVNSJkgC16WDjPWtQ==}
+    engines: {node: '>=18'}
+    peerDependencies:
+      '@opentelemetry/api': '>=1.9.0'
+    peerDependenciesMeta:
+      '@opentelemetry/api':
+        optional: true
+
+  '@tanstack/devtools-event-client@0.4.4':
+    resolution: {integrity: sha512-6T5Yop/793YI+H+5J8Hsyj4kCih9sl4t3ElLgKioW5hk3ocn+ZdSJ94tT7vL7uabxSugWYBZlOTMPzEw2puvQw==}
+    engines: {node: '>=18'}
+    hasBin: true
 
   '@tanstack/query-core@5.101.4':
     resolution: {integrity: sha512-gNwcvOJcRbLWPOLG/2OBm+zM+Yv+MKsXKEOWC57USuZDEsI71hEErQsiEGx5wX9rzWWkfwM0fVSPoiIFSsxfiw==}
@@ -1892,6 +1952,9 @@ packages:
   parse5@7.3.0:
     resolution: {integrity: sha512-IInvU7fabl34qmi9gY8XOVxhYyMyuH2xUNpb2q8/Y+7552KlejkRvqvD19nMoUW/uQGGbqNpA6Tufu5FL5BZgw==}
 
+  partial-json@0.1.7:
+    resolution: {integrity: sha512-Njv/59hHaokb/hRUjce3Hdv12wd60MtM9Z5Olmn+nehe0QDAsRtRbJPvJ0Z91TusF0SuZRIvnM+S4l6EIP8leA==}
+
   path-exists@4.0.0:
     resolution: {integrity: sha512-ak9Qy5Q7jYb2Wwcey5Fpvg2KoAc/ZIhLSLOSBmRmygPsGwkVVt0fZa0qrtMz+m6tJTAHfZQ8FnmB4MG4LWy7/w==}
     engines: {node: '>=8'}
@@ -2236,6 +2299,10 @@ packages:
     resolution: {integrity: sha512-ytENFjIJFl2UwYglde2jchW2Hwm4GJFLDiSXWdTrJQBIN9Fcyp7n4DhxJEiWNAJMV1/BqWfW/kkg71UDcHJyTQ==}
 
 snapshots:
+
+  '@ag-ui/core@0.1.1-canary.beta.0(zod@4.4.3)':
+    optionalDependencies:
+      zod: 4.4.3
 
   '@awesome.me/webawesome@3.11.0(@floating-ui/utils@0.2.12)(@types/node@24.13.3)(@types/react@19.2.17)':
     dependencies:
@@ -2793,6 +2860,10 @@ snapshots:
 
   '@nothing-but/utils@0.17.0': {}
 
+  '@openrouter/sdk@0.13.20':
+    dependencies:
+      zod: 4.4.3
+
   '@oxc-project/types@0.142.0': {}
 
   '@parse5/tools@0.3.0':
@@ -3046,6 +3117,8 @@ snapshots:
     dependencies:
       solid-js: 1.9.14
 
+  '@standard-schema/spec@1.1.0': {}
+
   '@supabase/auth-js@2.111.0':
     dependencies:
       tslib: 2.8.1
@@ -3101,6 +3174,48 @@ snapshots:
       '@supabase/postgrest-js': 2.111.0
       '@supabase/realtime-js': 2.111.0
       '@supabase/storage-js': 2.111.0
+
+  '@tanstack/ai-client@0.29.2(zod@4.4.3)':
+    dependencies:
+      '@tanstack/ai': 0.52.1(zod@4.4.3)
+      '@tanstack/ai-event-client': 0.11.2
+      '@tanstack/ai-utils': 0.4.0
+    transitivePeerDependencies:
+      - '@opentelemetry/api'
+      - zod
+
+  '@tanstack/ai-event-client@0.11.2':
+    dependencies:
+      '@tanstack/devtools-event-client': 0.4.4
+
+  '@tanstack/ai-openrouter@0.19.6(@tanstack/ai@0.52.1(zod@4.4.3))':
+    dependencies:
+      '@openrouter/sdk': 0.13.20
+      '@tanstack/ai': 0.52.1(zod@4.4.3)
+      '@tanstack/ai-utils': 0.4.0
+
+  '@tanstack/ai-solid@0.19.4(@tanstack/ai@0.52.1(zod@4.4.3))(solid-js@1.9.14)(zod@4.4.3)':
+    dependencies:
+      '@tanstack/ai': 0.52.1(zod@4.4.3)
+      '@tanstack/ai-client': 0.29.2(zod@4.4.3)
+      solid-js: 1.9.14
+    transitivePeerDependencies:
+      - '@opentelemetry/api'
+      - zod
+
+  '@tanstack/ai-utils@0.4.0': {}
+
+  '@tanstack/ai@0.52.1(zod@4.4.3)':
+    dependencies:
+      '@ag-ui/core': 0.1.1-canary.beta.0(zod@4.4.3)
+      '@standard-schema/spec': 1.1.0
+      '@tanstack/ai-event-client': 0.11.2
+      '@tanstack/ai-utils': 0.4.0
+      partial-json: 0.1.7
+    transitivePeerDependencies:
+      - zod
+
+  '@tanstack/devtools-event-client@0.4.4': {}
 
   '@tanstack/query-core@5.101.4': {}
 
@@ -3869,6 +3984,8 @@ snapshots:
   parse5@7.3.0:
     dependencies:
       entities: 6.0.1
+
+  partial-json@0.1.7: {}
 
   path-exists@4.0.0: {}
 
