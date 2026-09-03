@@ -1,8 +1,7 @@
 import { globalStyle, style } from "@vanilla-extract/css";
 
-// workspace.css.ts
 export const page = style({
-	touchAction: "pan-y", // <-- Allows vertical scrolling while enabling JS horizontal drag capture
+	touchAction: "pan-y",
 	selectors: {
 		"&::part(body)": {
 			transition: "grid-template-columns 0.2s ease-in-out",
