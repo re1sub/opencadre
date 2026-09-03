@@ -306,6 +306,7 @@ const SettingsWorkspaceSection = (props: SettingsWorkspaceSectionProps) => {
 					<ConfirmDialog
 						label="Delete workspace"
 						message={`Permanently delete "${props.workspace()?.name ?? "this workspace"}" and all of its pages? This cannot be undone.`}
+						confirmText={props.workspace()?.name ?? ""}
 						onConfirm={() => {
 							const ws = props.workspace();
 							if (ws) props.onDeleteWorkspace(ws.id);

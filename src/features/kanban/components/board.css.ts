@@ -100,6 +100,10 @@ export const columnHeader = style({
 	alignItems: "center",
 	gap: "var(--wa-space-xs)",
 	padding: "var(--wa-space-m)",
+	":hover": {
+		backgroundColor:
+			"color-mix(in srgb, var(--column-accent) 30%, transparent)",
+	},
 });
 
 export const columnHeaderTitle = style({

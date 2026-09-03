@@ -1,4 +1,6 @@
 import { useSortable } from "@dnd-kit/solid/sortable";
+import { createSignal } from "solid-js";
+import PopupMenu from "#/features/ui/PopupMenu";
 import { PAGE_KIND_META, type Page } from "../types";
 import { pageButton, pageMenuTrigger, pageRow } from "./workspace.css";
 
@@ -7,9 +9,12 @@ interface SortablePageItemProps {
 	index: number;
 	isActive: boolean;
 	onRequestDelete: (id: string) => void;
+	onDuplicatePage: (id: string) => void;
 }
 
 export const SortablePageItem = (props: SortablePageItemProps) => {
+	const [liRef, setLiRef] = createSignal<HTMLElement | null>(null);
+
 	const { ref, isDragging, isDropTarget } = useSortable({
 		get id() {
 			return props.entry.id;
@@ -22,9 +27,27 @@ export const SortablePageItem = (props: SortablePageItemProps) => {
 		accept: ["page"],
 	});
 
+	const menuItems = [
+		{
+			id: `duplicate-${props.entry.id}`,
+			icon: "copy",
+			label: "Duplicate page",
+			onClick: () => props.onDuplicatePage(props.entry.id),
+		},
+		{
+			id: `delete-${props.entry.id}`,
+			icon: "trash-2",
+			label: "Delete page",
+			onClick: () => props.onRequestDelete(props.entry.id),
+		},
+	];
+
 	return (
 		<li
-			ref={ref}
+			ref={(el) => {
+				ref(el);
+				setLiRef(el);
+			}}
 			class={pageRow}
 			style={{
 				opacity: isDragging() ? 0.5 : 1,
@@ -54,23 +77,22 @@ export const SortablePageItem = (props: SortablePageItemProps) => {
 				{props.entry.title}
 			</wa-button>
 
-			<wa-dropdown on:wa-select={() => props.onRequestDelete(props.entry.id)}>
-				<wa-button
-					slot="trigger"
-					variant={props.isActive ? "brand" : "neutral"}
-					appearance="plain"
-					size="xs"
-					class={pageMenuTrigger}
-					aria-label={`Options for ${props.entry.title}`}
-				>
-					<wa-icon name="ellipsis-vertical"></wa-icon>
-				</wa-button>
-
-				<wa-dropdown-item>
-					<wa-icon slot="icon" name="trash-2"></wa-icon>
-					Delete page
-				</wa-dropdown-item>
-			</wa-dropdown>
+			<PopupMenu items={menuItems} contextMenuTarget={() => liRef()}>
+				{({ ref: triggerRef, toggle }) => (
+					<wa-button
+						ref={triggerRef}
+						slot="trigger"
+						variant={props.isActive ? "brand" : "neutral"}
+						appearance="plain"
+						size="xs"
+						class={pageMenuTrigger}
+						aria-label={`Options for ${props.entry.title}`}
+						onClick={toggle}
+					>
+						<wa-icon name="ellipsis-vertical"></wa-icon>
+					</wa-button>
+				)}
+			</PopupMenu>
 		</li>
 	);
 };

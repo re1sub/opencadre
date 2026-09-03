@@ -4,6 +4,7 @@ export const confirmMessage = style({
 	margin: 0,
 	fontSize: "0.9rem",
 	color: "var(--wa-color-text-normal)",
+	marginBottom: "var(--wa-space-s)",
 });
 
 export const confirmActions = style({

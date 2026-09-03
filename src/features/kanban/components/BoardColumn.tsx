@@ -1,7 +1,8 @@
 import { useDroppable } from "@dnd-kit/solid";
 import { useSortable } from "@dnd-kit/solid/sortable";
-import { For } from "solid-js";
+import { createSignal, For } from "solid-js";
 import type { Tag } from "#/features/tags/types";
+import PopupMenu from "#/features/ui/PopupMenu";
 import type { WorkspaceMember } from "#/features/workspace/types";
 import { useDragTilt } from "../hooks/useDragTilt";
 import { BOARD_ID, type Column } from "../types";
@@ -16,10 +17,14 @@ interface BoardColumnProps {
 	pageId?: string;
 	onAddCard: (columnId: string) => void;
 	onEditColumn: (column: Column) => void;
+	onColumnDuplicate: (column: Column) => void;
+	onColumnDelete: (column: Column) => void;
 	onFocusColumn?: (columnId: string) => void;
 }
 
 const BoardColumn = (props: BoardColumnProps) => {
+	const [headerRef, setHeaderRef] = createSignal<HTMLElement | null>(null);
+
 	// Column as sortable (for column reordering)
 	const {
 		ref: sortableRef,
@@ -49,6 +54,27 @@ const BoardColumn = (props: BoardColumnProps) => {
 
 	const rotation = useDragTilt(isDragging);
 
+	const menuItems = [
+		{
+			id: `edit-column-${props.column.id}`,
+			icon: "pencil",
+			label: "Edit column",
+			onClick: () => props.onEditColumn(props.column),
+		},
+		{
+			id: `duplicate-column-${props.column.id}`,
+			icon: "copy",
+			label: "Duplicate column",
+			onClick: () => props.onColumnDuplicate(props.column),
+		},
+		{
+			id: `delete-column-${props.column.id}`,
+			icon: "trash-2",
+			label: "Delete column",
+			onClick: () => props.onColumnDelete(props.column),
+		},
+	];
+
 	return (
 		<section
 			ref={(el) => {
@@ -67,7 +93,12 @@ const BoardColumn = (props: BoardColumnProps) => {
 				rotate: `${rotation()}deg`,
 			}}
 		>
-			<div class={styles.columnHeader}>
+			<div
+				class={styles.columnHeader}
+				ref={(el) => {
+					setHeaderRef(el);
+				}}
+			>
 				<div ref={handleRef} class={styles.columnHeaderTitle}>
 					<span class={styles.columnDot}></span>
 					<span class={styles.columnTitle}>
@@ -78,17 +109,25 @@ const BoardColumn = (props: BoardColumnProps) => {
 					</span>
 				</div>
 
-				<wa-button
-					type="button"
-					variant="neutral"
-					appearance="plain"
-					aria-label="Column settings"
-					class={styles.columnControlsButton}
-					size="xs"
-					onClick={() => props.onEditColumn(props.column)}
-				>
-					<wa-icon name="ellipsis-vertical" label="Column settings"></wa-icon>
-				</wa-button>
+				<PopupMenu items={menuItems} contextMenuTarget={() => headerRef()}>
+					{({ ref, toggle }) => (
+						<wa-button
+							ref={ref}
+							type="button"
+							variant="neutral"
+							appearance="plain"
+							aria-label="Column settings"
+							class={styles.columnControlsButton}
+							size="xs"
+							onClick={toggle}
+						>
+							<wa-icon
+								name="ellipsis-vertical"
+								label="Column settings"
+							></wa-icon>
+						</wa-button>
+					)}
+				</PopupMenu>
 			</div>
 
 			<div class={styles.columnCards}>

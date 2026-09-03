@@ -2,22 +2,20 @@ interface DeleteButtonProps {
 	onDelete: () => void;
 	label?: string;
 	iconOnly?: boolean;
+	disabled?: boolean;
 }
 
-const DeleteButton = ({
-	onDelete,
-	label = "Delete",
-	iconOnly,
-}: DeleteButtonProps) => {
+const DeleteButton = (props: DeleteButtonProps) => {
 	return (
 		<wa-button
 			variant="danger"
-			appearance={iconOnly ? "plain" : "filled-outlined"}
-			onClick={onDelete}
-			aria-label={label}
+			appearance={props.iconOnly ? "plain" : "filled-outlined"}
+			onClick={props.onDelete}
+			aria-label={props.label || "Delete"}
+			disabled={props.disabled}
 		>
-			<wa-icon name="trash-2" slot={iconOnly ? "" : "start"}></wa-icon>
-			{!iconOnly && <span>{label}</span>}
+			<wa-icon name="trash-2" slot={props.iconOnly ? "" : "start"}></wa-icon>
+			{!props.iconOnly && <span>{props.label || "Delete"}</span>}
 		</wa-button>
 	);
 };
