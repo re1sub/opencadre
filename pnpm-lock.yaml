@@ -44,9 +44,6 @@ importers:
       '@tanstack/ai-solid':
         specifier: ^0.19.4
         version: 0.19.4(@tanstack/ai@0.52.1(zod@4.4.3))(solid-js@1.9.14)(zod@4.4.3)
-      '@tanstack/solid-query':
-        specifier: ^5.101.4
-        version: 5.101.4(solid-js@1.9.14)
       '@tiptap/core':
         specifier: ^3.29.2
         version: 3.29.2(@tiptap/pm@3.29.2)
@@ -1131,14 +1128,6 @@ packages:
     resolution: {integrity: sha512-6T5Yop/793YI+H+5J8Hsyj4kCih9sl4t3ElLgKioW5hk3ocn+ZdSJ94tT7vL7uabxSugWYBZlOTMPzEw2puvQw==}
     engines: {node: '>=18'}
     hasBin: true
-
-  '@tanstack/query-core@5.101.4':
-    resolution: {integrity: sha512-gNwcvOJcRbLWPOLG/2OBm+zM+Yv+MKsXKEOWC57USuZDEsI71hEErQsiEGx5wX9rzWWkfwM0fVSPoiIFSsxfiw==}
-
-  '@tanstack/solid-query@5.101.4':
-    resolution: {integrity: sha512-w+QNX4al4zkfOfO6FYILouPX3yAxLANvBNz0cZqaBrSRKfBP3qNC179wu/eS2w1asH+QqEeI0rR2/s7gRGxnFA==}
-    peerDependencies:
-      solid-js: ^1.6.0
 
   '@tiptap/core@3.29.2':
     resolution: {integrity: sha512-oKUkiPUB7noilVYxI9lNzUD4rX17sHub+PYjMfHMWHG9A3nvIy+FdePIVIIhThKWF7ijhr3eIqHY51Bn+GAFtw==}
@@ -3216,13 +3205,6 @@ snapshots:
       - zod
 
   '@tanstack/devtools-event-client@0.4.4': {}
-
-  '@tanstack/query-core@5.101.4': {}
-
-  '@tanstack/solid-query@5.101.4(solid-js@1.9.14)':
-    dependencies:
-      '@tanstack/query-core': 5.101.4
-      solid-js: 1.9.14
 
   '@tiptap/core@3.29.2(@tiptap/pm@3.29.2)':
     dependencies:

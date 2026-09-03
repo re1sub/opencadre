@@ -1,4 +1,3 @@
-import { useQueryClient } from "@tanstack/solid-query";
 import { createEffect, createSignal } from "solid-js";
 import type { Tables } from "#/types/database";
 import { supabase } from "#/utils/supabase";
@@ -16,7 +15,6 @@ const toWorkspace = (row: WorkspaceRow) => ({
 });
 
 export function useWorkspaceAdapter() {
-	const _queryClient = useQueryClient();
 	const [workspaces, setWorkspaces] = createSignal<Workspace[]>([]);
 	const [activeWorkspaceId, setActiveWorkspaceId] = createSignal<string>("");
 	const [loaded, setLoaded] = createSignal(false);
