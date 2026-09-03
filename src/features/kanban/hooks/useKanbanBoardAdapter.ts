@@ -317,6 +317,50 @@ export function useKanbanBoardAdapter(options: UseKanbanBoardAdapterOptions) {
 		updateColumns((current) => current.filter((c) => c.id !== columnId));
 	};
 
+	const duplicateColumn = async (sourceColumn: Column) => {
+		const position = columns().length;
+
+		const { data: newColData, error: colError } = await supabase
+			.from("columns")
+			.insert({
+				page_id: options.pageId,
+				title: `${sourceColumn.title} (Copy)`,
+				color: sourceColumn.color || null,
+				position,
+			})
+			.select()
+			.single();
+		if (colError) throw colError;
+
+		const newCards: Card[] = [];
+		for (let i = 0; i < sourceColumn.cards.length; i++) {
+			const src = sourceColumn.cards[i];
+			const { data: cardData, error: cardError } = await supabase
+				.from("cards")
+				.insert({
+					column_id: newColData.id,
+					page_id: options.pageId,
+					title: src.title,
+					description: src.description || null,
+					due_date: src.dueDate ?? null,
+					assignee_ids: src.assigneeIds ?? [],
+					position: i,
+				})
+				.select()
+				.single();
+			if (cardError) throw cardError;
+			newCards.push(toCard(cardData));
+		}
+
+		const column: Column = {
+			...toColumn(newColData),
+			cards: newCards,
+		};
+
+		updateColumns((current) => [...current, column]);
+		setColumnDialog(column);
+	};
+
 	return {
 		columns,
 		cardDialog,
@@ -332,6 +376,7 @@ export function useKanbanBoardAdapter(options: UseKanbanBoardAdapterOptions) {
 		deleteCard,
 		addCard,
 		addColumn,
+		duplicateColumn,
 		saveColumn,
 		deleteColumn,
 		loaded,

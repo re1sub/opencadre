@@ -4,6 +4,7 @@ import { createSignal, Show } from "solid-js";
 import { useAuth } from "#/features/auth/AuthContext";
 import ConfirmDialog from "#/features/ui/ConfirmDialog";
 import EditableText from "#/features/ui/EditableText";
+import { formatTimestamp } from "#/utils/date";
 import { useHotkey } from "#/utils/useHotkey";
 import LoadingSpinner from "../ui/LoadingSpinner";
 import CreateWorkspace from "./components/CreateWorkspace";
@@ -15,6 +16,7 @@ import WorkspaceHeader from "./components/WorkspaceHeader";
 import WorkspaceHome from "./components/WorkspaceHome";
 import WorkspaceSidebar from "./components/WorkspaceSidebar";
 import {
+	editedBadge,
 	mainContent,
 	mainHeader,
 	page,
@@ -294,6 +296,10 @@ const Workspace = () => {
 									{pagesHook.activePage()?.title}
 								</wa-button>
 							</div>
+							<span class={editedBadge}>
+								Edited{" "}
+								{formatTimestamp(pagesHook.activePage()?.updatedAt ?? "")}
+							</span>
 							<wa-copy-button
 								value={`${window.location.origin}/workspace/p/${pagesHook.activePage()?.id}`}
 								copy-label="Copy page link"
@@ -343,6 +349,7 @@ const Workspace = () => {
 									title: found.title,
 								});
 						}}
+						onDuplicatePage={pagesHook.duplicatePage}
 						onReorder={pagesHook.reorderPages}
 					/>
 

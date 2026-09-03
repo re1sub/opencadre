@@ -101,17 +101,27 @@ const KanbanBoard = (props: KanbanBoardProps) => {
 								pageId={props.pageId}
 								onAddCard={board.addCard}
 								onEditColumn={board.setColumnDialog}
+								onColumnDuplicate={board.duplicateColumn}
+								onColumnDelete={(col) => {
+									board.setConfirmDialog({
+										kind: "column",
+										columnId: col.id,
+										title: col.title,
+									});
+								}}
 							/>
 						)}
 					</For>
 
-					<button
-						type="button"
-						class={styles.addColumnButton}
-						onClick={board.addColumn}
-					>
-						+ Add column
-					</button>
+					<Show when={board.loaded()}>
+						<button
+							type="button"
+							class={styles.addColumnButton}
+							onClick={board.addColumn}
+						>
+							+ Add column
+						</button>
+					</Show>
 				</div>
 			</DragDropProvider>
 

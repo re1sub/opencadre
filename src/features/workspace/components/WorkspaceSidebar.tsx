@@ -9,6 +9,7 @@ interface WorkspaceSidebarProps {
 	defaultKind?: PageKind;
 	onAddPage: (kind: PageKind) => void;
 	onRequestDeletePage: (id: string) => void;
+	onDuplicatePage: (id: string) => void;
 	onReorder: (pageId: string, newIndex: number) => void;
 }
 
@@ -24,6 +25,7 @@ const WorkspaceSidebar = (props: WorkspaceSidebarProps) => {
 				pages={props.pages}
 				activePageId={props.activePageId}
 				onRequestDelete={props.onRequestDeletePage}
+				onDuplicatePage={props.onDuplicatePage}
 				onReorder={props.onReorder}
 			/>
 		</nav>

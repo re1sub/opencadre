@@ -11,6 +11,7 @@ interface PageListProps {
 	pages: Page[];
 	activePageId: () => string | null;
 	onRequestDelete: (id: string) => void;
+	onDuplicatePage: (id: string) => void;
 	onReorder: (pageId: string, newIndex: number) => void;
 }
 
@@ -43,6 +44,7 @@ const PageList = (props: PageListProps) => {
 								index={index()}
 								isActive={entry.id === props.activePageId()}
 								onRequestDelete={props.onRequestDelete}
+								onDuplicatePage={props.onDuplicatePage}
 							/>
 						)}
 					</For>

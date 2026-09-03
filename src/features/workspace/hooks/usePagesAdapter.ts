@@ -54,6 +54,8 @@ const toPage = (row: PageRow, content?: PageContentRow): Page => ({
 	title: row.title,
 	kind: row.kind as PageKind,
 	content: contentToString(row.kind as PageKind, content?.content),
+	createdAt: row.created_at,
+	updatedAt: row.updated_at,
 });
 
 export function usePagesAdapter(
@@ -245,6 +247,8 @@ export function usePagesAdapter(
 			title: page.title,
 			kind,
 			content: contentToString(kind, content),
+			createdAt: page.created_at,
+			updatedAt: page.updated_at,
 		};
 		setAllPages((prev) => [...prev, mapped]);
 		navigate(`/workspace/p/${mapped.id}`);
@@ -281,8 +285,11 @@ export function usePagesAdapter(
 			.eq("id", id);
 		if (error) throw error;
 
+		const now = new Date().toISOString();
 		setAllPages((prev) =>
-			prev.map((entry) => (entry.id === id ? { ...entry, title } : entry)),
+			prev.map((entry) =>
+				entry.id === id ? { ...entry, title, updatedAt: now } : entry,
+			),
 		);
 	};
 
@@ -316,9 +323,144 @@ export function usePagesAdapter(
 			.upsert({ page_id: id, content: parsed }, { onConflict: "page_id" });
 		if (error) throw error;
 
+		const now = new Date().toISOString();
+		const { error: pageError } = await supabase
+			.from("pages")
+			.update({ updated_at: now })
+			.eq("id", id);
+		if (pageError) throw pageError;
+
 		setAllPages((prev) =>
-			prev.map((entry) => (entry.id === id ? { ...entry, content } : entry)),
+			prev.map((entry) =>
+				entry.id === id ? { ...entry, content, updatedAt: now } : entry,
+			),
 		);
+	};
+
+	const duplicatePage = async (id: string) => {
+		const source = allPages().find((p) => p.id === id);
+		if (!source) return;
+
+		let clonedContent: Json;
+		try {
+			clonedContent = JSON.parse(source.content);
+		} catch {
+			clonedContent = source.content;
+		}
+
+		const targetWorkspaceId = activeWorkspaceId();
+
+		if (source.kind === "kanban") {
+			const { data: page, error: pageError } = await supabase
+				.from("pages")
+				.insert({
+					workspace_id: targetWorkspaceId,
+					title: `${source.title} (Copy)`,
+					kind: source.kind,
+				})
+				.select()
+				.single();
+			if (pageError) throw pageError;
+
+			const content = clonedContent ?? DEFAULT_CONTENT[source.kind];
+			const { error: contentError } = await supabase
+				.from("page_content")
+				.insert({ page_id: page.id, content });
+			if (contentError) throw contentError;
+
+			const { data: sourceColumns } = await supabase
+				.from("columns")
+				.select("*")
+				.eq("page_id", id)
+				.order("position", { ascending: true });
+
+			const columnIdMap = new Map<string, string>();
+
+			if (sourceColumns) {
+				for (const col of sourceColumns) {
+					const { data: newCol } = await supabase
+						.from("columns")
+						.insert({
+							page_id: page.id,
+							title: col.title,
+							color: col.color,
+							position: col.position,
+						})
+						.select()
+						.single();
+					if (newCol) columnIdMap.set(col.id, newCol.id);
+				}
+
+				const { data: sourceCards } = await supabase
+					.from("cards")
+					.select("*")
+					.eq("page_id", id)
+					.order("position", { ascending: true });
+
+				if (sourceCards) {
+					const { data: sourceCardTags } = await supabase
+						.from("card_tags")
+						.select("card_id, tag_id")
+						.in(
+							"card_id",
+							sourceCards.map((c) => c.id),
+						);
+
+					const cardTagMap = new Map<string, string[]>();
+					for (const ct of sourceCardTags ?? []) {
+						const tags = cardTagMap.get(ct.card_id) ?? [];
+						tags.push(ct.tag_id);
+						cardTagMap.set(ct.card_id, tags);
+					}
+
+					for (const card of sourceCards) {
+						const newColumnId = columnIdMap.get(card.column_id);
+						if (!newColumnId) continue;
+
+						const { data: newCard } = await supabase
+							.from("cards")
+							.insert({
+								column_id: newColumnId,
+								page_id: page.id,
+								title: card.title,
+								description: card.description,
+								due_date: card.due_date,
+								assignee_ids: card.assignee_ids,
+								position: card.position,
+							})
+							.select()
+							.single();
+
+						const tagIds = cardTagMap.get(card.id);
+						if (newCard && tagIds?.length) {
+							await supabase
+								.from("card_tags")
+								.insert(
+									tagIds.map((tid) => ({ card_id: newCard.id, tag_id: tid })),
+								);
+						}
+					}
+				}
+			}
+
+			const mapped: Page = {
+				id: page.id,
+				workspaceId: targetWorkspaceId,
+				title: page.title,
+				kind: source.kind,
+				content: contentToString(source.kind, content),
+				createdAt: page.created_at,
+				updatedAt: page.updated_at,
+			};
+			setAllPages((prev) => [...prev, mapped]);
+			navigate(`/workspace/p/${mapped.id}`);
+			return mapped;
+		}
+
+		return addPage(source.kind, {
+			title: `${source.title} (Copy)`,
+			content: clonedContent,
+		});
 	};
 
 	return {
@@ -333,6 +475,7 @@ export function usePagesAdapter(
 		renamePage,
 		reorderPages,
 		updatePageContent,
+		duplicatePage,
 		loaded,
 	};
 }
