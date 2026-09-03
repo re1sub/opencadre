@@ -167,16 +167,6 @@ export function usePageQueries(workspaceId: string | undefined) {
 		},
 	}));
 
-	const reorderPage = createMutation(() => ({
-		mutationFn: async (input: { id: string; position: number }) => {
-			const { error } = await supabase
-				.from("pages")
-				.update({ updated_at: new Date().toISOString() })
-				.eq("id", input.id);
-			if (error) throw error;
-		},
-	}));
-
 	return {
 		pages: pagesQuery,
 		trash: trashQuery,
@@ -186,6 +176,5 @@ export function usePageQueries(workspaceId: string | undefined) {
 		softDeletePage,
 		restorePage,
 		purgePage,
-		reorderPage,
 	};
 }

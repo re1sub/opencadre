@@ -24,13 +24,18 @@ export const usePages = (
 	const activePage = () =>
 		activePages().find((entry) => entry.id === activePageId()) ?? null;
 
-	const createEmptyMarkdownPage = (): Page => ({
-		id: uid(),
-		workspaceId: activeWorkspaceId(),
-		title: "Untitled",
-		kind: "markdown",
-		content: "",
-	});
+	const createEmptyMarkdownPage = (): Page => {
+		const now = new Date().toISOString();
+		return {
+			id: uid(),
+			workspaceId: activeWorkspaceId(),
+			title: "Untitled",
+			kind: "markdown",
+			content: "",
+			createdAt: now,
+			updatedAt: now,
+		};
+	};
 
 	createEffect(() => {
 		const pageId = params.pageId;
@@ -77,12 +82,15 @@ export const usePages = (
 						})
 					: "";
 
+		const now = new Date().toISOString();
 		const newPage: Page = {
 			id: uid(),
 			workspaceId: activeWorkspaceId(),
 			title: kind === "kanban" ? "Kanban Board" : "Untitled",
 			kind,
 			content: initialContent,
+			createdAt: now,
+			updatedAt: now,
 		};
 
 		setAllPages((prev) => [...prev, newPage]);
