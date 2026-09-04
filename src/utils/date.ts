@@ -11,8 +11,16 @@ export const toIsoDate = (date: Date) => {
 };
 
 const parseDueDate = (iso: string) => {
-	const [year, month, day] = iso.split("-").map(Number);
-	return new Date(year, (month ?? 1) - 1, day ?? 1);
+	// Accept either YYYY-MM-DD or a full ISO timestamp (e.g. a timestamptz
+	// value returned by Postgres). Reject everything else as invalid.
+	if (/^\d{4}-\d{2}-\d{2}$/.test(iso)) {
+		const [year, month, day] = iso.split("-").map(Number);
+		return new Date(year, (month ?? 1) - 1, day ?? 1);
+	}
+	const date = new Date(iso);
+	return Number.isNaN(date.getTime())
+		? new Date(NaN)
+		: new Date(date.getFullYear(), date.getMonth(), date.getDate());
 };
 
 export const getDueDateStatus = (iso: string): DueDateStatus => {

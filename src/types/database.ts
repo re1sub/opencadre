@@ -598,6 +598,44 @@ export type Database = {
 					},
 				];
 			};
+			ydocs: {
+				Row: {
+					entity_id: string;
+					entity_type: string;
+					id: string;
+					state: string;
+					updated_at: string;
+					version: number;
+					workspace_id: string;
+				};
+				Insert: {
+					entity_id: string;
+					entity_type: string;
+					id?: string;
+					state?: string;
+					updated_at?: string;
+					version?: number;
+					workspace_id: string;
+				};
+				Update: {
+					entity_id?: string;
+					entity_type?: string;
+					id?: string;
+					state?: string;
+					updated_at?: string;
+					version?: number;
+					workspace_id?: string;
+				};
+				Relationships: [
+					{
+						foreignKeyName: "ydocs_workspace_id_fkey";
+						columns: ["workspace_id"];
+						isOneToOne: false;
+						referencedRelation: "workspaces";
+						referencedColumns: ["id"];
+					},
+				];
+			};
 			workspaces: {
 				Row: {
 					created_at: string;
