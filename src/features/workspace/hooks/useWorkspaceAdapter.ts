@@ -1,5 +1,6 @@
-import { createEffect, createSignal } from "solid-js";
+import { createEffect, createSignal, onCleanup } from "solid-js";
 import type { Tables } from "#/types/database";
+import { registerRealtimeHandlers } from "#/utils/realtime/registrar";
 import { supabase } from "#/utils/supabase";
 import type { PageKind, Workspace } from "../types";
 
@@ -18,6 +19,29 @@ export function useWorkspaceAdapter() {
 	const [workspaces, setWorkspaces] = createSignal<Workspace[]>([]);
 	const [activeWorkspaceId, setActiveWorkspaceId] = createSignal<string>("");
 	const [loaded, setLoaded] = createSignal(false);
+
+	// Apply remote workspace edits (rename/settings) and new workspaces.
+	const unregister = registerRealtimeHandlers("workspaces", {
+		applyInsert: (row) => {
+			const workspacesList = workspaces();
+			if (workspacesList.some((w) => w.id === row.id)) return;
+			setWorkspaces((prev) => [
+				...prev,
+				toWorkspace(row as unknown as WorkspaceRow),
+			]);
+		},
+		applyUpdate: (row) => {
+			const r = row as unknown as WorkspaceRow;
+			setWorkspaces((prev) =>
+				prev.map((w) => (w.id === r.id ? toWorkspace(r) : w)),
+			);
+		},
+		applyDelete: (row) => {
+			setWorkspaces((prev) => prev.filter((w) => w.id !== row.id));
+		},
+	});
+
+	onCleanup(unregister);
 
 	const fetchWorkspaces = async () => {
 		const {

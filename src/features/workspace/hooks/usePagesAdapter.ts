@@ -1,6 +1,8 @@
 import { useNavigate, useParams } from "@solidjs/router";
-import { createEffect, createSignal } from "solid-js";
+import { createEffect, createSignal, onCleanup } from "solid-js";
 import type { Json, Tables } from "#/types/database";
+import { createReconcileGuard } from "#/utils/realtime/reconcile";
+import { registerRealtimeHandlers } from "#/utils/realtime/registrar";
 import { supabase } from "#/utils/supabase";
 import type { Page, PageKind } from "../types";
 
@@ -75,6 +77,95 @@ export function usePagesAdapter(
 	const [activePageId, setActivePageId] = createSignal<string | null>(null);
 	const [recentIds, setRecentIds] = createSignal<string[]>([]);
 	const [loaded, setLoaded] = createSignal(false);
+
+	const reconcile = createReconcileGuard();
+
+	// Apply remote page changes (titles, delete/restore) and page_content
+	// updates to the local signal, with author-echo suppression.
+	const unregister = registerRealtimeHandlers("pages", {
+		applyInsert: (row) => {
+			const r = row as unknown as PageRow;
+			if (r.workspace_id === activeWorkspaceId() && !r.is_deleted) {
+				if (allPages().some((p) => p.id === r.id)) return;
+				setAllPages((prev) => [...prev, toPage(r)]);
+			}
+		},
+		applyUpdate: (row) => {
+			const r = row as unknown as PageRow;
+			if (r.is_deleted) {
+				setAllPages((prev) => prev.filter((p) => p.id !== r.id));
+				return;
+			}
+			setAllPages((prev) =>
+				prev.map((p) =>
+					p.id === r.id
+						? {
+								...p,
+								title: r.title,
+								updatedAt: r.updated_at,
+								content: p.content,
+							}
+						: p,
+				),
+			);
+		},
+		applyDelete: (row) => {
+			const r = row as unknown as PageRow;
+			setAllPages((prev) => prev.filter((p) => p.id !== r.id));
+			setRecentIds((prev) => prev.filter((id) => id !== r.id));
+		},
+	});
+
+	const unregisterContent = registerRealtimeHandlers("page_content", {
+		applyInsert: (row) => applyRemoteContent(row),
+		applyUpdate: (row) => applyRemoteContent(row),
+		applyDelete: () => {},
+	});
+
+	const applyRemoteContent = (row: Record<string, unknown>) => {
+		const r = row as unknown as PageContentRow;
+		const page = allPages().find((p) => p.id === r.page_id);
+		if (!page) return;
+
+		const blob =
+			typeof r.content === "string"
+				? r.content
+				: page.kind === "markdown" &&
+						r.content &&
+						typeof r.content === "object" &&
+						!Array.isArray(r.content) &&
+						Object.keys(r.content).length === 0
+					? ""
+					: JSON.stringify(r.content);
+
+		if (
+			!reconcile.shouldApply("page_content", r.id, {
+				version: r.version,
+				content: blob,
+			})
+		) {
+			return;
+		}
+
+		setAllPages((prev) =>
+			prev.map((p) =>
+				p.id === r.page_id
+					? { ...p, content: blob, updatedAt: r.updated_at }
+					: p,
+			),
+		);
+
+		reconcile.recordWrite("page_content", r.id, {
+			version: r.version,
+			blob,
+			updatedAt: r.updated_at,
+		});
+	};
+
+	onCleanup(() => {
+		unregister();
+		unregisterContent();
+	});
 
 	const fetchRecents = async (workspaceId: string) => {
 		const {
@@ -318,10 +409,19 @@ export function usePagesAdapter(
 			parsed = content;
 		}
 
-		const { error } = await supabase
+		const { data: saved, error } = await supabase
 			.from("page_content")
-			.upsert({ page_id: id, content: parsed }, { onConflict: "page_id" });
+			.upsert({ page_id: id, content: parsed }, { onConflict: "page_id" })
+			.select("id, version")
+			.single();
 		if (error) throw error;
+
+		if (saved) {
+			reconcile.recordWrite("page_content", saved.id, {
+				version: saved.version,
+				blob: content,
+			});
+		}
 
 		const now = new Date().toISOString();
 		const { error: pageError } = await supabase

@@ -1,23 +1,62 @@
-import { createEffect, createSignal } from "solid-js";
+import { createEffect, createSignal, onCleanup } from "solid-js";
+import { registerRealtimeHandlers } from "#/utils/realtime/registrar";
 import { supabase } from "#/utils/supabase";
 import type { WorkspaceMember, WorkspaceRole } from "../types";
 
 interface WorkspaceMemberRow {
+	id?: string;
 	workspace_id?: string | null;
 	user_id?: string | null;
 	role: string;
 	email?: string | null;
 }
 
+const toMember = (m: WorkspaceMemberRow): WorkspaceMember => ({
+	id: m.user_id ?? m.email ?? "",
+	name: m.email || "Unknown",
+	email: m.email ?? "",
+	role: m.role as WorkspaceRole,
+});
+
 export function useWorkspaceMembersAdapter(workspaceId: () => string) {
 	const [members, setMembers] = createSignal<WorkspaceMember[]>([]);
 	const [myRole, setMyRole] = createSignal<WorkspaceRole>("member");
+	const [meUserId, setMeUserId] = createSignal<string | null>(null);
+
+	const unregister = registerRealtimeHandlers("workspace_members", {
+		applyInsert: (row) => {
+			const r = row as unknown as WorkspaceMemberRow;
+			if (r.workspace_id !== workspaceId()) return;
+			setMembers((prev) => [
+				...prev.filter((m) => m.id !== toMember(r).id),
+				toMember(r),
+			]);
+		},
+		applyUpdate: (row) => {
+			const r = row as unknown as WorkspaceMemberRow;
+			if (r.workspace_id !== workspaceId()) return;
+			const mapped = toMember(r);
+			setMembers((prev) => prev.map((m) => (m.id === mapped.id ? mapped : m)));
+			if (r.user_id && r.user_id === meUserId()) {
+				setMyRole(r.role as WorkspaceRole);
+			}
+		},
+		applyDelete: (row) => {
+			const r = row as unknown as WorkspaceMemberRow;
+			if (r.workspace_id !== workspaceId()) return;
+			const mapped = toMember(r);
+			setMembers((prev) => prev.filter((m) => m.id !== mapped.id));
+		},
+	});
+
+	onCleanup(unregister);
 
 	const fetchMembers = async (wsId: string) => {
 		const {
 			data: { user },
 		} = await supabase.auth.getUser();
 		if (!user) return;
+		setMeUserId(user.id);
 
 		const { data, error } = await supabase
 			.from("workspace_members")

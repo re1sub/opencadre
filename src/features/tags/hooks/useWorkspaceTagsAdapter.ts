@@ -1,5 +1,6 @@
-import { createEffect, createSignal } from "solid-js";
+import { createEffect, createSignal, onCleanup } from "solid-js";
 import type { Tables } from "#/types/database";
+import { registerRealtimeHandlers } from "#/utils/realtime/registrar";
 import { supabase } from "#/utils/supabase";
 import type { Tag } from "../types";
 
@@ -14,6 +15,22 @@ const toTag = (row: TagRow): Tag => ({
 
 export function useWorkspaceTagsAdapter(workspaceId: () => string) {
 	const [tags, setTags] = createSignal<Tag[]>([]);
+
+	const unregister = registerRealtimeHandlers("tags", {
+		applyInsert: (row) => {
+			const r = row as unknown as TagRow;
+			setTags((prev) => [...prev.filter((t) => t.id !== r.id), toTag(r)]);
+		},
+		applyUpdate: (row) => {
+			const r = row as unknown as TagRow;
+			setTags((prev) => prev.map((t) => (t.id === r.id ? toTag(r) : t)));
+		},
+		applyDelete: (row) => {
+			setTags((prev) => prev.filter((t) => t.id !== row.id));
+		},
+	});
+
+	onCleanup(unregister);
 
 	const fetchTags = async (wsId: string) => {
 		const { data, error } = await supabase

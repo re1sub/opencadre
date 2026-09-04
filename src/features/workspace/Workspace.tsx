@@ -5,6 +5,7 @@ import { useAuth } from "#/features/auth/AuthContext";
 import ConfirmDialog from "#/features/ui/ConfirmDialog";
 import EditableText from "#/features/ui/EditableText";
 import { formatTimestamp } from "#/utils/date";
+import { useWorkspaceRealtime } from "#/utils/realtime/useWorkspaceRealtime";
 import { useHotkey } from "#/utils/useHotkey";
 import LoadingSpinner from "../ui/LoadingSpinner";
 import CreateWorkspace from "./components/CreateWorkspace";
@@ -52,6 +53,16 @@ const Workspace = () => {
 	);
 	const trashHook = useTrash(wsHook.setWorkspaces, pagesHook.setAllPages);
 	const membersHook = useWorkspaceMembersAdapter(wsHook.activeWorkspaceId);
+
+	// Realtime: one channel per active workspace; pages scoped by membership.
+	useWorkspaceRealtime({
+		workspaceId: wsHook.activeWorkspaceId,
+		getPageIds: () =>
+			pagesHook
+				.allPages()
+				.filter((p) => p.workspaceId === wsHook.activeWorkspaceId())
+				.map((p) => p.id),
+	});
 
 	const [deleteTarget, setDeleteTarget] = createSignal<
 		| { kind: "page"; id: string; title: string }

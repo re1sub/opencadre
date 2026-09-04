@@ -1,5 +1,6 @@
-import { createEffect, createSignal } from "solid-js";
+import { createEffect, createSignal, onCleanup } from "solid-js";
 import type { Tables } from "#/types/database";
+import { registerRealtimeHandlers } from "#/utils/realtime/registrar";
 import { supabase } from "#/utils/supabase";
 import type { Comment, CommentThread } from "../types";
 
@@ -27,6 +28,104 @@ const toThread = (
 
 export function usePageCommentsAdapter(pageId: () => string) {
 	const [threads, setThreads] = createSignal<CommentThread[]>([]);
+
+	const liveTempIds = new Set<string>();
+
+	const emptyThread = (row: CommentThreadRow): CommentThread => ({
+		id: row.id,
+		pageId: row.page_id,
+		anchorText: "",
+		createdAt: row.created_at,
+		comments: [],
+	});
+
+	const applyRemoteComment = (row: CommentRow) => {
+		setThreads((current) =>
+			current.map((t) => {
+				if (t.id !== row.thread_id) return t;
+				if (t.comments.some((c) => c.id === row.id)) return t;
+				return {
+					...t,
+					comments: [
+						...t.comments,
+						{
+							id: row.id,
+							parentId: row.thread_id,
+							author: row.author_id,
+							text: row.content,
+							createdAt: row.created_at,
+						},
+					],
+				};
+			}),
+		);
+	};
+
+	const unregisterThreads = registerRealtimeHandlers("comment_threads", {
+		applyInsert: (row) => {
+			const r = row as unknown as CommentThreadRow;
+			if (r.page_id !== pageId()) return;
+
+			setThreads((current) => {
+				if (current.some((t) => t.id === r.id)) return current;
+
+				// Oldest still-present live temp (Set iteration order = creation order)
+				let targetId: string | undefined;
+				for (const tid of liveTempIds) {
+					if (current.some((t) => t.id === tid)) {
+						targetId = tid;
+						break;
+					}
+				}
+				if (targetId) {
+					liveTempIds.delete(targetId);
+					return current.map((t) => (t.id === targetId ? emptyThread(r) : t));
+				}
+
+				return [...current, emptyThread(r)];
+			});
+		},
+		applyUpdate: () => {},
+		applyDelete: (row) => {
+			setThreads((current) => current.filter((t) => t.id !== row.id));
+		},
+	});
+
+	const unregisterComments = registerRealtimeHandlers("comments", {
+		applyInsert: (row) => applyRemoteComment(row as unknown as CommentRow),
+		applyUpdate: (row) => {
+			const r = row as unknown as CommentRow;
+			setThreads((current) =>
+				current.map((t) =>
+					t.id === r.thread_id
+						? {
+								...t,
+								comments: t.comments.map((c) =>
+									c.id === r.id
+										? { ...c, text: r.content, createdAt: r.created_at }
+										: c,
+								),
+							}
+						: t,
+				),
+			);
+		},
+		applyDelete: (row) => {
+			const r = row as unknown as CommentRow;
+			setThreads((current) =>
+				current.map((t) =>
+					t.id === r.thread_id
+						? { ...t, comments: t.comments.filter((c) => c.id !== r.id) }
+						: t,
+				),
+			);
+		},
+	});
+
+	onCleanup(() => {
+		unregisterThreads();
+		unregisterComments();
+	});
 
 	const fetchThreads = async (pid: string) => {
 		const { data: threadData, error: threadError } = await supabase
@@ -69,6 +168,7 @@ export function usePageCommentsAdapter(pageId: () => string) {
 		};
 
 		setThreads((prev) => [...prev, thread]);
+		liveTempIds.add(tempId);
 
 		// Fire-and-forget: persist to DB, replace temp ID on success
 		(async () => {
@@ -77,7 +177,10 @@ export function usePageCommentsAdapter(pageId: () => string) {
 				.insert({ page_id: pageId() })
 				.select()
 				.single();
-			if (error || !data) return;
+			if (error || !data) {
+				liveTempIds.delete(tempId);
+				return;
+			}
 
 			setThreads((prev) =>
 				prev.map((t) =>
@@ -86,6 +189,7 @@ export function usePageCommentsAdapter(pageId: () => string) {
 						: t,
 				),
 			);
+			liveTempIds.delete(tempId);
 		})();
 
 		return thread;

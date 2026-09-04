@@ -20,38 +20,43 @@ const PageView = (props: PageViewProps) => {
 				const page = props.page;
 				if (!page || page.id !== id) return null;
 
+				// Read `props.page` reactively in the JSX below (not via the
+				// frozen `page` const) so content edits on the SAME page flow to
+				// the editors without remounting them.
 				return (
 					<Switch
 						fallback={
 							<Suspense fallback={<Skeleton />}>
 								<MarkdownEditor
-									content={page.content}
-									onUpdate={(content) =>
-										props.onChangeContent?.(page.id, content)
-									}
+									pageId={id}
+									workspaceId={props.page?.workspaceId}
+									content={props.page?.content ?? ""}
+									onUpdate={(content) => props.onChangeContent?.(id, content)}
 								/>
 							</Suspense>
 						}
 					>
-						<Match when={page.kind === "kanban"}>
+						<Match when={props.page?.kind === "kanban"}>
 							<Suspense fallback={<Skeleton />}>
 								<KanbanBoard
-									pageId={page.id}
-									workspaceId={page.workspaceId}
-									content={page.content}
+									pageId={id}
+									workspaceId={props.page?.workspaceId}
+									content={props.page?.content ?? ""}
 									onChangeContent={(content) =>
-										props.onChangeContent?.(page.id, content)
+										props.onChangeContent?.(id, content)
 									}
 								/>
 							</Suspense>
 						</Match>
-						<Match when={page.kind === "table"}>
+						<Match when={props.page?.kind === "table"}>
 							<Suspense fallback={<Skeleton />}>
 								<TablePage
-									content={page.content}
-									title={page.title}
+									pageId={id}
+									workspaceId={props.page?.workspaceId}
+									content={props.page?.content ?? ""}
+									title={props.page?.title}
 									onChangeContent={(content) =>
-										props.onChangeContent?.(page.id, content)
+										props.onChangeContent?.(id, content)
 									}
 								/>
 							</Suspense>
