@@ -1,9 +1,12 @@
 import { createEffect, For } from "solid-js";
+import { uid } from "#/utils/misc";
 import { toolbarGroups } from "../toolbar";
 import type { MenuItemsProps } from "../types";
 import ToolbarButton from "./ToolbarButton";
 
 const EditorMenuItems = (props: MenuItemsProps) => {
+	const ns = uid();
+
 	const groups = () => props.groups ?? toolbarGroups;
 
 	// Helper to compute flat index based on current group & item indices
@@ -53,7 +56,7 @@ const EditorMenuItems = (props: MenuItemsProps) => {
 								>
 									<ToolbarButton
 										button={button}
-										id={button.id}
+										id={`${ns}-${button.id}`}
 										onClick={() => {
 											if (props.isCommandMenu && props.onExecuteCommand) {
 												props.onExecuteCommand(button.id);

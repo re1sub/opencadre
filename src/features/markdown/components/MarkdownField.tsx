@@ -1,5 +1,4 @@
 import { Editor } from "@tiptap/core";
-import Heading from "@tiptap/extension-heading";
 import { Placeholder } from "@tiptap/extension-placeholder";
 import { Markdown } from "@tiptap/markdown";
 import StarterKit from "@tiptap/starter-kit";
@@ -105,8 +104,10 @@ const MarkdownField = (props: MarkdownFieldProps) => {
 		instance = new Editor({
 			element: editorRef,
 			extensions: [
-				StarterKit.configure({ trailingNode: false, heading: false }),
-				Heading.configure({ levels: [1, 2, 3] }),
+				StarterKit.configure({
+					trailingNode: false,
+					heading: { levels: [1, 2, 3] },
+				}),
 				Placeholder.configure({
 					placeholder: props.placeholder ?? "",
 					showOnlyCurrent: false,

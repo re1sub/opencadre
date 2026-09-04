@@ -1,11 +1,11 @@
 import { Editor, posToDOMRect } from "@tiptap/core";
 import BubbleMenu from "@tiptap/extension-bubble-menu";
+import Collaboration from "@tiptap/extension-collaboration";
 import Document from "@tiptap/extension-document";
-import Heading from "@tiptap/extension-heading";
 import { Placeholder } from "@tiptap/extension-placeholder";
 import { Markdown } from "@tiptap/markdown";
 import StarterKit from "@tiptap/starter-kit";
-import { createSignal, onCleanup, onMount, splitProps } from "solid-js";
+import { createEffect, createSignal, onCleanup, splitProps } from "solid-js";
 import { Motion } from "solid-motionone";
 import AiPopup from "#/features/ai/components/AiPopup";
 import { useAuth } from "#/features/auth/AuthContext";
@@ -14,6 +14,8 @@ import {
 	COMMENT_MARK_NAME,
 	CommentMark,
 } from "#/features/comments/mark/CommentMark";
+import { useDebouncedPush } from "#/utils/realtime/useDebouncedPush";
+import { useYjsDoc } from "#/utils/yjs/useYjsDoc";
 import CommentPopup from "./components/CommentPopup";
 import { bubbleMenu, bubbleMenuContent } from "./editorBubbleMenu.css";
 import { useEditorComments } from "./hooks/useEditorComments";
@@ -33,6 +35,7 @@ interface MarkdownEditorProps {
 	class?: string;
 	editable?: boolean;
 	pageId?: string;
+	workspaceId?: string;
 	onUpdate?: (markdown: string) => void;
 }
 
@@ -42,10 +45,17 @@ const MarkdownEditor = (props: MarkdownEditorProps) => {
 		"content",
 		"editable",
 		"pageId",
+		"workspaceId",
 		"onUpdate",
 	]);
 	const { user } = useAuth();
 	const pageComments = usePageCommentsAdapter(() => props.pageId ?? "");
+
+	const yjs = useYjsDoc({
+		entityType: () => "markdown",
+		entityId: () => props.pageId ?? "",
+		workspaceId: () => props.workspaceId ?? "",
+	});
 
 	let instance: Editor | undefined;
 	const slashCommand = useSlashCommand(() => instance);
@@ -55,6 +65,13 @@ const MarkdownEditor = (props: MarkdownEditorProps) => {
 	const [bubbleVisible, setBubbleVisible] = createSignal(false);
 	const [aiRect, setAiRect] = createSignal<DOMRect | null>(null);
 
+	const { setPush, push } = useDebouncedPush(400);
+	let mdRef = props.content;
+	createEffect(() => {
+		setPush(() => {
+			props.onUpdate?.(mdRef);
+		});
+	});
 	const bumpToolbar = () => setToolbarVersion((v) => v + 1);
 	const author = () => user()?.email?.split("@")[0] ?? "You";
 
@@ -84,8 +101,12 @@ const MarkdownEditor = (props: MarkdownEditorProps) => {
 		setAiRect(null);
 	};
 
-	onMount(() => {
+	createEffect(() => {
 		if (!editorRef || !menuRef || !commandMenuRef) return;
+		if (!yjs.loaded() || !yjs.doc()) return;
+		if (instance) return;
+
+		const yDoc = yjs.doc()!;
 
 		const commonMenuOptions = {
 			strategy: "fixed" as const,
@@ -109,13 +130,7 @@ const MarkdownEditor = (props: MarkdownEditorProps) => {
 				CustomDocument,
 				StarterKit.configure({
 					document: false,
-					trailingNode: false,
-					heading: false,
-					// link: {
-					// 	HTMLAttributes: {
-					// 		title: "my-custom-title",
-					// 	},
-					// },
+					trailingNode: { node: "paragraph" },
 				}),
 				Placeholder.configure({
 					placeholder: ({ node, pos }) => {
@@ -123,11 +138,13 @@ const MarkdownEditor = (props: MarkdownEditorProps) => {
 						if (node.type.name === "paragraph") return "Press / for commands";
 						return "";
 					},
-					showOnlyCurrent: false,
+					showOnlyCurrent: true,
 				}),
 				Markdown.configure({ markedOptions: { gfm: true } }),
-				Heading.configure({ levels: [2, 3, 4, 5, 6] }),
 				CommentMark,
+				Collaboration.configure({
+					document: yDoc,
+				}),
 				selectBubbleMenu.configure({
 					element: menuRef,
 					pluginKey: "editorBubbleMenu",
@@ -153,8 +170,14 @@ const MarkdownEditor = (props: MarkdownEditorProps) => {
 			content: props.content.trim() ? props.content : "#\n",
 			contentType: "markdown",
 			editable: props.editable ?? true,
-			onUpdate: ({ editor: editorInstance }) => {
-				props.onUpdate?.(editorInstance.getMarkdown());
+			onUpdate: ({ editor: editorInstance, transaction }) => {
+				// Prevent saving remote changes back as if they were local
+				const isRemote = transaction.getMeta("ySync");
+				if (isRemote) return;
+
+				const md = editorInstance.getMarkdown();
+				mdRef = md;
+				push();
 				editorComments.pruneOrphanThreads(editorInstance);
 			},
 			editorProps: {
@@ -221,7 +244,7 @@ const MarkdownEditor = (props: MarkdownEditorProps) => {
 
 	return (
 		<>
-			<div
+			<section
 				{...rest}
 				ref={editorRef}
 				class={editor}
@@ -229,6 +252,9 @@ const MarkdownEditor = (props: MarkdownEditorProps) => {
 					"markdown-body": true,
 					[local.class ?? ""]: Boolean(local.class),
 				}}
+				style={
+					yjs.loaded() ? undefined : { opacity: 0.5, "pointer-events": "none" }
+				}
 			/>
 
 			<div
