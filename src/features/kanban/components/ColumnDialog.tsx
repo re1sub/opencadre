@@ -7,6 +7,7 @@ import * as styles from "./board.css";
 
 interface ColumnDialogProps {
 	column: Column;
+	isNew?: boolean;
 	onClose: () => void;
 	onSave: (column: Column) => void;
 	onRequestDelete: () => void;
@@ -41,13 +42,15 @@ const ColumnDialog = (props: ColumnDialogProps) => {
 			label="Column settings"
 			on:wa-after-hide={dialog.handleHide}
 		>
-			<div slot="header-actions">
-				<DeleteButton
-					onDelete={dialog.handleDelete}
-					label="Delete card"
-					iconOnly
-				/>
-			</div>
+			{!props.isNew && (
+				<div slot="header-actions">
+					<DeleteButton
+						onDelete={dialog.handleDelete}
+						label="Delete column"
+						iconOnly
+					/>
+				</div>
+			)}
 			<div class={styles.dialogBody}>
 				<wa-input
 					label="Column name"

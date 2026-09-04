@@ -26,9 +26,7 @@ const KanbanBoard = (props: KanbanBoardProps) => {
 
 	const board = useKanbanBoardAdapter({
 		pageId: props.pageId ?? "",
-		onChange: (columns) => {
-			props.onChangeContent?.(JSON.stringify(columns));
-		},
+		workspaceId: props.workspaceId,
 	});
 	const { tags } = useWorkspaceTagsAdapter(() => props.workspaceId ?? "");
 	const { members } = useWorkspaceMembersAdapter(() => props.workspaceId ?? "");
@@ -100,7 +98,7 @@ const KanbanBoard = (props: KanbanBoardProps) => {
 								index={index}
 								pageId={props.pageId}
 								onAddCard={board.addCard}
-								onEditColumn={board.setColumnDialog}
+								onEditColumn={(col) => board.setColumnDialog({ column: col })}
 								onColumnDuplicate={board.duplicateColumn}
 								onColumnDelete={(col) => {
 									board.setConfirmDialog({
@@ -152,7 +150,8 @@ const KanbanBoard = (props: KanbanBoardProps) => {
 			<Show when={board.columnDialog()}>
 				{(dialog) => (
 					<ColumnDialog
-						column={dialog()}
+						column={dialog().column}
+						isNew={dialog().isNew}
 						onClose={() => board.setColumnDialog(null)}
 						onSave={board.saveColumn}
 						onRequestDelete={() => {
@@ -160,8 +159,8 @@ const KanbanBoard = (props: KanbanBoardProps) => {
 							board.setColumnDialog(null);
 							board.setConfirmDialog({
 								kind: "column",
-								columnId: target.id,
-								title: target.title,
+								columnId: target.column.id,
+								title: target.column.title,
 							});
 						}}
 					/>

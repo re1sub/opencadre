@@ -1,4 +1,4 @@
-import { createSignal, Index, Show } from "solid-js";
+import { createEffect, createSignal, Index, Show } from "solid-js";
 import CommentsPanel from "#/features/comments/components/CommentsPanel";
 import type { Comment } from "#/features/comments/types";
 import MarkdownField from "#/features/markdown/components/MarkdownField";
@@ -47,6 +47,42 @@ const CardDialog = (props: CardDialogProps) => {
 	} = useWorkspaceTagsAdapter(() => props.workspaceId);
 
 	const [card, setCard] = createSignal<Card>(props.card);
+	const [titleFocused, setTitleFocused] = createSignal(false);
+	const [descFocused, setDescFocused] = createSignal(false);
+
+	// Live-sync remote edits into the local buffer, except fields currently being typed
+	createEffect(() => {
+		if (props.isNew) return;
+		const remote = props.card;
+		const tf = titleFocused();
+		const df = descFocused();
+		setCard((prev) => {
+			// Preserve focused text fields to avoid stomping keystrokes/caret
+			const nextTitle = tf ? prev.title : remote.title;
+			const nextDesc = df
+				? (prev.description ?? "")
+				: (remote.description ?? "");
+			// Short-circuit if nothing meaningful changed to avoid noisy rerenders
+			if (
+				prev.title === nextTitle &&
+				(prev.description ?? "") === nextDesc &&
+				(prev.dueDate ?? null) === (remote.dueDate ?? null) &&
+				JSON.stringify(prev.assigneeIds ?? []) ===
+					JSON.stringify(remote.assigneeIds ?? []) &&
+				JSON.stringify(prev.tagIds ?? []) ===
+					JSON.stringify(remote.tagIds ?? [])
+			)
+				return prev;
+			return {
+				...prev,
+				title: nextTitle,
+				description: nextDesc,
+				dueDate: remote.dueDate ?? null,
+				assigneeIds: remote.assigneeIds ?? [],
+				tagIds: remote.tagIds ?? [],
+			};
+		});
+	});
 
 	const attachedTags = () =>
 		(card().tagIds ?? [])
@@ -131,13 +167,18 @@ const CardDialog = (props: CardDialogProps) => {
 
 			<div class={dialogContent}>
 				<div class={dialogLeftColumn}>
-					<EditableText
-						value={card().title}
-						onChange={handleTitleChange}
-						ariaLabel="Title"
-						class={dialogCardTitle}
-						autoFocus={props.isNew}
-					/>
+					<div
+						onFocusIn={() => setTitleFocused(true)}
+						onFocusOut={() => setTitleFocused(false)}
+					>
+						<EditableText
+							value={card().title}
+							onChange={handleTitleChange}
+							ariaLabel="Title"
+							class={dialogCardTitle}
+							autoFocus={props.isNew}
+						/>
+					</div>
 
 					<div
 						class={dialogLeftColumn}
@@ -188,10 +229,10 @@ const CardDialog = (props: CardDialogProps) => {
 						</div>
 
 						<div
-							class={dialogMetaGroup}
+							class={customLabel}
 							style={{ "margin-bottom": "var(--wa-space-xs)" }}
 						>
-							Description
+							<wa-icon name="calendar"></wa-icon>Due date
 						</div>
 						<DueDate
 							value={card().dueDate ?? null}
@@ -200,13 +241,18 @@ const CardDialog = (props: CardDialogProps) => {
 						<div class={customLabel}>
 							<wa-icon name="list-sort-descending"></wa-icon>Description
 						</div>
-						<MarkdownField
-							value={card().description ?? ""}
-							onSave={handleDescriptionSave}
-							onChange={props.isNew ? handleDescriptionSave : undefined}
-							noControlsFooter={props.isNew}
-							placeholder="Add a description..."
-						/>
+						<div
+							onFocusIn={() => setDescFocused(true)}
+							onFocusOut={() => setDescFocused(false)}
+						>
+							<MarkdownField
+								value={card().description ?? ""}
+								onSave={handleDescriptionSave}
+								onChange={props.isNew ? handleDescriptionSave : undefined}
+								noControlsFooter={props.isNew}
+								placeholder="Add a description..."
+							/>
+						</div>
 					</div>
 				</div>
 

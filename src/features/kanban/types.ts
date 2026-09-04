@@ -10,6 +10,7 @@ export interface Card {
 	tagIds?: string[];
 	dueDate?: string | null;
 	assigneeIds?: string[];
+	position?: number;
 }
 
 export interface Column {
@@ -17,11 +18,17 @@ export interface Column {
 	title: string;
 	color: string;
 	cards: Card[];
+	position?: number;
 }
 
 export interface CardDialogState {
 	columnId: string;
 	card: Card;
+	isNew?: boolean;
+}
+
+export interface ColumnDialogState {
+	column: Column;
 	isNew?: boolean;
 }
 
