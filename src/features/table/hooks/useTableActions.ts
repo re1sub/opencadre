@@ -5,142 +5,163 @@ import type {
 	SolidColumnDef,
 	TableAPI,
 } from "@simple-table/solid";
+import * as Y from "yjs";
 import type { GridRow } from "../types";
+import { mutateTableDoc } from "./tableYjs";
 
 export const useTableActions = (
 	columns: () => SolidColumnDef<GridRow>[],
 	rows: () => GridRow[],
-	setColumns: (
-		fn: (c: SolidColumnDef<GridRow>[]) => SolidColumnDef<GridRow>[],
-	) => void,
-	setRows: (fn: (r: GridRow[]) => GridRow[]) => void,
+	ydoc: () => Y.Doc | null | undefined,
 	setSelectedRows: (s: Set<string>) => void,
-	emitChange: () => void,
-	makeColumnDef: (
-		accessor: string,
-		label: string,
-		width?: number,
-	) => SolidColumnDef<GridRow>,
 	tableApi: () => TableAPI<GridRow> | undefined,
 ) => {
 	const handleCellEdit = ({ accessor, newValue, row }: CellChangeProps) => {
 		if (accessor === "__add_column__") return;
+		const doc = ydoc();
+		if (!doc) return;
 
-		setRows((current) => {
-			const index = current.findIndex((r) => r.id === row.id);
-			if (index === -1) return current;
-
-			const next = [...current];
-			next[index] = { ...next[index], [accessor]: newValue };
-
-			tableApi()?.updateData({ rowIndex: index, accessor, newValue });
-
-			return next;
+		mutateTableDoc(doc, ({ rowsMap }) => {
+			const rMap = rowsMap.get(row.id as string);
+			if (rMap) {
+				rMap.set(accessor as string, newValue);
+			}
 		});
-		emitChange();
+
+		const index = rows().findIndex((r) => r.id === row.id);
+		if (index !== -1) {
+			tableApi()?.updateData({ rowIndex: index, accessor, newValue });
+		}
 	};
 
 	const handleHeaderEdit = (
 		header: ColumnDef<GridRow, CellValue>,
 		newLabel: string,
 	) => {
-		setColumns((current) =>
-			current.map((column) =>
-				column.accessor === header.accessor
-					? { ...column, label: newLabel }
-					: column,
-			),
-		);
-		emitChange();
+		const doc = ydoc();
+		if (!doc) return;
+		mutateTableDoc(doc, ({ colsMap }) => {
+			const cMap = colsMap.get(header.accessor as string);
+			if (cMap) {
+				cMap.set("label", newLabel);
+			}
+		});
 	};
 
 	const deleteColumnDef = (column: SolidColumnDef<GridRow>) => {
-		const accessor = column.accessor;
-		setColumns((current) => current.filter((col) => col.accessor !== accessor));
-		setRows((current) =>
-			current.map((row) => {
-				const next: GridRow = { ...row };
-				delete next[accessor];
-				return next;
-			}),
-		);
+		const accessor = column.accessor as string;
+		const doc = ydoc();
+		if (!doc) return;
+
+		mutateTableDoc(doc, ({ colOrder, colsMap, rowOrder, rowsMap }) => {
+			for (let i = 0; i < colOrder.length; i++) {
+				if (colOrder.get(i) === accessor) {
+					colOrder.delete(i, 1);
+					break;
+				}
+			}
+			colsMap.delete(accessor);
+
+			for (const rId of rowOrder) {
+				const rMap = rowsMap.get(rId);
+				if (rMap) rMap.delete(accessor);
+			}
+		});
+
 		void tableApi()?.clearFilter(accessor);
-		emitChange();
 	};
 
 	const handleColumnDuplicate = (header: ColumnDef<GridRow, CellValue>) => {
-		const source = columns().find(
-			(column) => column.accessor === header.accessor,
-		);
+		const doc = ydoc();
+		if (!doc) return;
+
+		const source = columns().find((c) => c.accessor === header.accessor);
 		if (!source) return;
 
-		const existing = new Set(columns().map((column) => column.accessor));
-		let newAccessor = `${source.accessor}_copy`;
+		const existing = new Set(columns().map((c) => c.accessor));
+		let newAccessor = `${source.accessor as string}_copy`;
 		let counter = 2;
 		while (existing.has(newAccessor)) {
-			newAccessor = `${source.accessor}_copy${counter}`;
+			newAccessor = `${source.accessor as string}_copy${counter}`;
 			counter += 1;
 		}
 
-		const duplicated = makeColumnDef(
-			newAccessor,
-			`${source.label} copy`,
-			typeof source.width === "number" ? source.width : undefined,
-		);
+		mutateTableDoc(doc, ({ colOrder, colsMap, rowOrder, rowsMap }) => {
+			const sourceCMap = colsMap.get(source.accessor as string);
+			if (!sourceCMap) return;
 
-		setColumns((current) => {
-			const index = current.findIndex(
-				(column) => column.accessor === source.accessor,
-			);
-			if (index === -1) return current;
-			const next = [...current];
-			next.splice(index + 1, 0, duplicated);
-			return next;
+			const cMap = new Y.Map<string | number>();
+			cMap.set("accessor", newAccessor);
+			cMap.set("label", `${sourceCMap.get("label") ?? ""} copy`);
+			cMap.set("width", sourceCMap.get("width") ?? 200);
+			colsMap.set(newAccessor, cMap);
+
+			let insertIndex = colOrder.length;
+			for (let i = 0; i < colOrder.length; i++) {
+				if (colOrder.get(i) === source.accessor) {
+					insertIndex = i + 1;
+					break;
+				}
+			}
+			colOrder.insert(insertIndex, [newAccessor]);
+
+			for (const rId of rowOrder) {
+				const rMap = rowsMap.get(rId);
+				if (rMap) {
+					rMap.set(newAccessor, rMap.get(source.accessor as string));
+				}
+			}
 		});
-		setRows((current) =>
-			current.map((row) => ({
-				...row,
-				[newAccessor]: row[source.accessor],
-			})),
-		);
-		emitChange();
 	};
 
 	const deleteRows = (idsToDelete: Iterable<string> | string[]) => {
+		const doc = ydoc();
+		if (!doc) return;
+
 		const ids = new Set(idsToDelete);
 		if (ids.size === 0) return;
 
-		setRows((current) => current.filter((row) => !ids.has(row.id)));
+		mutateTableDoc(doc, ({ rowOrder, rowsMap }) => {
+			let i = 0;
+			while (i < rowOrder.length) {
+				const rId = rowOrder.get(i);
+				if (ids.has(rId)) {
+					rowOrder.delete(i, 1);
+					rowsMap.delete(rId);
+				} else {
+					i++;
+				}
+			}
+		});
+
 		setSelectedRows(new Set<string>());
 		tableApi()?.clearRowSelection();
-		emitChange();
 	};
 
 	const addRow = (targetRowId?: string, e?: MouseEvent) => {
-		const nextIndex = rows().length;
-		const newRow: GridRow = {
-			id: `row_${Date.now()}_${nextIndex + 1}`,
-			...Object.fromEntries(columns().map((column) => [column.accessor, ""])),
-		};
+		const doc = ydoc();
+		if (!doc) return;
 
-		if (!targetRowId) {
-			setRows((current) => [...current, newRow]);
-			emitChange();
-			return;
-		}
+		const newRowId = `row_${Date.now()}_${rows().length + 1}`;
 
-		setRows((current) => {
-			const index = current.findIndex((r) => r.id === targetRowId);
-			if (index === -1) return [...current, newRow];
+		mutateTableDoc(doc, ({ rowOrder, rowsMap, colOrder }) => {
+			const rMap = new Y.Map<CellValue>();
+			for (let i = 0; i < colOrder.length; i++) {
+				rMap.set(colOrder.get(i), "");
+			}
+			rowsMap.set(newRowId, rMap);
 
-			const isShift = e?.shiftKey ?? false;
-			const insertIndex = isShift ? index : index + 1;
-
-			const updated = [...current];
-			updated.splice(insertIndex, 0, newRow);
-			return updated;
+			let insertIndex = rowOrder.length;
+			if (targetRowId) {
+				for (let i = 0; i < rowOrder.length; i++) {
+					if (rowOrder.get(i) === targetRowId) {
+						insertIndex = (e?.shiftKey ?? false) ? i : i + 1;
+						break;
+					}
+				}
+			}
+			rowOrder.insert(insertIndex, [newRowId]);
 		});
-		emitChange();
 	};
 
 	return {

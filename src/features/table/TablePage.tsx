@@ -6,8 +6,15 @@ import type {
 	TableAPI,
 } from "@simple-table/solid";
 import { SimpleTable } from "@simple-table/solid";
-import { createMemo, createSignal, onMount, Show } from "solid-js";
+import {
+	createEffect,
+	createMemo,
+	createSignal,
+	onCleanup,
+	Show,
+} from "solid-js";
 import "@simple-table/solid/styles.css";
+import * as Y from "yjs";
 import EditableHeader from "#/features/table/components/EditableHeader";
 import { RowActions } from "#/features/table/components/RowActions";
 import { TableToolbar } from "#/features/table/components/TableToolbar";
@@ -23,10 +30,16 @@ import type {
 } from "#/features/table/types";
 import ConfirmDialog from "#/features/ui/ConfirmDialog";
 import { useTheme } from "#/theme/ThemeProvider";
+import { useDebouncedPush } from "#/utils/realtime/useDebouncedPush";
+import type { YjsUpdateOrigin } from "#/utils/yjs/types";
+import { useYjsDoc } from "#/utils/yjs/useYjsDoc";
+import { initTableDoc, mutateTableDoc, parseTableDoc } from "./hooks/tableYjs";
 
 const ADD_COL_ACCESSOR = "__add_column__";
 
 interface TablePageProps {
+	pageId?: string;
+	workspaceId?: string;
 	content?: string;
 	onChangeContent?: (content: string) => void;
 	title?: string;
@@ -50,6 +63,16 @@ const TablePage = (props: TablePageProps) => {
 	const [columns, setColumns] = createSignal<SolidColumnDef<GridRow>[]>([]);
 	const [rows, setRows] = createSignal<GridRow[]>([]);
 	const [selectedRows, setSelectedRows] = createSignal<Set<string>>(new Set());
+
+	const yjs = useYjsDoc({
+		entityType: () => "table",
+		entityId: () => props.pageId ?? "",
+		workspaceId: () => props.workspaceId ?? "",
+	});
+
+	const { setPush, push } = useDebouncedPush(400);
+
+	let lastValue = props.content ?? "";
 	const [pendingAction, setPendingAction] = createSignal<{
 		label: string;
 		message: string;
@@ -61,17 +84,20 @@ const TablePage = (props: TablePageProps) => {
 
 	let tableApi: TableAPI<GridRow> | undefined;
 
-	const emitChange = () => {
-		const serialized: SerializedTable = {
-			columns: columns().map((c) => ({
-				accessor: c.accessor,
-				label: c.label ?? "",
-				width: Number(c.width) || 200,
-			})),
-			rows: rows(),
-		};
-		props.onChangeContent?.(JSON.stringify(serialized));
-	};
+	createEffect(() => {
+		setPush(() => {
+			const serialized: SerializedTable = {
+				columns: columns().map((c) => ({
+					accessor: c.accessor as string,
+					label: c.label ?? "",
+					width: Number(c.width) || 200,
+				})),
+				rows: rows(),
+			};
+			lastValue = JSON.stringify(serialized);
+			props.onChangeContent?.(lastValue);
+		});
+	});
 
 	const makeColumnDef = (
 		accessor: string,
@@ -97,23 +123,12 @@ const TablePage = (props: TablePageProps) => {
 	const actions = useTableActions(
 		columns,
 		rows,
-		setColumns,
-		setRows,
+		yjs.doc,
 		setSelectedRows,
-		emitChange,
-		makeColumnDef,
 		() => tableApi,
 	);
-	const csv = useCsv(
-		columns,
-		rows,
-		setColumns,
-		setRows,
-		makeColumnDef,
-		emitChange,
-		props.title,
-		() => tableApi,
-	);
+
+	const csv = useCsv(yjs.doc);
 
 	const exportCsv = () => {
 		tableApi?.exportToCSV({
@@ -135,15 +150,24 @@ const TablePage = (props: TablePageProps) => {
 	};
 
 	const addColumn = () => {
+		const doc = yjs.doc();
+		if (!doc) return;
 		const nextColumnNumber = columns().length + 1;
 		const accessor = `col_${nextColumnNumber}`;
 
-		setColumns((current) => [
-			...current,
-			makeColumnDef(accessor, `Column ${nextColumnNumber}`),
-		]);
-		setRows((current) => current.map((row) => ({ ...row, [accessor]: "" })));
-		emitChange();
+		mutateTableDoc(doc, ({ colOrder, colsMap, rowOrder, rowsMap }) => {
+			const cMap = new Y.Map<string | number>();
+			cMap.set("accessor", accessor);
+			cMap.set("label", `Column ${nextColumnNumber}`);
+			cMap.set("width", 200);
+			colsMap.set(accessor, cMap);
+			colOrder.insert(colOrder.length, [accessor]);
+
+			for (const rId of rowOrder) {
+				const rMap = rowsMap.get(rId);
+				if (rMap) rMap.set(accessor, "");
+			}
+		});
 	};
 
 	const buildColumns = (saved: SerializedColumn[]): SolidColumnDef<GridRow>[] =>
@@ -176,23 +200,50 @@ const TablePage = (props: TablePageProps) => {
 		return [...columns(), addColumnDef];
 	});
 
-	onMount(() => {
-		if (columns().length > 0) return;
+	createEffect(() => {
+		const ydoc = yjs.doc();
+		if (!ydoc || !yjs.loaded()) return;
 
-		const parsed = parseTableContent(props.content ?? "");
-		if (parsed) {
+		const syncLocal = () => {
+			const parsed = parseTableDoc(ydoc);
 			setColumns(buildColumns(parsed.columns));
 			setRows(parsed.rows);
-		} else {
-			setColumns(
+		};
+
+		const updateHandler = (_update: Uint8Array, origin: YjsUpdateOrigin) => {
+			syncLocal();
+			if (origin !== "supabase-load" && origin !== "supabase-broadcast") {
+				push();
+			}
+		};
+		ydoc.on("update", updateHandler);
+
+		if (yjs.isNew()) {
+			const parsed = parseTableContent(props.content ?? "");
+			if (parsed) {
+				initTableDoc(ydoc, parsed);
+			} else {
+				const initCols: SerializedColumn[] = [];
 				INITIAL_COLUMNS(
-					actions.handleHeaderEdit,
-					handleColumnDelete,
-					actions.handleColumnDuplicate,
-				),
-			);
-			setRows(INITIAL_ROWS);
+					() => {},
+					() => {},
+					() => {},
+				).forEach((c) => {
+					initCols.push({
+						accessor: c.accessor as string,
+						label: c.label || "",
+						width: typeof c.width === "number" ? c.width : 200,
+					});
+				});
+				initTableDoc(ydoc, { columns: initCols, rows: INITIAL_ROWS });
+			}
 		}
+
+		syncLocal();
+
+		onCleanup(() => {
+			ydoc.off("update", updateHandler);
+		});
 	});
 
 	return (
@@ -235,7 +286,29 @@ const TablePage = (props: TablePageProps) => {
 					),
 				]}
 				columnReordering
+				onColumnOrderChange={(newCols) => {
+					const doc = yjs.doc();
+					if (!doc) return;
+
+					mutateTableDoc(doc, ({ colOrder }) => {
+						colOrder.delete(0, colOrder.length);
+						colOrder.insert(
+							0,
+							newCols.map((c) => c.accessor as string),
+						);
+					});
+				}}
 				columnResizing
+				onColumnWidthChange={(headers) => {
+					const doc = yjs.doc();
+					if (!doc) return;
+					mutateTableDoc(doc, ({ colsMap }) => {
+						for (const h of headers) {
+							const cMap = colsMap.get(h.accessor as string);
+							if (cMap) cMap.set("width", Number(h.width) || 200);
+						}
+					});
+				}}
 				enableRowSelection
 				getRowId={({ row }) => String(row.id)}
 				onCellEdit={actions.handleCellEdit}
