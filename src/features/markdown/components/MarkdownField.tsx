@@ -107,6 +107,7 @@ const MarkdownField = (props: MarkdownFieldProps) => {
 				StarterKit.configure({
 					trailingNode: false,
 					heading: { levels: [1, 2, 3] },
+					undoRedo: false,
 				}),
 				Placeholder.configure({
 					placeholder: props.placeholder ?? "",
