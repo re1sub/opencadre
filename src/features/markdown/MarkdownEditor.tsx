@@ -8,8 +8,7 @@ import StarterKit from "@tiptap/starter-kit";
 import { createEffect, createSignal, onCleanup, splitProps } from "solid-js";
 import { Motion } from "solid-motionone";
 import AiPopup from "#/features/ai/components/AiPopup";
-import { useAuth } from "#/features/auth/AuthContext";
-import { usePageCommentsAdapter } from "#/features/comments/hooks/usePageCommentsAdapter";
+import { useCommentsAdapter } from "#/features/comments/hooks/useCommentsAdapter";
 import {
 	COMMENT_MARK_NAME,
 	CommentMark,
@@ -48,8 +47,9 @@ const MarkdownEditor = (props: MarkdownEditorProps) => {
 		"workspaceId",
 		"onUpdate",
 	]);
-	const { user } = useAuth();
-	const pageComments = usePageCommentsAdapter(() => props.pageId ?? "");
+	const pageComments = useCommentsAdapter(() =>
+		props.pageId ? { type: "page" as const, id: props.pageId } : null,
+	);
 
 	const yjs = useYjsDoc({
 		entityType: () => "markdown",
@@ -73,7 +73,6 @@ const MarkdownEditor = (props: MarkdownEditorProps) => {
 		});
 	});
 	const bumpToolbar = () => setToolbarVersion((v) => v + 1);
-	const author = () => user()?.email?.split("@")[0] ?? "You";
 
 	let editorRef!: HTMLDivElement;
 	let menuRef!: HTMLDivElement;
@@ -131,6 +130,7 @@ const MarkdownEditor = (props: MarkdownEditorProps) => {
 				StarterKit.configure({
 					document: false,
 					trailingNode: { node: "paragraph" },
+					undoRedo: false,
 				}),
 				Placeholder.configure({
 					placeholder: ({ node, pos }) => {
@@ -322,30 +322,33 @@ const MarkdownEditor = (props: MarkdownEditorProps) => {
 				open={() => Boolean(editorComments.activeThreadId())}
 				anchorRect={editorComments.popupRect}
 				thread={editorComments.activeThread}
-				author={author()}
-				isPopup={true}
-				onReplaceComments={(comments) => {
+				reactions={pageComments.reactions()}
+				currentUserId={pageComments.currentUserId()}
+				onAddComment={async (text) => {
 					const id = editorComments.activeThreadId();
 					if (!id) return;
+					await pageComments.addComment(id, text);
 					const pending = editorComments.pendingComment();
-					if (pending && pending.threadId === id) {
-						const wasEmpty =
-							pageComments.threads().find((t) => t.id === id)?.comments
-								.length === 0;
-						if (wasEmpty && comments.length > 0) {
-							instance
-								?.chain()
-								.setTextSelection({ from: pending.from, to: pending.to })
-								.setComment(id)
-								.run();
-							editorComments.setPendingComment(null);
-						}
+					const thread = pageComments.threads().find((t) => t.id === id);
+					if (
+						pending &&
+						pending.threadId === id &&
+						thread?.comments.length === 1
+					) {
+						instance
+							?.chain()
+							.setTextSelection({ from: pending.from, to: pending.to })
+							.setComment(id)
+							.run();
+						editorComments.setPendingComment(null);
 					}
-					pageComments.replaceThreadComments(id, comments);
+				}}
+				onToggleReaction={(commentId, reaction) => {
+					void pageComments.toggleReaction(commentId, reaction);
 				}}
 				onDeleteComment={(commentId) => {
 					const id = editorComments.activeThreadId();
-					if (id) pageComments.deleteComment(id, commentId);
+					if (id) void pageComments.deleteComment(id, commentId);
 				}}
 				onClose={editorComments.closeThreadPopup}
 			/>

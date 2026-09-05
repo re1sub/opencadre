@@ -1,14 +1,16 @@
 import { createEffect, Show } from "solid-js";
 import CommentsPanel from "#/features/comments/components/CommentsPanel";
-import type { Comment, CommentThread } from "#/features/comments/types";
+import type { CommentReaction, CommentThread } from "#/features/comments/types";
 import { usePopup } from "#/utils/usePopup";
 
 interface CommentPopupProps {
 	open: () => boolean;
 	anchorRect: () => DOMRect | null;
 	thread: () => CommentThread | undefined;
-	author: string;
-	onReplaceComments: (comments: Comment[]) => void;
+	reactions: CommentReaction[];
+	currentUserId: string | null;
+	onAddComment: (text: string) => void | Promise<void>;
+	onToggleReaction: (commentId: string, reaction: string) => void;
 	onDeleteComment: (commentId: string) => void;
 	onClose: () => void;
 	isPopup?: boolean;
@@ -68,10 +70,11 @@ const CommentPopup = (props: CommentPopupProps) => {
 			<Show when={props.thread()}>
 				{(thread) => (
 					<CommentsPanel
-						parentId={thread().id}
 						comments={thread().comments}
-						author={props.author}
-						onChange={props.onReplaceComments}
+						reactions={props.reactions}
+						currentUserId={props.currentUserId}
+						onAddComment={props.onAddComment}
+						onToggleReaction={props.onToggleReaction}
 						onDelete={props.onDeleteComment}
 						maxHeight="400px"
 					/>

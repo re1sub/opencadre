@@ -61,13 +61,26 @@ export function useWorkspaceRealtime(options: UseWorkspaceRealtimeOptions) {
 					return true;
 				case "page_content":
 				case "comment_threads":
+					// comment_threads carries entity_type/entity_id. Page threads must
+					// belong to a page in the workspace; card threads pass through and
+					// are scoped by owning adapters against their entity.
+					if (table === "comment_threads") {
+						if (row.entity_type === "page") {
+							return (
+								typeof row.entity_id === "string" &&
+								options.getPageIds().includes(row.entity_id)
+							);
+						}
+						return true;
+					}
 					return (
 						typeof row.page_id === "string" &&
 						options.getPageIds().includes(row.page_id)
 					);
 				case "comments":
-					// carries thread_id, not page_id; the owning adapter scopes
-					// it against its known threads.
+				case "comment_reactions":
+					// carries thread_id / comment_id, not page_id; the owning adapter
+					// scopes them against its known threads.
 					return true;
 				default:
 					return true;
@@ -85,6 +98,7 @@ export function useWorkspaceRealtime(options: UseWorkspaceRealtimeOptions) {
 		subscribe("page_content");
 		subscribe("comment_threads");
 		subscribe("comments");
+		subscribe("comment_reactions");
 
 		channel.subscribe();
 

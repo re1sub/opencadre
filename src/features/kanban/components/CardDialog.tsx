@@ -1,6 +1,6 @@
 import { createEffect, createSignal, Index, Show } from "solid-js";
 import CommentsPanel from "#/features/comments/components/CommentsPanel";
-import type { Comment } from "#/features/comments/types";
+import { useCommentsAdapter } from "#/features/comments/hooks/useCommentsAdapter";
 import MarkdownField from "#/features/markdown/components/MarkdownField";
 import TagEditor from "#/features/tags/components/TagEditor";
 import TagPicker from "#/features/tags/components/TagPicker";
@@ -50,6 +50,12 @@ const CardDialog = (props: CardDialogProps) => {
 	const [titleFocused, setTitleFocused] = createSignal(false);
 	const [descFocused, setDescFocused] = createSignal(false);
 
+	const cardComments = useCommentsAdapter(() =>
+		props.isNew ? null : { type: "card" as const, id: props.card.id },
+	);
+
+	const cardThread = () => cardComments.threads()[0];
+
 	// Live-sync remote edits into the local buffer, except fields currently being typed
 	createEffect(() => {
 		if (props.isNew) return;
@@ -97,10 +103,6 @@ const CardDialog = (props: CardDialogProps) => {
 
 	const handleTitleChange = (newTitle: string) => {
 		updateAndSaveCard({ title: newTitle });
-	};
-
-	const handleCommentsChange = (newComments: Comment[]) => {
-		updateAndSaveCard({ comments: newComments });
 	};
 
 	const handleDescriptionSave = (newDescription: string) => {
@@ -258,9 +260,21 @@ const CardDialog = (props: CardDialogProps) => {
 
 				<Show when={!props.isNew}>
 					<CommentsPanel
-						parentId={card().id}
-						comments={card().comments ?? []}
-						onChange={handleCommentsChange}
+						comments={cardThread()?.comments ?? []}
+						reactions={cardComments.reactions()}
+						currentUserId={cardComments.currentUserId()}
+						onAddComment={async (text) => {
+							const thread =
+								cardThread() ?? (await cardComments.ensureThread());
+							await cardComments.addComment(thread.id, text);
+						}}
+						onToggleReaction={(commentId, reaction) => {
+							void cardComments.toggleReaction(commentId, reaction);
+						}}
+						onDelete={(commentId) => {
+							const thread = cardThread();
+							if (thread) void cardComments.deleteComment(thread.id, commentId);
+						}}
 					/>
 				</Show>
 			</div>

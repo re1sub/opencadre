@@ -1,12 +1,9 @@
-import type { Comment } from "#/features/comments/types";
-
 export const BOARD_ID = "board";
 
 export interface Card {
 	id: string;
 	title: string;
 	description: string;
-	comments?: Comment[];
 	tagIds?: string[];
 	dueDate?: string | null;
 	assigneeIds?: string[];

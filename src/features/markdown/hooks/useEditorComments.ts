@@ -1,11 +1,11 @@
 import { type Editor, posToDOMRect } from "@tiptap/core";
 import { createSignal } from "solid-js";
-import type { usePageCommentsAdapter } from "#/features/comments/hooks/usePageCommentsAdapter";
+import type { useCommentsAdapter } from "#/features/comments/hooks/useCommentsAdapter";
 import { COMMENT_MARK_NAME } from "#/features/comments/mark/CommentMark";
 
-type PageCommentsReturn = ReturnType<typeof usePageCommentsAdapter>;
+type CommentsReturn = ReturnType<typeof useCommentsAdapter>;
 
-export function useEditorComments(pageComments: PageCommentsReturn) {
+export function useEditorComments(pageComments: CommentsReturn) {
 	const [activeThreadId, setActiveThreadId] = createSignal<string | null>(null);
 	const [popupRect, setPopupRect] = createSignal<DOMRect | null>(null);
 	const [pendingComment, setPendingComment] = createSignal<{

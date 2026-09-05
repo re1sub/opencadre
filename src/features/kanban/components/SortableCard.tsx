@@ -52,8 +52,6 @@ const SortableCard = (props: SortableCardProps) => {
 	// Calculate remaining count (+N)
 	const remainingCount = () => cardTags().length - MAX_TAGS;
 
-	const commentsCount = () => props.card.comments?.length ?? 0;
-
 	const assignedMembers = () =>
 		(props.card.assigneeIds ?? [])
 			.map((id) => props.members?.find((member) => member.id === id))
@@ -122,10 +120,6 @@ const SortableCard = (props: SortableCardProps) => {
 						</span>
 					)}
 				</Show>
-				<div class={styles.cardMetaGroup}>
-					<wa-icon name="message-square-text" label="Comments"></wa-icon>
-					<span>{commentsCount()}</span>
-				</div>
 				<div class={styles.cardMetaSpacer}></div>
 				<Show when={assignedMembers().length}>
 					<div class={styles.cardAvatarStack}>

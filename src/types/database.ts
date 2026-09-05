@@ -287,39 +287,24 @@ export type Database = {
 			};
 			comment_threads: {
 				Row: {
-					card_id: string | null;
 					created_at: string;
+					entity_id: string;
+					entity_type: string;
 					id: string;
-					page_id: string;
 				};
 				Insert: {
-					card_id?: string | null;
 					created_at?: string;
+					entity_id: string;
+					entity_type: string;
 					id?: string;
-					page_id: string;
 				};
 				Update: {
-					card_id?: string | null;
 					created_at?: string;
+					entity_id?: string;
+					entity_type?: string;
 					id?: string;
-					page_id?: string;
 				};
-				Relationships: [
-					{
-						foreignKeyName: "comment_threads_card_id_fkey";
-						columns: ["card_id"];
-						isOneToOne: false;
-						referencedRelation: "cards";
-						referencedColumns: ["id"];
-					},
-					{
-						foreignKeyName: "comment_threads_page_id_fkey";
-						columns: ["page_id"];
-						isOneToOne: false;
-						referencedRelation: "pages";
-						referencedColumns: ["id"];
-					},
-				];
+				Relationships: [];
 			};
 			comments: {
 				Row: {
@@ -352,6 +337,38 @@ export type Database = {
 						columns: ["thread_id"];
 						isOneToOne: false;
 						referencedRelation: "comment_threads";
+						referencedColumns: ["id"];
+					},
+				];
+			};
+			comment_reactions: {
+				Row: {
+					comment_id: string;
+					created_at: string;
+					id: string;
+					reaction: string;
+					user_id: string;
+				};
+				Insert: {
+					comment_id: string;
+					created_at?: string;
+					id?: string;
+					reaction: string;
+					user_id: string;
+				};
+				Update: {
+					comment_id?: string;
+					created_at?: string;
+					id?: string;
+					reaction?: string;
+					user_id?: string;
+				};
+				Relationships: [
+					{
+						foreignKeyName: "comment_reactions_comment_id_fkey";
+						columns: ["comment_id"];
+						isOneToOne: false;
+						referencedRelation: "comments";
 						referencedColumns: ["id"];
 					},
 				];
