@@ -145,6 +145,8 @@ const BoardColumn = (props: BoardColumnProps) => {
 				</For>
 			</div>
 
+			<wa-divider></wa-divider>
+
 			<wa-button
 				type="button"
 				variant="neutral"

@@ -13,11 +13,13 @@ interface ColumnDialogProps {
 	onRequestDelete: () => void;
 }
 
+const DEFAULT_COLOR = "#9097e2";
+
 const ColumnDialog = (props: ColumnDialogProps) => {
 	const dialog = useDialog(props.onClose, props.onRequestDelete);
 
 	const [title, setTitle] = createSignal(props.column.title);
-	const [color, setColor] = createSignal(props.column.color);
+	const [color, setColor] = createSignal(props.column.color || DEFAULT_COLOR);
 	const [error, setError] = createSignal<string | null>(null);
 
 	const handleSave = () => {
@@ -76,7 +78,7 @@ const ColumnDialog = (props: ColumnDialogProps) => {
 						}}
 					>
 						<wa-color-picker
-							value={props.column.color}
+							value={props.column.color || DEFAULT_COLOR}
 							onInput={(e) =>
 								setColor(
 									(e.currentTarget as unknown as { value: string }).value,

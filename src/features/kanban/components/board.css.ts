@@ -100,6 +100,8 @@ export const columnHeader = style({
 	alignItems: "center",
 	gap: "var(--wa-space-xs)",
 	padding: "var(--wa-space-m)",
+	marginBottom: "var(--wa-space-m)",
+	borderBottom: "1px solid var(--wa-color-surface-border)",
 	":hover": {
 		backgroundColor:
 			"color-mix(in srgb, var(--column-accent) 30%, transparent)",
@@ -164,7 +166,7 @@ export const columnCards = style({
 	display: "flex",
 	flexDirection: "column",
 	gap: "var(--wa-space-xs)",
-	padding: "0 var(--wa-space-m) var(--wa-space-m)",
+	padding: "0 var(--wa-space-m)",
 	overflowY: "auto",
 	overflowX: "hidden",
 	scrollbarWidth: "none",
