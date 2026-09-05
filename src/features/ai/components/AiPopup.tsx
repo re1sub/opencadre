@@ -1,6 +1,7 @@
 import { createEffect, createSignal, Show } from "solid-js";
 import { useAiChat } from "#/features/ai/hooks/useAiChat";
 import MarkdownView from "#/features/markdown/components/MarkdownView";
+import { uid } from "#/utils/misc";
 import { usePopup } from "#/utils/usePopup";
 import { actions, field, panel, result } from "./aiPopup.css";
 
@@ -21,9 +22,12 @@ const isAiTrigger = (target: HTMLElement | null) =>
 	Boolean(target?.closest?.('[id$="-ai"], #ai'));
 
 const AiPopup = (props: AiPopupProps) => {
+	const ns = uid();
+
 	const popup = usePopup({ onClose: props.onClose, ignore: isAiTrigger });
 
-	let popupEl: AiPopupElement | undefined;
+	let popupEl!: AiPopupElement;
+	let textareaEl!: HTMLTextAreaElement;
 
 	const [prompt, setPrompt] = createSignal("");
 	const { messages, sendMessage, isLoading } = useAiChat();
@@ -65,6 +69,13 @@ const AiPopup = (props: AiPopupProps) => {
 		});
 	});
 
+	createEffect(() => {
+		if (!props.open()) return;
+		requestAnimationFrame(() => {
+			textareaEl?.focus();
+		});
+	});
+
 	const handleGenerate = () => {
 		const text = prompt().trim();
 		if (!text) return;
@@ -91,6 +102,9 @@ const AiPopup = (props: AiPopupProps) => {
 		>
 			<div class={panel}>
 				<textarea
+					ref={textareaEl}
+					id={`${ns}-ai-prompt-popup`}
+					name={`${ns}-ai-prompt-popup`}
 					class={field}
 					value={prompt()}
 					onInput={(e) => setPrompt(e.currentTarget.value)}
