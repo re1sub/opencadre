@@ -5,7 +5,6 @@ import { useHotkey } from "#/utils/useHotkey";
 import { useProfile } from "../hooks/useProfile";
 import { useShortcuts } from "../hooks/useShortcuts";
 import type { Page, PageKind, Workspace } from "../types";
-import AddAccountDialog from "./AddAccountDialog";
 import type { SettingsSection } from "./SettingsDialog";
 import SettingsDialog from "./SettingsDialog";
 import { navFooter, userMenuName, userMenuTrigger } from "./workspace.css";
@@ -36,7 +35,6 @@ interface WorkspaceFooterProps {
 const WorkspaceFooter = (props: WorkspaceFooterProps) => {
 	const [showSettings, setShowSettings] = createSignal(false);
 	const [settingsSection, setSettingsSection] = createSignal<SettingsSection>();
-	const [showAddAccount, setShowAddAccount] = createSignal(false);
 
 	const { name } = useProfile(props.user);
 
@@ -64,7 +62,6 @@ const WorkspaceFooter = (props: WorkspaceFooterProps) => {
 		if (value === "__signout__") props.onSignOut();
 		else if (value === "__settings__") openSettings();
 		else if (value === "__members__") openSettings("members");
-		else if (value === "__account__") setShowAddAccount(true);
 		else if (value === "__trash__") props.onOpenTrash();
 	};
 
@@ -92,11 +89,6 @@ const WorkspaceFooter = (props: WorkspaceFooterProps) => {
 					<wa-dropdown-item value="__members__">
 						<wa-icon slot="icon" name="users" label="Members"></wa-icon>
 						Members
-					</wa-dropdown-item>
-
-					<wa-dropdown-item value="__account__">
-						<wa-icon slot="icon" name="user-plus" label="Add account"></wa-icon>
-						Add account
 					</wa-dropdown-item>
 
 					<wa-divider></wa-divider>
@@ -139,10 +131,6 @@ const WorkspaceFooter = (props: WorkspaceFooterProps) => {
 						setSettingsSection(undefined);
 					}}
 				/>
-			</Show>
-
-			<Show when={showAddAccount()}>
-				<AddAccountDialog onClose={() => setShowAddAccount(false)} />
 			</Show>
 		</nav>
 	);

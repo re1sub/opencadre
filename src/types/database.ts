@@ -10,7 +10,7 @@ export type Database = {
 	// Allows to automatically instantiate createClient with right options
 	// instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
 	__InternalSupabase: {
-		PostgrestVersion: "14.17";
+		PostgrestVersion: "14.5";
 	};
 	public: {
 		Tables: {
@@ -99,57 +99,6 @@ export type Database = {
 					},
 					{
 						foreignKeyName: "ai_requests_page_id_fkey";
-						columns: ["page_id"];
-						isOneToOne: false;
-						referencedRelation: "pages";
-						referencedColumns: ["id"];
-					},
-				];
-			};
-			attachments: {
-				Row: {
-					card_id: string | null;
-					created_at: string;
-					file_path: string;
-					file_size: number | null;
-					filename: string;
-					id: string;
-					mime_type: string | null;
-					page_id: string;
-					uploader_id: string;
-				};
-				Insert: {
-					card_id?: string | null;
-					created_at?: string;
-					file_path: string;
-					file_size?: number | null;
-					filename: string;
-					id?: string;
-					mime_type?: string | null;
-					page_id: string;
-					uploader_id: string;
-				};
-				Update: {
-					card_id?: string | null;
-					created_at?: string;
-					file_path?: string;
-					file_size?: number | null;
-					filename?: string;
-					id?: string;
-					mime_type?: string | null;
-					page_id?: string;
-					uploader_id?: string;
-				};
-				Relationships: [
-					{
-						foreignKeyName: "attachments_card_id_fkey";
-						columns: ["card_id"];
-						isOneToOne: false;
-						referencedRelation: "cards";
-						referencedColumns: ["id"];
-					},
-					{
-						foreignKeyName: "attachments_page_id_fkey";
 						columns: ["page_id"];
 						isOneToOne: false;
 						referencedRelation: "pages";
@@ -285,6 +234,38 @@ export type Database = {
 					},
 				];
 			};
+			comment_reactions: {
+				Row: {
+					comment_id: string;
+					created_at: string;
+					id: string;
+					reaction: string;
+					user_id: string;
+				};
+				Insert: {
+					comment_id: string;
+					created_at?: string;
+					id?: string;
+					reaction: string;
+					user_id: string;
+				};
+				Update: {
+					comment_id?: string;
+					created_at?: string;
+					id?: string;
+					reaction?: string;
+					user_id?: string;
+				};
+				Relationships: [
+					{
+						foreignKeyName: "comment_reactions_comment_id_fkey";
+						columns: ["comment_id"];
+						isOneToOne: false;
+						referencedRelation: "comments";
+						referencedColumns: ["id"];
+					},
+				];
+			};
 			comment_threads: {
 				Row: {
 					created_at: string;
@@ -337,38 +318,6 @@ export type Database = {
 						columns: ["thread_id"];
 						isOneToOne: false;
 						referencedRelation: "comment_threads";
-						referencedColumns: ["id"];
-					},
-				];
-			};
-			comment_reactions: {
-				Row: {
-					comment_id: string;
-					created_at: string;
-					id: string;
-					reaction: string;
-					user_id: string;
-				};
-				Insert: {
-					comment_id: string;
-					created_at?: string;
-					id?: string;
-					reaction: string;
-					user_id: string;
-				};
-				Update: {
-					comment_id?: string;
-					created_at?: string;
-					id?: string;
-					reaction?: string;
-					user_id?: string;
-				};
-				Relationships: [
-					{
-						foreignKeyName: "comment_reactions_comment_id_fkey";
-						columns: ["comment_id"];
-						isOneToOne: false;
-						referencedRelation: "comments";
 						referencedColumns: ["id"];
 					},
 				];
@@ -436,13 +385,6 @@ export type Database = {
 						columns: ["page_id"];
 						isOneToOne: false;
 						referencedRelation: "pages";
-						referencedColumns: ["id"];
-					},
-					{
-						foreignKeyName: "page_visits_user_id_fkey";
-						columns: ["user_id"];
-						isOneToOne: false;
-						referencedRelation: "users";
 						referencedColumns: ["id"];
 					},
 					{
@@ -533,24 +475,6 @@ export type Database = {
 					},
 				];
 			};
-			todos: {
-				Row: {
-					content: string | null;
-					created_at: string;
-					id: number;
-				};
-				Insert: {
-					content?: string | null;
-					created_at?: string;
-					id?: number;
-				};
-				Update: {
-					content?: string | null;
-					created_at?: string;
-					id?: number;
-				};
-				Relationships: [];
-			};
 			user_settings: {
 				Row: {
 					created_at: string;
@@ -570,15 +494,7 @@ export type Database = {
 					updated_at?: string;
 					user_id?: string;
 				};
-				Relationships: [
-					{
-						foreignKeyName: "user_settings_user_id_fkey";
-						columns: ["user_id"];
-						isOneToOne: true;
-						referencedRelation: "users";
-						referencedColumns: ["id"];
-					},
-				];
+				Relationships: [];
 			};
 			workspace_members: {
 				Row: {
@@ -615,6 +531,36 @@ export type Database = {
 					},
 				];
 			};
+			workspaces: {
+				Row: {
+					created_at: string;
+					default_page_kind: string;
+					description: string | null;
+					id: string;
+					name: string;
+					owner_id: string;
+					updated_at: string;
+				};
+				Insert: {
+					created_at?: string;
+					default_page_kind?: string;
+					description?: string | null;
+					id?: string;
+					name: string;
+					owner_id: string;
+					updated_at?: string;
+				};
+				Update: {
+					created_at?: string;
+					default_page_kind?: string;
+					description?: string | null;
+					id?: string;
+					name?: string;
+					owner_id?: string;
+					updated_at?: string;
+				};
+				Relationships: [];
+			};
 			ydocs: {
 				Row: {
 					entity_id: string;
@@ -645,43 +591,13 @@ export type Database = {
 				};
 				Relationships: [
 					{
-						foreignKeyName: "ydocs_workspace_id_fkey";
+						foreignKeyName: "y_doc_workspace_id_fkey";
 						columns: ["workspace_id"];
 						isOneToOne: false;
 						referencedRelation: "workspaces";
 						referencedColumns: ["id"];
 					},
 				];
-			};
-			workspaces: {
-				Row: {
-					created_at: string;
-					default_page_kind: string;
-					description: string | null;
-					id: string;
-					name: string;
-					owner_id: string;
-					updated_at: string;
-				};
-				Insert: {
-					created_at?: string;
-					default_page_kind?: string;
-					description?: string | null;
-					id?: string;
-					name: string;
-					owner_id: string;
-					updated_at?: string;
-				};
-				Update: {
-					created_at?: string;
-					default_page_kind?: string;
-					description?: string | null;
-					id?: string;
-					name?: string;
-					owner_id?: string;
-					updated_at?: string;
-				};
-				Relationships: [];
 			};
 		};
 		Views: {
