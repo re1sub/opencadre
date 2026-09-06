@@ -1,6 +1,7 @@
 import { createEffect, createSignal, Show } from "solid-js";
 import { useAiChat } from "#/features/ai/hooks/useAiChat";
 import MarkdownView from "#/features/markdown/components/MarkdownView";
+import type { EntityContext } from "#/types/ai";
 import { uid } from "#/utils/misc";
 import { usePopup } from "#/utils/usePopup";
 import { actions, field, panel, result } from "./aiPopup.css";
@@ -10,6 +11,7 @@ interface AiPopupProps {
 	anchorRect: () => DOMRect | null;
 	onInsert: (text: string) => void;
 	onClose: () => void;
+	entity?: EntityContext;
 }
 
 interface AiPopupElement extends HTMLElement {
@@ -30,7 +32,17 @@ const AiPopup = (props: AiPopupProps) => {
 	let textareaEl!: HTMLTextAreaElement;
 
 	const [prompt, setPrompt] = createSignal("");
-	const { messages, sendMessage, isLoading } = useAiChat();
+	const { messages, sendMessage, isLoading, clear } = useAiChat({
+		entity: props.entity,
+	});
+
+	createEffect(() => {
+		if (props.open()) {
+			console.log("DEBUG: AiPopup open, entity:", props.entity);
+			setPrompt("");
+			clear();
+		}
+	});
 
 	const assistantText = () => {
 		for (let i = messages().length - 1; i >= 0; i--) {
