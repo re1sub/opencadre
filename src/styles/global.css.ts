@@ -125,3 +125,12 @@ globalStyle("wa-dialog::part(footer)", {
 	paddingBlockStart: "inherit",
 	padding: "var(--wa-space-s)",
 });
+
+globalStyle("wa-tooltip", {
+	vars: {
+		"--wa-tooltip-background-color": "var(--wa-color-surface-raised)",
+		"--wa-tooltip-content-color": "var(--wa-color-text-normal)",
+		"--wa-tooltip-border-color":
+			"color-mix(in srgb, var(--wa-color-text-quiet) 50%, transparent)",
+	},
+});
