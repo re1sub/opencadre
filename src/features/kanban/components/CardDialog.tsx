@@ -8,7 +8,10 @@ import { useWorkspaceTagsAdapter } from "#/features/tags/hooks/useWorkspaceTagsA
 import type { Tag } from "#/features/tags/types";
 import DeleteButton from "#/features/ui/DeleteButton";
 import EditableText from "#/features/ui/EditableText";
-import type { WorkspaceMember } from "#/features/workspace/types";
+import type {
+	WorkspaceMember,
+	WorkspaceRole,
+} from "#/features/workspace/types";
 import { useDialog } from "#/utils/useDialog";
 import type { Card } from "../types";
 import AssigneePicker from "./AssigneePicker";
@@ -30,6 +33,7 @@ interface CardDialogProps {
 	card: Card;
 	workspaceId: string;
 	members: WorkspaceMember[];
+	myRole?: WorkspaceRole;
 	isNew?: boolean;
 	onClose: () => void;
 	onSave: (card: Card) => void;
@@ -263,6 +267,8 @@ const CardDialog = (props: CardDialogProps) => {
 						comments={cardThread()?.comments ?? []}
 						reactions={cardComments.reactions()}
 						currentUserId={cardComments.currentUserId()}
+						authorNames={cardComments.authorNames()}
+						myRole={props.myRole}
 						onAddComment={async (text) => {
 							const thread =
 								cardThread() ?? (await cardComments.ensureThread());

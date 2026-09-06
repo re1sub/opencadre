@@ -1,6 +1,8 @@
 import { createSignal, For, Show } from "solid-js";
 import MarkdownField from "#/features/markdown/components/MarkdownField";
 import MarkdownView from "#/features/markdown/components/MarkdownView";
+import { canManageMembers } from "#/features/workspace/constants/roles";
+import type { WorkspaceRole } from "#/features/workspace/types";
 import { formatTimestamp } from "#/utils/date";
 import { dropdownItemValue, getInitials } from "#/utils/misc";
 import { REACTIONS_LIST } from "../constants/reactions";
@@ -11,6 +13,8 @@ interface CommentsPanelProps {
 	comments: Comment[];
 	reactions: CommentReaction[];
 	currentUserId: string | null;
+	authorNames?: Record<string, string>;
+	myRole?: WorkspaceRole;
 	onAddComment: (text: string) => void | Promise<void>;
 	onToggleReaction: (commentId: string, reaction: string) => void;
 	onDelete?: (commentId: string) => void;
@@ -108,6 +112,17 @@ const CommentsPanel = (props: CommentsPanelProps) => {
 										),
 								);
 
+							const getDisplayName = (userId: string) =>
+								props.authorNames?.[userId] ?? userId.slice(0, 8);
+
+							const canDelete = (comment: Comment) =>
+								Boolean(
+									props.onDelete &&
+										props.currentUserId &&
+										(comment.authorId === props.currentUserId ||
+											(props.myRole && canManageMembers(props.myRole))),
+								);
+
 							return (
 								<div
 									style={{
@@ -137,7 +152,7 @@ const CommentsPanel = (props: CommentsPanelProps) => {
 													{formatTimestamp(comment.createdAt)}
 												</span>
 											</div>
-											{props.onDelete && (
+											<Show when={canDelete(comment)}>
 												<wa-button
 													variant="neutral"
 													appearance="plain"
@@ -147,7 +162,7 @@ const CommentsPanel = (props: CommentsPanelProps) => {
 												>
 													<wa-icon name="trash-2"></wa-icon>
 												</wa-button>
-											)}
+											</Show>
 										</div>
 										<div class={styles.commentText}>
 											<MarkdownView text={comment.text} />
@@ -169,34 +184,85 @@ const CommentsPanel = (props: CommentsPanelProps) => {
 													const matched = REACTIONS_LIST.find(
 														(r) => r.icon === group.reaction,
 													);
+													const tooltipId = `reaction-${comment.id}-${group.reaction}`;
 													return (
-														<wa-button
-															appearance={
-																reactedByMe(group.reaction)
-																	? "filled"
-																	: "outlined"
-															}
-															variant="neutral"
-															pill
-															size="xs"
-															onClick={() =>
-																props.onToggleReaction(
-																	comment.id,
-																	group.reaction,
-																)
-															}
-														>
-															<wa-icon
-																name={group.reaction}
-																label={matched?.name ?? group.reaction}
-																style={{
-																	color: matched?.color || "",
-																	"margin-right": "var(--wa-space-3xs)",
-																}}
-																slot="start"
-															></wa-icon>
-															{group.users.length}
-														</wa-button>
+														<>
+															<wa-button
+																id={tooltipId}
+																appearance={
+																	reactedByMe(group.reaction)
+																		? "filled"
+																		: "outlined"
+																}
+																variant="neutral"
+																pill
+																size="xs"
+																onClick={() =>
+																	props.onToggleReaction(
+																		comment.id,
+																		group.reaction,
+																	)
+																}
+															>
+																<wa-icon
+																	name={group.reaction}
+																	label={matched?.name ?? group.reaction}
+																	style={{
+																		color: matched?.color || "",
+																		"margin-right": "var(--wa-space-3xs)",
+																	}}
+																	slot="start"
+																></wa-icon>
+																{group.users.length}
+															</wa-button>
+															<wa-tooltip for={tooltipId}>
+																<div
+																	style={{
+																		display: "flex",
+																		"flex-direction": "column",
+																		gap: "var(--wa-space-3xs)",
+																	}}
+																>
+																	<For each={group.users.slice(0, 5)}>
+																		{(userId) => {
+																			const name = getDisplayName(userId);
+																			const initials = getInitials(name);
+																			return (
+																				<div
+																					style={{
+																						display: "flex",
+																						gap: "var(--wa-space-xs)",
+																						"align-items": "center",
+																					}}
+																				>
+																					<wa-avatar
+																						initials={initials}
+																						label={`Avatar with initials: ${initials}`}
+																						style={{ "--size": "24px" }}
+																					></wa-avatar>
+																					<span>{name}</span>
+																				</div>
+																			);
+																		}}
+																	</For>
+																	<Show when={group.users.length > 5}>
+																		<wa-divider
+																			style={{
+																				"--spacing": "var(--wa-space-3xs)",
+																			}}
+																		></wa-divider>
+																		<span
+																			style={{
+																				color: "var(--wa-color-text-quiet)",
+																				"font-size": "var(--wa-font-size-xs)",
+																			}}
+																		>
+																			+{group.users.length - 5} users
+																		</span>
+																	</Show>
+																</div>
+															</wa-tooltip>
+														</>
 													);
 												}}
 											</For>

@@ -48,6 +48,7 @@ export function useCommentsAdapter(entity: () => CommentEntity | null) {
 		id: row.id,
 		parentId: row.thread_id,
 		author: displayName(row.author_id),
+		authorId: row.author_id,
 		text: row.content,
 		createdAt: row.created_at,
 	});
@@ -97,14 +98,14 @@ export function useCommentsAdapter(entity: () => CommentEntity | null) {
 	const loadAuthors = async (workspaceId: string) => {
 		const { data, error } = await supabase
 			.from("workspace_members")
-			.select("user_id, email")
+			.select("user_id, profiles(display_name)")
 			.eq("workspace_id", workspaceId);
 		if (error) return;
 
 		const map: Record<string, string> = {};
 		for (const m of data ?? []) {
 			if (!m.user_id) continue;
-			const name = (m.email ?? "").split("@")[0];
+			const name = m.profiles?.display_name?.trim();
 			map[m.user_id] = name || m.user_id.slice(0, 8);
 		}
 
@@ -366,6 +367,7 @@ export function useCommentsAdapter(entity: () => CommentEntity | null) {
 			id: data.id,
 			parentId: data.thread_id,
 			author: displayName(user.id),
+			authorId: user.id,
 			text: data.content,
 			createdAt: data.created_at,
 		};
@@ -432,6 +434,7 @@ export function useCommentsAdapter(entity: () => CommentEntity | null) {
 		threads,
 		reactions,
 		currentUserId,
+		authorNames,
 		createThread,
 		ensureThread,
 		addComment,
