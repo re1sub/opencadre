@@ -12,6 +12,7 @@ import type {
 	WorkspaceMember,
 	WorkspaceRole,
 } from "#/features/workspace/types";
+import type { EntityContext } from "#/types/ai";
 import { useDialog } from "#/utils/useDialog";
 import type { Card } from "../types";
 import AssigneePicker from "./AssigneePicker";
@@ -32,6 +33,7 @@ import MemberChips from "./MemberChips";
 interface CardDialogProps {
 	card: Card;
 	workspaceId: string;
+	pageId?: string;
 	members: WorkspaceMember[];
 	myRole?: WorkspaceRole;
 	isNew?: boolean;
@@ -59,6 +61,12 @@ const CardDialog = (props: CardDialogProps) => {
 	);
 
 	const cardThread = () => cardComments.threads()[0];
+
+	const cardEntity: EntityContext = {
+		type: "card",
+		id: card().id,
+		pageId: props.pageId,
+	};
 
 	// Live-sync remote edits into the local buffer, except fields currently being typed
 	createEffect(() => {
@@ -257,6 +265,7 @@ const CardDialog = (props: CardDialogProps) => {
 								onChange={props.isNew ? handleDescriptionSave : undefined}
 								noControlsFooter={props.isNew}
 								placeholder="Add a description..."
+								entity={cardEntity}
 							/>
 						</div>
 					</div>
@@ -269,6 +278,7 @@ const CardDialog = (props: CardDialogProps) => {
 						currentUserId={cardComments.currentUserId()}
 						authorNames={cardComments.authorNames()}
 						myRole={props.myRole}
+						entity={cardEntity}
 						onAddComment={async (text) => {
 							const thread =
 								cardThread() ?? (await cardComments.ensureThread());

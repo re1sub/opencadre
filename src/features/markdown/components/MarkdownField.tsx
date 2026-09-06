@@ -11,6 +11,7 @@ import {
 	Show,
 } from "solid-js";
 import AiPopup from "#/features/ai/components/AiPopup";
+import type { EntityContext } from "#/types/ai";
 import { dropdownItemValue, uid } from "#/utils/misc";
 import { insertMarkdown } from "../insertMarkdown";
 import {
@@ -33,6 +34,7 @@ interface MarkdownFieldProps {
 	onChange?: (markdown: string) => void;
 	class?: string;
 	noControlsFooter?: boolean;
+	entity?: EntityContext;
 }
 
 const visibleInlineButtons = inlineButtons.filter(({ id }) =>
@@ -346,6 +348,7 @@ const MarkdownField = (props: MarkdownFieldProps) => {
 				anchorRect={aiRect}
 				onInsert={handleAiInsert}
 				onClose={() => setAiRect(null)}
+				entity={props.entity}
 			/>
 			<Show when={isFocused() && !props.noControlsFooter}>
 				<div

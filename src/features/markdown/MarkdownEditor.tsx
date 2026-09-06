@@ -350,6 +350,7 @@ const MarkdownEditor = (props: MarkdownEditorProps) => {
 				anchorRect={aiRect}
 				onInsert={handleAiInsert}
 				onClose={() => setAiRect(null)}
+				entity={props.pageId ? { type: "page", id: props.pageId } : undefined}
 			/>
 
 			<CommentPopup

@@ -3,6 +3,7 @@ import MarkdownField from "#/features/markdown/components/MarkdownField";
 import MarkdownView from "#/features/markdown/components/MarkdownView";
 import { canManageMembers } from "#/features/workspace/constants/roles";
 import type { WorkspaceRole } from "#/features/workspace/types";
+import type { EntityContext } from "#/types/ai";
 import { formatTimestamp } from "#/utils/date";
 import { dropdownItemValue, getInitials } from "#/utils/misc";
 import { REACTIONS_LIST } from "../constants/reactions";
@@ -19,6 +20,7 @@ interface CommentsPanelProps {
 	onToggleReaction: (commentId: string, reaction: string) => void;
 	onDelete?: (commentId: string) => void;
 	maxHeight?: string;
+	entity?: EntityContext;
 }
 
 const CommentsPanel = (props: CommentsPanelProps) => {
@@ -51,6 +53,7 @@ const CommentsPanel = (props: CommentsPanelProps) => {
 							onChange={setCommentDraft}
 							placeholder="Write a comment..."
 							noControlsFooter={true}
+							entity={props.entity}
 						/>
 						<wa-button
 							type="button"

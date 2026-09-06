@@ -135,6 +135,7 @@ const KanbanBoard = (props: KanbanBoardProps) => {
 					<CardDialog
 						card={dialog().card}
 						workspaceId={props.workspaceId ?? ""}
+						pageId={props.pageId}
 						members={members()}
 						myRole={myRole()}
 						isNew={dialog().isNew}
