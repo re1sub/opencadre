@@ -5,6 +5,7 @@ import { createEffect, createSignal, onCleanup } from "solid-js";
 import * as Y from "yjs";
 import type { Database, Tables } from "#/types/database";
 import { toIsoDate } from "#/utils/date";
+import { logActivity } from "#/utils/log";
 import { uid } from "#/utils/misc";
 import { supabase } from "#/utils/supabase";
 import { useDragReorder } from "#/utils/useDragReorder";
@@ -422,6 +423,10 @@ export function useKanbanBoardAdapter(options: UseKanbanBoardAdapterOptions) {
 		await supabase.from("card_tags").delete().eq("card_id", cardId);
 		await supabase.from("cards").delete().eq("id", cardId);
 
+		if (options.workspaceId) {
+			await logActivity(options.workspaceId, "card", cardId, "card_delete");
+		}
+
 		mutateKanbanDoc(doc, ({ cardsMap, columnCardsMap }) => {
 			cardsMap.delete(cardId);
 			const colCards = columnCardsMap.get(columnId);
@@ -470,6 +475,11 @@ export function useKanbanBoardAdapter(options: UseKanbanBoardAdapterOptions) {
 			const colCards = columnCardsMap.get(target.columnId);
 			if (colCards) colCards.insert(colCards.length, [draft.id]);
 		});
+		if (options.workspaceId) {
+			await logActivity(options.workspaceId, "card", draft.id, "card_create", {
+				title,
+			});
+		}
 	};
 
 	const addColumn = () =>

@@ -1,6 +1,9 @@
 import { createSignal, For, Show } from "solid-js";
 import { useDialog } from "#/utils/useDialog";
+import { canManageMembers } from "../constants/roles";
+import { useWorkspaceMembersAdapter } from "../hooks/useWorkspaceMembersAdapter";
 import type { Page, PageKind, Workspace } from "../types";
+import SettingsActivitySection from "./SettingsActivitySection";
 import SettingsGeneralSection from "./SettingsGeneralSection";
 import SettingsKeyboardSection from "./SettingsKeyboardSection";
 import SettingsMembersSection from "./SettingsMembersSection";
@@ -23,7 +26,8 @@ export type SettingsSection =
 	| "workspace"
 	| "members"
 	| "keyboard"
-	| "notifications";
+	| "notifications"
+	| "activity";
 
 interface SettingsDialogProps {
 	workspaceId: string;
@@ -57,10 +61,12 @@ const SECTIONS: {
 	{ value: "members", label: "Members", icon: "users" },
 	{ value: "keyboard", label: "Keyboard", icon: "keyboard" },
 	{ value: "notifications", label: "Notifications", icon: "bell" },
+	{ value: "activity", label: "Activity", icon: "clock" },
 ];
 
 const SettingsDialog = (props: SettingsDialogProps) => {
 	const dialog = useDialog(props.onClose);
+	const { myRole } = useWorkspaceMembersAdapter(() => props.workspaceId);
 
 	const [section, setSection] = createSignal<SettingsSection>(
 		props.initialSection ?? "general",
@@ -72,6 +78,11 @@ const SettingsDialog = (props: SettingsDialogProps) => {
 		setPanelOpen(true);
 	};
 
+	const visibleSections = () =>
+		SECTIONS.filter(
+			(s) => s.value !== "activity" || (myRole && canManageMembers(myRole())),
+		);
+
 	return (
 		<wa-dialog
 			ref={dialog.ref}
@@ -82,7 +93,7 @@ const SettingsDialog = (props: SettingsDialogProps) => {
 		>
 			<div class={settingsLayout}>
 				<nav class={settingsNav} aria-label="Settings sections">
-					<For each={SECTIONS}>
+					<For each={visibleSections()}>
 						{(item) => (
 							<wa-button
 								type="button"
@@ -142,6 +153,10 @@ const SettingsDialog = (props: SettingsDialogProps) => {
 
 					<Show when={section() === "notifications"}>
 						<SettingsNotificationsSection />
+					</Show>
+
+					<Show when={section() === "activity"}>
+						<SettingsActivitySection workspaceId={props.workspaceId} />
 					</Show>
 				</div>
 			</div>

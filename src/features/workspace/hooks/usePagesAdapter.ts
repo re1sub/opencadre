@@ -1,6 +1,7 @@
 import { useNavigate, useParams } from "@solidjs/router";
 import { createEffect, createSignal, onCleanup } from "solid-js";
 import type { Json, Tables } from "#/types/database";
+import { logActivity } from "#/utils/log";
 import { createReconcileGuard } from "#/utils/realtime/reconcile";
 import { registerRealtimeHandlers } from "#/utils/realtime/registrar";
 import { supabase } from "#/utils/supabase";
@@ -325,6 +326,10 @@ export function usePagesAdapter(
 			.single();
 		if (pageError) throw pageError;
 
+		await logActivity(targetWorkspaceId, "page", page.id, "page_create", {
+			title: page.title,
+		});
+
 		const content = options?.content ?? DEFAULT_CONTENT[kind];
 
 		const { error: contentError } = await supabase
@@ -354,6 +359,8 @@ export function usePagesAdapter(
 			.update({ is_deleted: true, deleted_at: new Date().toISOString() })
 			.eq("id", id);
 		if (error) throw error;
+
+		await logActivity(page!.workspaceId, "page", id, "page_delete");
 
 		setAllPages((prev) => prev.filter((p) => p.id !== id));
 		await supabase.from("page_visits").delete().eq("page_id", id);

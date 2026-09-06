@@ -1,5 +1,6 @@
 import { createEffect, createSignal, onCleanup } from "solid-js";
 import type { Tables } from "#/types/database";
+import { logActivity } from "#/utils/log";
 import { registerRealtimeHandlers } from "#/utils/realtime/registrar";
 import { supabase } from "#/utils/supabase";
 import type {
@@ -362,6 +363,16 @@ export function useCommentsAdapter(entity: () => CommentEntity | null) {
 			.select()
 			.single();
 		if (error) throw error;
+
+		const e = entity();
+		if (e) {
+			const workspaceId = await resolveWorkspace(e);
+			if (workspaceId) {
+				await logActivity(workspaceId, e.type, e.id, "comment_add", {
+					thread_id: threadId,
+				});
+			}
+		}
 
 		const created: Comment = {
 			id: data.id,

@@ -1,4 +1,5 @@
 import { createEffect, createSignal, onCleanup } from "solid-js";
+import { logActivity } from "#/utils/log";
 import { registerRealtimeHandlers } from "#/utils/realtime/registrar";
 import { supabase } from "#/utils/supabase";
 import type { WorkspaceMember, WorkspaceRole } from "../types";
@@ -150,6 +151,10 @@ export function useWorkspaceMembersAdapter(workspaceId: () => string) {
 		}
 
 		await fetchMembers(workspaceId());
+		await logActivity(workspaceId(), "member", null, "member_invite", {
+			email,
+			role,
+		});
 		return payload.status;
 	};
 
@@ -164,6 +169,10 @@ export function useWorkspaceMembersAdapter(workspaceId: () => string) {
 			: query.eq("user_id", memberId);
 		const { error } = await query;
 		if (error) throw error;
+
+		await logActivity(workspaceId(), "member", memberId, "member_role_update", {
+			role,
+		});
 
 		setMembers((prev) =>
 			prev.map((m) => (m.id === memberId ? { ...m, role } : m)),
@@ -187,6 +196,8 @@ export function useWorkspaceMembersAdapter(workspaceId: () => string) {
 			: query.eq("user_id", memberId);
 		const { error } = await query;
 		if (error) throw error;
+
+		await logActivity(workspaceId(), "member", memberId, "member_remove");
 
 		setMembers((prev) => prev.filter((m) => m.id !== memberId));
 	};
