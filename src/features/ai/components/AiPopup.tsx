@@ -38,7 +38,6 @@ const AiPopup = (props: AiPopupProps) => {
 
 	createEffect(() => {
 		if (props.open()) {
-			console.log("DEBUG: AiPopup open, entity:", props.entity);
 			setPrompt("");
 			clear();
 		}
