@@ -443,6 +443,27 @@ export type Database = {
 					},
 				];
 			};
+			profiles: {
+				Row: {
+					avatar_url: string | null;
+					display_name: string | null;
+					id: string;
+					updated_at: string | null;
+				};
+				Insert: {
+					avatar_url?: string | null;
+					display_name?: string | null;
+					id: string;
+					updated_at?: string | null;
+				};
+				Update: {
+					avatar_url?: string | null;
+					display_name?: string | null;
+					id?: string;
+					updated_at?: string | null;
+				};
+				Relationships: [];
+			};
 			tags: {
 				Row: {
 					color: string;
@@ -501,6 +522,7 @@ export type Database = {
 					created_at: string;
 					email: string;
 					id: string;
+					invite_token: string | null;
 					role: string;
 					user_id: string | null;
 					workspace_id: string;
@@ -509,6 +531,7 @@ export type Database = {
 					created_at?: string;
 					email?: string;
 					id?: string;
+					invite_token?: string | null;
 					role: string;
 					user_id?: string | null;
 					workspace_id: string;
@@ -517,11 +540,19 @@ export type Database = {
 					created_at?: string;
 					email?: string;
 					id?: string;
+					invite_token?: string | null;
 					role?: string;
 					user_id?: string | null;
 					workspace_id?: string;
 				};
 				Relationships: [
+					{
+						foreignKeyName: "workspace_members_user_id_fkey";
+						columns: ["user_id"];
+						isOneToOne: false;
+						referencedRelation: "profiles";
+						referencedColumns: ["id"];
+					},
 					{
 						foreignKeyName: "workspace_members_workspace_id_fkey";
 						columns: ["workspace_id"];
@@ -604,6 +635,16 @@ export type Database = {
 			[_ in never]: never;
 		};
 		Functions: {
+			accept_invite: { Args: { token: string }; Returns: string };
+			get_invite_details: {
+				Args: { p_token: string };
+				Returns: {
+					email: string;
+					role: string;
+					workspace_id: string;
+					workspace_name: string;
+				}[];
+			};
 			get_user_role: {
 				Args: { user_id: string; workspace_id: string };
 				Returns: string;
@@ -612,6 +653,7 @@ export type Database = {
 				Args: { user_id: string; workspace_id: string };
 				Returns: boolean;
 			};
+			lookup_confirmed_user_id: { Args: { p_email: string }; Returns: string };
 		};
 		Enums: {
 			[_ in never]: never;

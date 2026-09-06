@@ -16,7 +16,7 @@ values
    crypt('dev-password-123', gen_salt('bf')),
    now(), '', '', '', '',
    '{"provider":"email","providers":["email"]}',
-   '{}', now(), now(), false, false)
+   '{"display_name":"Dev User"}', now(), now(), false, false)
 on conflict (id) do nothing;
 
 -- Identity row required for email/password sign-in.
