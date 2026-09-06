@@ -9,6 +9,7 @@ import * as styles from "./components/board.css";
 import CardDialog from "./components/CardDialog";
 import ColumnDialog from "./components/ColumnDialog";
 import { useKanbanBoardAdapter } from "./hooks/useKanbanBoardAdapter";
+import { useKanbanCommentCounts } from "./hooks/useKanbanCommentCounts";
 
 import type { Card } from "./types";
 
@@ -29,7 +30,12 @@ const KanbanBoard = (props: KanbanBoardProps) => {
 		workspaceId: props.workspaceId,
 	});
 	const { tags } = useWorkspaceTagsAdapter(() => props.workspaceId ?? "");
-	const { members } = useWorkspaceMembersAdapter(() => props.workspaceId ?? "");
+	const { members, myRole } = useWorkspaceMembersAdapter(
+		() => props.workspaceId ?? "",
+	);
+	const commentCounts = useKanbanCommentCounts(() =>
+		board.columns().flatMap((col) => col.cards.map((c) => c.id)),
+	);
 
 	let openedCardParam: string | undefined;
 
@@ -95,6 +101,7 @@ const KanbanBoard = (props: KanbanBoardProps) => {
 								column={column}
 								tags={tags()}
 								members={members()}
+								commentCounts={commentCounts()}
 								index={index}
 								pageId={props.pageId}
 								onAddCard={board.addCard}
@@ -129,6 +136,7 @@ const KanbanBoard = (props: KanbanBoardProps) => {
 						card={dialog().card}
 						workspaceId={props.workspaceId ?? ""}
 						members={members()}
+						myRole={myRole()}
 						isNew={dialog().isNew}
 						onClose={closeCardDialog}
 						onSave={board.saveCard}

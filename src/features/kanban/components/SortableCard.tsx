@@ -12,6 +12,7 @@ interface SortableCardProps {
 	card: Card;
 	tags: Tag[];
 	members?: WorkspaceMember[];
+	commentCount?: number;
 	index: number;
 	columnId: string;
 	pageId?: string;
@@ -121,22 +122,37 @@ const SortableCard = (props: SortableCardProps) => {
 					)}
 				</Show>
 				<div class={styles.cardMetaSpacer}></div>
+				<Show when={(props.commentCount ?? 0) > 0}>
+					<span class={styles.cardMetaGroup}>
+						<wa-icon name="message-square-text" label="Comments"></wa-icon>
+						{props.commentCount}
+					</span>
+				</Show>
 				<Show when={assignedMembers().length}>
 					<div class={styles.cardAvatarStack}>
-						<For each={assignedMembers().slice(0, 3)}>
+						<For each={assignedMembers().slice(0, 5)}>
 							{(member) => (
-								<span
+								<wa-avatar
+									initials={getInitials(member.name)}
+									label={member.name}
 									class={styles.cardAvatar}
-									style={{ "background-color": member.color }}
-									title={member.name}
-								>
-									{getInitials(member.name)}
-								</span>
+									style={{
+										"--size": "26px",
+										color: "#fff",
+									}}
+								></wa-avatar>
 							)}
 						</For>
-						<Show when={assignedMembers().length > 3}>
-							<span class={styles.cardAvatar}>
-								+{assignedMembers().length - 3}
+						<Show when={assignedMembers().length > 5}>
+							<span
+								style={{
+									"margin-left": "var(--wa-space-3xs)",
+									color: "var(--wa-color-text-quiet)",
+									"font-size": "var(--wa-font-size-xs)",
+									"font-weight": "600",
+								}}
+							>
+								+{assignedMembers().length - 5}
 							</span>
 						</Show>
 					</div>

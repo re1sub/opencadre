@@ -13,6 +13,7 @@ interface BoardColumnProps {
 	column: Column;
 	tags: Tag[];
 	members?: WorkspaceMember[];
+	commentCounts?: Record<string, number>;
 	index: () => number;
 	pageId?: string;
 	onAddCard: (columnId: string) => void;
@@ -137,6 +138,7 @@ const BoardColumn = (props: BoardColumnProps) => {
 							card={card}
 							tags={props.tags}
 							members={props.members}
+							commentCount={props.commentCounts?.[card.id] ?? 0}
 							index={index()}
 							columnId={props.column.id}
 							pageId={props.pageId}

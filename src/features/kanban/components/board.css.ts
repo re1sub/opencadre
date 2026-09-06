@@ -280,17 +280,9 @@ export const cardAvatarStack = style({
 });
 
 export const cardAvatar = style({
-	display: "inline-flex",
-	alignItems: "center",
-	justifyContent: "center",
-	width: "1.25rem",
-	height: "1.25rem",
-	borderRadius: "50%",
-	fontSize: "0.55rem",
-	fontWeight: 700,
-	color: "#fff",
 	flexShrink: 0,
 	userSelect: "none",
+	fontWeight: "700",
 	selectors: {
 		[`${cardAvatarStack} & + &`]: {
 			marginLeft: "-0.4rem",
