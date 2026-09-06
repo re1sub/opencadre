@@ -13,6 +13,7 @@ import {
 	COMMENT_MARK_NAME,
 	CommentMark,
 } from "#/features/comments/mark/CommentMark";
+import { useWorkspaceMembersAdapter } from "#/features/workspace/hooks/useWorkspaceMembersAdapter";
 import { useDebouncedPush } from "#/utils/realtime/useDebouncedPush";
 import { useYjsDoc } from "#/utils/yjs/useYjsDoc";
 import CommentPopup from "./components/CommentPopup";
@@ -50,6 +51,7 @@ const MarkdownEditor = (props: MarkdownEditorProps) => {
 	const pageComments = useCommentsAdapter(() =>
 		props.pageId ? { type: "page" as const, id: props.pageId } : null,
 	);
+	const { myRole } = useWorkspaceMembersAdapter(() => props.workspaceId ?? "");
 
 	const yjs = useYjsDoc({
 		entityType: () => "markdown",
@@ -176,6 +178,7 @@ const MarkdownEditor = (props: MarkdownEditorProps) => {
 				if (isRemote) return;
 
 				const md = editorInstance.getMarkdown();
+				if (md === mdRef) return;
 				mdRef = md;
 				push();
 				editorComments.pruneOrphanThreads(editorInstance);
@@ -193,6 +196,37 @@ const MarkdownEditor = (props: MarkdownEditorProps) => {
 				},
 				handleKeyDown: (_view, event) =>
 					slashCommand.handleKeyDown(event, actions),
+				handleClickOn: (view, pos, _node, _nodePos, event) => {
+					const target = event.target as HTMLElement;
+					const markEl = target.closest?.("mark[data-comment-id]");
+					if (markEl) {
+						const threadId = markEl.getAttribute("data-comment-id");
+						if (threadId) {
+							const rect = markEl.getBoundingClientRect();
+							if (editorComments.activeThreadId() === threadId) {
+								editorComments.closeThreadPopup();
+							} else {
+								editorComments.openThreadPopup(threadId, rect);
+							}
+							return true;
+						}
+					}
+					const $pos = view.state.doc.resolve(pos);
+					const commentMark = $pos
+						.marks()
+						.find((m) => m.type.name === COMMENT_MARK_NAME);
+					const threadId = commentMark?.attrs.commentId as string | undefined;
+					if (threadId) {
+						const rect = posToDOMRect(view, pos, pos);
+						if (editorComments.activeThreadId() === threadId) {
+							editorComments.closeThreadPopup();
+						} else {
+							editorComments.openThreadPopup(threadId, rect);
+						}
+						return true;
+					}
+					return false;
+				},
 			},
 			onSelectionUpdate: ({ editor }) => {
 				const query = slashCommand.getSlashQuery(editor);
@@ -324,6 +358,8 @@ const MarkdownEditor = (props: MarkdownEditorProps) => {
 				thread={editorComments.activeThread}
 				reactions={pageComments.reactions()}
 				currentUserId={pageComments.currentUserId()}
+				authorNames={pageComments.authorNames()}
+				myRole={myRole()}
 				onAddComment={async (text) => {
 					const id = editorComments.activeThreadId();
 					if (!id) return;

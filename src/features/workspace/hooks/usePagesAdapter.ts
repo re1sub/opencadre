@@ -402,6 +402,9 @@ export function usePagesAdapter(
 	};
 
 	const updatePageContent = async (id: string, content: string) => {
+		const existing = allPages().find((p) => p.id === id);
+		if (existing && existing.content === content) return;
+
 		let parsed: Json;
 		try {
 			parsed = JSON.parse(content);
