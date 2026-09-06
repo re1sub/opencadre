@@ -45,9 +45,19 @@ const Auth = (props: { view?: "forgot" | "reset" }) => {
 	const [pending, setPending] = createSignal(false);
 	const [sent, setSent] = createSignal(false);
 
+	const inviteToken = () => {
+		const t = searchParams.invite_token;
+		return typeof t === "string" && t ? t : null;
+	};
+
 	createEffect(() => {
 		if (user() && !loading() && view() !== "reset") {
-			navigate("/workspace", { replace: true });
+			const t = inviteToken();
+			if (t)
+				navigate(`/accept-invite?token=${encodeURIComponent(t)}`, {
+					replace: true,
+				});
+			else navigate("/workspace", { replace: true });
 		}
 	});
 
@@ -55,9 +65,11 @@ const Auth = (props: { view?: "forgot" | "reset" }) => {
 		e.preventDefault();
 		setView(next);
 		setError(null);
-		setSearchParams(next === "signup" ? { register: "1" } : {}, {
-			replace: true,
-		});
+		const t = inviteToken();
+		const nextParams: Record<string, string> = {};
+		if (next === "signup") nextParams.register = "1";
+		if (t) nextParams.invite_token = t;
+		setSearchParams(nextParams, { replace: true });
 	};
 
 	const authenticate = async (
@@ -79,7 +91,9 @@ const Auth = (props: { view?: "forgot" | "reset" }) => {
 			} else {
 				await login(email, password);
 			}
-			navigate("/workspace");
+			const t = inviteToken();
+			if (t) navigate(`/accept-invite?token=${encodeURIComponent(t)}`);
+			else navigate("/workspace");
 		} catch (authError: unknown) {
 			if (
 				authError instanceof AuthApiError &&
@@ -329,6 +343,20 @@ const Auth = (props: { view?: "forgot" | "reset" }) => {
 						<a href="/" class={logo} style={{ "align-self": "center" }}>
 							opencadre
 						</a>
+						<Show when={inviteToken()}>
+							<p
+								style={{
+									"text-align": "center",
+									color: "var(--wa-color-text-quiet)",
+									"font-size": "0.875rem",
+									margin: "0",
+								}}
+							>
+								You've been invited to a workspace. Please{" "}
+								{view() === "signup" ? "create an account" : "sign in"} to
+								accept the invite.
+							</p>
+						</Show>
 						<h2 style={{ "font-size": "1.5rem" }}>
 							{view() === "signup" ? "Create your account" : "Sign in"}
 						</h2>

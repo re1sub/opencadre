@@ -30,12 +30,13 @@ interface SettingsMembersSectionProps {
 }
 
 const SettingsMembersSection = (props: SettingsMembersSectionProps) => {
-	const { members, myRole, addMember, updateRole, removeMember } =
+	const { members, myRole, inviteMember, updateRole, removeMember } =
 		useWorkspaceMembersAdapter(() => props.workspaceId);
 
 	const [newEmail, setNewEmail] = createSignal("");
 	const [newRole, setNewRole] = createSignal<WorkspaceRole>("member");
 	const [memberError, setMemberError] = createSignal<string | null>(null);
+	const [inviting, setInviting] = createSignal(false);
 
 	const handleNewRoleSelect = (e: Event) => {
 		e.stopPropagation();
@@ -43,7 +44,7 @@ const SettingsMembersSection = (props: SettingsMembersSectionProps) => {
 		if (isWorkspaceRole(value) && value !== "owner") setNewRole(value);
 	};
 
-	const handleAddMember = () => {
+	const handleAddMember = async () => {
 		setMemberError(null);
 
 		const result = addMemberSchema.safeParse({
@@ -60,9 +61,23 @@ const SettingsMembersSection = (props: SettingsMembersSectionProps) => {
 			setMemberError("That person is already a member.");
 			return;
 		}
-		addMember(email, result.data.role);
-		setNewEmail("");
-		setNewRole("member");
+
+		setInviting(true);
+		try {
+			const status = await inviteMember(email, result.data.role);
+			if (status === "already-member") {
+				setMemberError("That person is already a member.");
+				return;
+			}
+			setNewEmail("");
+			setNewRole("member");
+		} catch (err) {
+			setMemberError(
+				err instanceof Error ? err.message : "Failed to send the invite.",
+			);
+		} finally {
+			setInviting(false);
+		}
 	};
 
 	const handleMemberRoleSelect = (memberId: string) => (e: Event) => {
@@ -119,9 +134,17 @@ const SettingsMembersSection = (props: SettingsMembersSectionProps) => {
 							)}
 						</For>
 					</wa-dropdown>
-					<wa-button variant="brand" onClick={handleAddMember}>
-						<wa-icon slot="start" name="user-plus" label="Add member"></wa-icon>
-						Add
+					<wa-button
+						variant="brand"
+						disabled={inviting()}
+						onClick={handleAddMember}
+					>
+						<wa-icon
+							slot="start"
+							name="user-plus"
+							label="Invite member"
+						></wa-icon>
+						{inviting() ? "Inviting" : "Invite"}
 					</wa-button>
 				</div>
 				<Show when={memberError()}>
