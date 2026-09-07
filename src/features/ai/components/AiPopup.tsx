@@ -53,9 +53,15 @@ const AiPopup = (props: AiPopupProps) => {
 		return "";
 	};
 
-	const virtualAnchor = () => ({
-		getBoundingClientRect: () => props.anchorRect() ?? new DOMRect(0, 0, 0, 0),
-	});
+	let lastAnchorRect: DOMRect | null = null;
+
+	const virtualAnchor = () => {
+		const rect = props.anchorRect();
+		if (rect) lastAnchorRect = rect;
+		return {
+			getBoundingClientRect: () => lastAnchorRect ?? new DOMRect(0, 0, 0, 0),
+		};
+	};
 
 	createEffect(() => {
 		const shouldBeOpen = props.open();
