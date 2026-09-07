@@ -20,8 +20,20 @@ export default defineConfig({
 				codeSplitting: {
 					groups: [
 						{
-							name: "editor-vendor",
-							test: /[\\/]node_modules[\\/](@tiptap|prosemirror.*|marked)[\\/]/,
+							name: "editor-collab",
+							test: /[\\/]node_modules[\\/](yjs|y-prosemirror|lib0|isomorphic\.js|y-protocols)[\\/]/,
+						},
+						{
+							name: "editor-prosemirror",
+							test: /[\\/]node_modules[\\/]@tiptap\/pm[\\/]/,
+						},
+						{
+							name: "editor-tiptap",
+							test: /[\\/]node_modules[\\/]@tiptap\/(core|starter-kit|extension-)/,
+						},
+						{
+							name: "editor-markdown",
+							test: /[\\/]node_modules[\\/](marked|@tiptap\/markdown)[\\/]/,
 						},
 						{
 							name: "table-vendor",
