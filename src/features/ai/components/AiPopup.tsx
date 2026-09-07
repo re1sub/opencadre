@@ -80,13 +80,6 @@ const AiPopup = (props: AiPopupProps) => {
 		});
 	});
 
-	createEffect(() => {
-		if (!props.open()) return;
-		requestAnimationFrame(() => {
-			textareaEl?.focus();
-		});
-	});
-
 	const handleGenerate = () => {
 		const text = prompt().trim();
 		if (!text) return;
@@ -110,10 +103,11 @@ const AiPopup = (props: AiPopupProps) => {
 			shift
 			auto-size="vertical"
 			active={popup.open()}
+			on:wa-reposition={() => textareaEl?.focus()}
 		>
 			<div class={panel}>
 				<textarea
-					ref={textareaEl}
+					ref={(el) => (textareaEl = el as HTMLTextAreaElement)}
 					id={`${ns}-ai-prompt-popup`}
 					name={`${ns}-ai-prompt-popup`}
 					class={field}
