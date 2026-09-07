@@ -367,13 +367,13 @@ const MarkdownEditor = (props: MarkdownEditorProps) => {
 				onAddComment={async (text) => {
 					const id = editorComments.activeThreadId();
 					if (!id) return;
-					await pageComments.addComment(id, text);
+					const created = await pageComments.addComment(id, text);
 					const pending = editorComments.pendingComment();
 					const thread = pageComments.threads().find((t) => t.id === id);
 					if (
 						pending &&
 						pending.threadId === id &&
-						thread?.comments.length === 1
+						thread?.comments.some((c) => c.id === created.id)
 					) {
 						instance
 							?.chain()

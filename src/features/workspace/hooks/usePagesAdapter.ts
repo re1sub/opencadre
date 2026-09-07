@@ -346,7 +346,9 @@ export function usePagesAdapter(
 			createdAt: page.created_at,
 			updatedAt: page.updated_at,
 		};
-		setAllPages((prev) => [...prev, mapped]);
+		setAllPages((prev) =>
+			prev.some((p) => p.id === page.id) ? prev : [...prev, mapped],
+		);
 		navigate(`/workspace/p/${mapped.id}`);
 		return mapped;
 	};
@@ -562,7 +564,9 @@ export function usePagesAdapter(
 				createdAt: page.created_at,
 				updatedAt: page.updated_at,
 			};
-			setAllPages((prev) => [...prev, mapped]);
+			setAllPages((prev) =>
+				prev.some((p) => p.id === page.id) ? prev : [...prev, mapped],
+			);
 			navigate(`/workspace/p/${mapped.id}`);
 			return mapped;
 		}

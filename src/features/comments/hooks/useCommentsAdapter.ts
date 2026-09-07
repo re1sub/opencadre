@@ -364,16 +364,6 @@ export function useCommentsAdapter(entity: () => CommentEntity | null) {
 			.single();
 		if (error) throw error;
 
-		const e = entity();
-		if (e) {
-			const workspaceId = await resolveWorkspace(e);
-			if (workspaceId) {
-				await logActivity(workspaceId, e.type, e.id, "comment_add", {
-					thread_id: threadId,
-				});
-			}
-		}
-
 		const created: Comment = {
 			id: data.id,
 			parentId: data.thread_id,
@@ -385,9 +375,22 @@ export function useCommentsAdapter(entity: () => CommentEntity | null) {
 
 		setThreads((current) =>
 			current.map((t) =>
-				t.id === threadId ? { ...t, comments: [...t.comments, created] } : t,
+				t.id === threadId && !t.comments.some((c) => c.id === created.id)
+					? { ...t, comments: [...t.comments, created] }
+					: t,
 			),
 		);
+
+		const e = entity();
+		if (e) {
+			const workspaceId = await resolveWorkspace(e);
+			if (workspaceId) {
+				await logActivity(workspaceId, e.type, e.id, "comment_add", {
+					thread_id: threadId,
+				});
+			}
+		}
+
 		return created;
 	};
 
