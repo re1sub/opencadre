@@ -111,13 +111,15 @@ const Features = () => {
 									class={cardImage}
 									src={feature.image}
 									alt={feature.title}
+									height="500px"
+									width="400px"
 									style={{
 										filter: feature.title.includes("shortcuts")
 											? "invert(1)"
 											: "",
 										"object-fit": feature.title.includes("shortcuts")
 											? "scale-down"
-											: "cover",
+											: "contain",
 									}}
 								/>
 								<div class={cardContent}>

@@ -113,9 +113,9 @@ export const cardImageWrapper = style({
 
 export const cardImage = style({
 	width: "100%",
-	maxHeight: "180px",
-	objectFit: "cover",
-	objectPosition: "top",
+	height: "180px",
+	objectFit: "contain",
+	objectPosition: "center",
 });
 
 export const cardContent = style({
@@ -123,7 +123,7 @@ export const cardContent = style({
 	alignItems: "center",
 	gap: "20px",
 	width: "100%",
-	height: "100%",
+	height: "120px",
 	padding: "20px",
 	borderTop: "1px solid var(--wa-color-surface-border)",
 });

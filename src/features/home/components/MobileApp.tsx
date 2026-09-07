@@ -35,14 +35,14 @@ const MobileApp = () => {
 					</div>
 					<div class={cta}>
 						<wa-button
-							href="https://github.com/opencadre"
+							href="https://github.com/re1sub/opencadre/releases"
 							variant="neutral"
 							class={downloadButton}
 						>
 							<wa-icon slot="start" name="download"></wa-icon>
 							Download
 						</wa-button>
-						<span class={comingSoon}>* iOS version coming soon.</span>
+						<span class={comingSoon}>Coming soon</span>
 					</div>
 				</Motion.div>
 				<Motion.div
