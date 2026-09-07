@@ -1,7 +1,6 @@
 import { createSignal, For, Show } from "solid-js";
 import DeleteButton from "#/features/ui/DeleteButton";
 import { dropdownItemValue, getInitials } from "#/utils/misc";
-import { CURRENT_MEMBER_ID } from "../constants/members";
 import {
 	ASSIGNABLE_ROLES,
 	canManageMembers,
@@ -30,7 +29,7 @@ interface SettingsMembersSectionProps {
 }
 
 const SettingsMembersSection = (props: SettingsMembersSectionProps) => {
-	const { members, myRole, inviteMember, updateRole, removeMember } =
+	const { members, myRole, meUserId, inviteMember, updateRole, removeMember } =
 		useWorkspaceMembersAdapter(() => props.workspaceId);
 
 	const [newEmail, setNewEmail] = createSignal("");
@@ -166,7 +165,7 @@ const SettingsMembersSection = (props: SettingsMembersSectionProps) => {
 							<div class={memberMeta}>
 								<span class={memberName}>
 									{member.name}
-									<Show when={member.id === CURRENT_MEMBER_ID}> (you)</Show>
+									<Show when={member.id === meUserId()}> (you)</Show>
 								</span>
 								<span class={memberEmail}>
 									{member.email || ROLE_META[member.role].description}
@@ -174,7 +173,7 @@ const SettingsMembersSection = (props: SettingsMembersSectionProps) => {
 							</div>
 							<Show
 								when={
-									member.id !== CURRENT_MEMBER_ID &&
+									member.id !== meUserId() &&
 									canModifyMember(myRole(), member.role)
 								}
 								fallback={

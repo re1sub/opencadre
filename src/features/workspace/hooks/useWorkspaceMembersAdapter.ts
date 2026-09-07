@@ -159,6 +159,9 @@ export function useWorkspaceMembersAdapter(workspaceId: () => string) {
 	};
 
 	const updateRole = async (memberId: string, role: WorkspaceRole) => {
+		if (memberId === meUserId()) {
+			throw new Error("You can't change your own role.");
+		}
 		const isEmail = memberId.includes("@");
 		let query = supabase
 			.from("workspace_members")
@@ -186,6 +189,9 @@ export function useWorkspaceMembersAdapter(workspaceId: () => string) {
 	};
 
 	const removeMember = async (memberId: string) => {
+		if (memberId === meUserId()) {
+			throw new Error("You can't remove yourself from the workspace.");
+		}
 		const isEmail = memberId.includes("@");
 		let query = supabase
 			.from("workspace_members")
@@ -205,6 +211,7 @@ export function useWorkspaceMembersAdapter(workspaceId: () => string) {
 	return {
 		members,
 		myRole,
+		meUserId,
 		inviteMember,
 		updateRole,
 		removeMember,
