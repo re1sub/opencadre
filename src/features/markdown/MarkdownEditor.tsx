@@ -48,9 +48,11 @@ const MarkdownEditor = (props: MarkdownEditorProps) => {
 		"workspaceId",
 		"onUpdate",
 	]);
+
 	const pageComments = useCommentsAdapter(() =>
 		props.pageId ? { type: "page" as const, id: props.pageId } : null,
 	);
+
 	const { members, myRole } = useWorkspaceMembersAdapter(
 		() => props.workspaceId ?? "",
 	);
@@ -70,12 +72,15 @@ const MarkdownEditor = (props: MarkdownEditorProps) => {
 	const [aiRect, setAiRect] = createSignal<DOMRect | null>(null);
 
 	const { setPush, push } = useDebouncedPush(400);
+
 	let mdRef = props.content;
+
 	createEffect(() => {
 		setPush(() => {
 			props.onUpdate?.(mdRef);
 		});
 	});
+
 	const bumpToolbar = () => setToolbarVersion((v) => v + 1);
 
 	let editorRef!: HTMLDivElement;
@@ -100,6 +105,7 @@ const MarkdownEditor = (props: MarkdownEditorProps) => {
 
 	const handleAiInsert = (text: string) => {
 		if (!text || !instance) return;
+
 		insertMarkdown(instance, text);
 		setAiRect(null);
 	};
@@ -115,8 +121,8 @@ const MarkdownEditor = (props: MarkdownEditorProps) => {
 			strategy: "fixed" as const,
 			placement: "bottom-start" as const,
 			offset: 8,
-			flip: { boundary: editorRef, padding: -50 },
-			shift: { boundary: editorRef },
+			flip: { padding: 8 },
+			shift: { padding: 8 },
 		};
 
 		const CustomDocument = Document.extend({
@@ -177,10 +183,13 @@ const MarkdownEditor = (props: MarkdownEditorProps) => {
 			onUpdate: ({ editor: editorInstance, transaction }) => {
 				// Prevent saving remote changes back as if they were local
 				const isRemote = transaction.getMeta("ySync");
+
 				if (isRemote) return;
 
 				const md = editorInstance.getMarkdown();
+
 				if (md === mdRef) return;
+
 				mdRef = md;
 				push();
 				editorComments.pruneOrphanThreads(editorInstance);
@@ -190,6 +199,7 @@ const MarkdownEditor = (props: MarkdownEditorProps) => {
 					if (text === "/") {
 						const before =
 							from > 0 ? view.state.doc.textBetween(from - 1, from) : "";
+
 						if (before === "" || /\s/.test(before)) {
 							slashCommand.setCommandVisible(true);
 							slashCommand.setCommandQuery("");
@@ -201,10 +211,13 @@ const MarkdownEditor = (props: MarkdownEditorProps) => {
 				handleClickOn: (view, pos, _node, _nodePos, event) => {
 					const target = event.target as HTMLElement;
 					const markEl = target.closest?.("mark[data-comment-id]");
+
 					if (markEl) {
 						const threadId = markEl.getAttribute("data-comment-id");
+
 						if (threadId) {
 							const rect = markEl.getBoundingClientRect();
+
 							if (editorComments.activeThreadId() === threadId) {
 								editorComments.closeThreadPopup();
 							} else {
@@ -213,13 +226,16 @@ const MarkdownEditor = (props: MarkdownEditorProps) => {
 							return true;
 						}
 					}
+
 					const $pos = view.state.doc.resolve(pos);
 					const commentMark = $pos
 						.marks()
 						.find((m) => m.type.name === COMMENT_MARK_NAME);
 					const threadId = commentMark?.attrs.commentId as string | undefined;
+
 					if (threadId) {
 						const rect = posToDOMRect(view, pos, pos);
+
 						if (editorComments.activeThreadId() === threadId) {
 							editorComments.closeThreadPopup();
 						} else {
@@ -232,6 +248,7 @@ const MarkdownEditor = (props: MarkdownEditorProps) => {
 			},
 			onSelectionUpdate: ({ editor }) => {
 				const query = slashCommand.getSlashQuery(editor);
+
 				if (query !== null) {
 					slashCommand.setCommandQuery(query);
 					if (!slashCommand.commandVisible()) {
@@ -257,8 +274,10 @@ const MarkdownEditor = (props: MarkdownEditorProps) => {
 				active: () => false,
 				run: () => {
 					if (!instance) return;
+
 					const { from, to } = instance.state.selection;
 					const rect = posToDOMRect(instance.view, from, to);
+
 					hideBubbleMenus();
 					if (aiRect()) {
 						setAiRect(null);
@@ -366,10 +385,13 @@ const MarkdownEditor = (props: MarkdownEditorProps) => {
 				members={members()}
 				onAddComment={async (text) => {
 					const id = editorComments.activeThreadId();
+
 					if (!id) return;
+
 					const created = await pageComments.addComment(id, text);
 					const pending = editorComments.pendingComment();
 					const thread = pageComments.threads().find((t) => t.id === id);
+
 					if (
 						pending &&
 						pending.threadId === id &&
