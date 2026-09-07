@@ -116,6 +116,7 @@ export const cardImage = style({
 	height: "180px",
 	objectFit: "contain",
 	objectPosition: "center",
+	color: "var(--wa-color-on-quiet)",
 });
 
 export const cardContent = style({

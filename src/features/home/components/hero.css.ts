@@ -29,6 +29,7 @@ export const screenshotImage = style({
 	width: "100%",
 	height: "auto",
 	borderRadius: "var(--wa-border-radius-l)",
-	boxShadow: "0 0 5.5px rgba(0, 0, 0, 0.25)",
+	boxShadow:
+		"0 0 10px 0 color-mix(in srgb, var(--wa-color-text-normal) 20%, transparent)",
 	aspectRatio: "3014 / 1644",
 });

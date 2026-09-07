@@ -1,11 +1,5 @@
 import { For } from "solid-js";
 import { Motion } from "solid-motionone";
-import feature1 from "#assets/img/home/feature-1.png";
-import feature2 from "#assets/img/home/feature-2.png";
-import feature3 from "#assets/img/home/feature-3.png";
-import feature4 from "#assets/img/home/feature-4.png";
-import feature5 from "#assets/img/home/feature-5.png";
-import feature6 from "#assets/img/home/feature-6.png";
 import {
 	card,
 	cardContent,
@@ -27,42 +21,36 @@ const featureCards = [
 		title: "Real-time collaboration",
 		description:
 			"Every change is instantly visible to your whole team. No refreshing, no conflicts, no out-of-sync boards.",
-		image: feature1,
 	},
 	{
 		icon: "sparkles",
 		title: "AI assistance",
 		description:
 			"Write descriptions, edit content, create cards and generate subtasks. AI is built into the workflow, not bolted on.",
-		image: feature2,
 	},
 	{
 		icon: "layout-template",
 		title: "Templates",
 		description:
 			"Start faster with pre-built board templates. Duplicate and customize them for any project type.",
-		image: feature3,
 	},
 	{
 		icon: "message-circle-more",
 		title: "Comments",
 		description:
 			"Discuss tasks directly on the card. Keep context where the work is, not scattered across messages.",
-		image: feature4,
 	},
 	{
 		icon: "square-slash",
 		title: "Keyboard shortcuts",
 		description:
 			"Navigate, create and act without leaving the keyboard. Built for people who prefer to stay in flow.",
-		image: feature5,
 	},
 	{
 		icon: "bell",
 		title: "Notifications",
 		description:
 			"Stay in the loop on what matters. Get notified when cards are updated, assigned or commented on.",
-		image: feature6,
 	},
 ];
 
@@ -107,21 +95,11 @@ const Features = () => {
 					{(feature) => (
 						<article class={card}>
 							<div class={cardInner}>
-								<img
+								<wa-icon
 									class={cardImage}
-									src={feature.image}
-									alt={feature.title}
-									height="500px"
-									width="400px"
-									style={{
-										filter: feature.title.includes("shortcuts")
-											? "invert(1)"
-											: "",
-										"object-fit": feature.title.includes("shortcuts")
-											? "scale-down"
-											: "contain",
-									}}
-								/>
+									name={feature.icon}
+									style={{ "font-size": "5rem" }}
+								></wa-icon>
 								<div class={cardContent}>
 									<span class={cardIcon}>
 										<wa-icon name={feature.icon}></wa-icon>
