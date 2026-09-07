@@ -278,6 +278,7 @@ const CardDialog = (props: CardDialogProps) => {
 						currentUserId={cardComments.currentUserId()}
 						authorNames={cardComments.authorNames()}
 						myRole={props.myRole}
+						members={props.members}
 						entity={cardEntity}
 						onAddComment={async (text) => {
 							const thread =

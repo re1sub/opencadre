@@ -51,7 +51,9 @@ const MarkdownEditor = (props: MarkdownEditorProps) => {
 	const pageComments = useCommentsAdapter(() =>
 		props.pageId ? { type: "page" as const, id: props.pageId } : null,
 	);
-	const { myRole } = useWorkspaceMembersAdapter(() => props.workspaceId ?? "");
+	const { members, myRole } = useWorkspaceMembersAdapter(
+		() => props.workspaceId ?? "",
+	);
 
 	const yjs = useYjsDoc({
 		entityType: () => "markdown",
@@ -361,6 +363,7 @@ const MarkdownEditor = (props: MarkdownEditorProps) => {
 				currentUserId={pageComments.currentUserId()}
 				authorNames={pageComments.authorNames()}
 				myRole={myRole()}
+				members={members()}
 				onAddComment={async (text) => {
 					const id = editorComments.activeThreadId();
 					if (!id) return;

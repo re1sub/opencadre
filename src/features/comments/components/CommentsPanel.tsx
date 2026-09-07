@@ -2,7 +2,10 @@ import { createSignal, For, Show } from "solid-js";
 import MarkdownField from "#/features/markdown/components/MarkdownField";
 import MarkdownView from "#/features/markdown/components/MarkdownView";
 import { canManageMembers } from "#/features/workspace/constants/roles";
-import type { WorkspaceRole } from "#/features/workspace/types";
+import type {
+	WorkspaceMember,
+	WorkspaceRole,
+} from "#/features/workspace/types";
 import type { EntityContext } from "#/types/ai";
 import { formatTimestamp } from "#/utils/date";
 import { dropdownItemValue, getInitials } from "#/utils/misc";
@@ -21,6 +24,7 @@ interface CommentsPanelProps {
 	onDelete?: (commentId: string) => void;
 	maxHeight?: string;
 	entity?: EntityContext;
+	members?: WorkspaceMember[];
 }
 
 const CommentsPanel = (props: CommentsPanelProps) => {
@@ -54,6 +58,7 @@ const CommentsPanel = (props: CommentsPanelProps) => {
 							placeholder="Write a comment..."
 							noControlsFooter={true}
 							entity={props.entity}
+							members={props.members}
 						/>
 						<wa-button
 							type="button"
@@ -168,7 +173,10 @@ const CommentsPanel = (props: CommentsPanelProps) => {
 											</Show>
 										</div>
 										<div class={styles.commentText}>
-											<MarkdownView text={comment.text} />
+											<MarkdownView
+												text={comment.text}
+												members={props.members}
+											/>
 										</div>
 
 										<div
@@ -218,7 +226,12 @@ const CommentsPanel = (props: CommentsPanelProps) => {
 																></wa-icon>
 																{group.users.length}
 															</wa-button>
-															<wa-tooltip for={tooltipId}>
+															<wa-tooltip
+																for={tooltipId}
+																on:wa-after-hide={(e: Event) =>
+																	e.stopPropagation()
+																}
+															>
 																<div
 																	style={{
 																		display: "flex",

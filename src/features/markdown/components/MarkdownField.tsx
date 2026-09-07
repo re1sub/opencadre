@@ -11,8 +11,10 @@ import {
 	Show,
 } from "solid-js";
 import AiPopup from "#/features/ai/components/AiPopup";
+import type { WorkspaceMember } from "#/features/workspace/types";
 import type { EntityContext } from "#/types/ai";
 import { dropdownItemValue, uid } from "#/utils/misc";
+import { useMentions } from "../hooks/useMentions";
 import { insertMarkdown } from "../insertMarkdown";
 import {
 	additionalButtons,
@@ -22,6 +24,7 @@ import {
 	inlineButtons,
 	type MarkdownAction,
 } from "../toolbar";
+import MentionPopup from "./MentionPopup";
 import { activeButton, content, field, toolbar } from "./markdownField.css";
 import ToolbarButton from "./ToolbarButton";
 
@@ -35,6 +38,7 @@ interface MarkdownFieldProps {
 	class?: string;
 	noControlsFooter?: boolean;
 	entity?: EntityContext;
+	members?: WorkspaceMember[];
 }
 
 const visibleInlineButtons = inlineButtons.filter(({ id }) =>
@@ -66,6 +70,8 @@ const MarkdownField = (props: MarkdownFieldProps) => {
 	const [isFocused, setIsFocused] = createSignal(false);
 	const [toolbarVersion, setToolbarVersion] = createSignal(0);
 	const [aiRect, setAiRect] = createSignal<DOMRect | null>(null);
+
+	const mentions = useMentions(() => instance);
 
 	const bumpToolbar = () => setToolbarVersion((v) => v + 1);
 
@@ -130,6 +136,24 @@ const MarkdownField = (props: MarkdownFieldProps) => {
 			},
 			onBlur: () => {
 				setIsFocused(false);
+			},
+			editorProps: {
+				handleTextInput: (view, from, _to, text) => {
+					if (!props.members?.length) return;
+					if (text !== "@") return;
+					const before =
+						from > 0 ? view.state.doc.textBetween(from - 1, from) : "";
+					if (before === "" || /\s/.test(before)) {
+						mentions.openMentionAt(from);
+					}
+				},
+				handleKeyDown: (_view, event) =>
+					mentions.handleKeyDown(event, props.members ?? []),
+			},
+			onSelectionUpdate: ({ editor }) => {
+				if (props.members?.length) {
+					mentions.syncFromSelection(editor, props.members);
+				}
 			},
 		});
 
@@ -349,6 +373,14 @@ const MarkdownField = (props: MarkdownFieldProps) => {
 				onInsert={handleAiInsert}
 				onClose={() => setAiRect(null)}
 				entity={props.entity}
+			/>
+			<MentionPopup
+				open={mentions.mentionVisible}
+				anchorRect={mentions.mentionRect}
+				members={mentions.filteredMembers(props.members ?? [])}
+				selectedIndex={mentions.selectedIndex}
+				onSelect={(member) => mentions.insertMention(member)}
+				onClose={() => mentions.setMentionVisible(false)}
 			/>
 			<Show when={isFocused() && !props.noControlsFooter}>
 				<div

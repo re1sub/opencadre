@@ -1,7 +1,10 @@
 import { createEffect, Show } from "solid-js";
 import CommentsPanel from "#/features/comments/components/CommentsPanel";
 import type { CommentReaction, CommentThread } from "#/features/comments/types";
-import type { WorkspaceRole } from "#/features/workspace/types";
+import type {
+	WorkspaceMember,
+	WorkspaceRole,
+} from "#/features/workspace/types";
 import { usePopup } from "#/utils/usePopup";
 
 interface CommentPopupProps {
@@ -12,6 +15,7 @@ interface CommentPopupProps {
 	currentUserId: string | null;
 	authorNames?: Record<string, string>;
 	myRole?: WorkspaceRole;
+	members?: WorkspaceMember[];
 	onAddComment: (text: string) => void | Promise<void>;
 	onToggleReaction: (commentId: string, reaction: string) => void;
 	onDeleteComment: (commentId: string) => void;
@@ -78,6 +82,7 @@ const CommentPopup = (props: CommentPopupProps) => {
 						currentUserId={props.currentUserId}
 						authorNames={props.authorNames}
 						myRole={props.myRole}
+						members={props.members}
 						onAddComment={props.onAddComment}
 						onToggleReaction={props.onToggleReaction}
 						onDelete={props.onDeleteComment}
