@@ -345,7 +345,7 @@ export const settingsPanel = style({
 	transition: "transform 0.25s ease-in-out, opacity 0.2s ease-in-out",
 	height: "60vh",
 	overflow: "auto",
-	paddingRight: "var(--wa-space-xs)",
+	padding: "var(--wa-space-2xs)",
 	marginBottom: "var(--wa-space-xs)",
 
 	"@media": {
