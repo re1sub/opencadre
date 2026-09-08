@@ -1,5 +1,6 @@
 import { useNavigate, useParams } from "@solidjs/router";
 import { createEffect, createSignal, onCleanup } from "solid-js";
+import { DEFAULT_MARKDOWN_CONTENT } from "#/features/markdown/constants";
 import type { Json, Tables } from "#/types/database";
 import { logActivity } from "#/utils/log";
 import { createReconcileGuard } from "#/utils/realtime/reconcile";
@@ -32,7 +33,7 @@ const EMPTY_TABLE_CONTENT = {
 } satisfies Json;
 
 const DEFAULT_CONTENT: Record<PageKind, Json> = {
-	markdown: "",
+	markdown: DEFAULT_MARKDOWN_CONTENT,
 	kanban: {},
 	table: EMPTY_TABLE_CONTENT,
 };
@@ -59,6 +60,7 @@ const toPage = (row: PageRow, content?: PageContentRow): Page => ({
 	content: contentToString(row.kind as PageKind, content?.content),
 	createdAt: row.created_at,
 	updatedAt: row.updated_at,
+	ownerId: row.owner_id,
 });
 
 export function usePagesAdapter(
@@ -315,6 +317,11 @@ export function usePagesAdapter(
 		const targetWorkspaceId = activeWorkspaceId();
 		const defaultTitle = "Untitled";
 
+		const {
+			data: { user },
+		} = await supabase.auth.getUser();
+		if (!user) throw new Error("Not authenticated");
+
 		const currentPages = activePages();
 		const nextPosition = currentPages.length;
 
@@ -325,6 +332,7 @@ export function usePagesAdapter(
 				title: options?.title ?? defaultTitle,
 				kind,
 				position: nextPosition,
+				owner_id: user.id,
 			})
 			.select()
 			.single();
@@ -349,6 +357,7 @@ export function usePagesAdapter(
 			content: contentToString(kind, content),
 			createdAt: page.created_at,
 			updatedAt: page.updated_at,
+			ownerId: user.id,
 		};
 		setAllPages((prev) =>
 			prev.some((p) => p.id === page.id) ? prev : [...prev, mapped],
@@ -400,6 +409,11 @@ export function usePagesAdapter(
 			.update({ title, updated_at: new Date().toISOString() })
 			.eq("id", id);
 		if (error) throw error;
+
+		const page = allPages().find((p) => p.id === id);
+		if (page) {
+			await logActivity(page.workspaceId, "page", id, "page_edit", { title });
+		}
 	};
 
 	const persistPagePositions = async (workspaceId: string, pages: Page[]) => {
@@ -434,6 +448,22 @@ export function usePagesAdapter(
 		if (updatedPages.length > 0) {
 			await persistPagePositions(activeWorkspaceId(), updatedPages);
 		}
+	};
+
+	const excerptFromDiff = (prev: string, next: string): string | null => {
+		if (!next || prev === next) return null;
+		if (!prev) return next.slice(0, 120).trim().slice(0, 80);
+		// Find first differing index
+		const minLen = Math.min(prev.length, next.length);
+		let start = 0;
+		while (start < minLen && prev[start] === next[start]) start++;
+		// If next is shorter, it's a deletion – show removed snippet from prev
+		if (next.length < prev.length && start === next.length) return null;
+		const snippet = next.slice(start, start + 80).trim();
+		if (!snippet) return null;
+		// Prefer whole words, break at newline
+		const firstLine = snippet.split("\n")[0];
+		return firstLine.slice(0, 80);
 	};
 
 	const updatePageContent = async (id: string, content: string) => {
@@ -473,6 +503,21 @@ export function usePagesAdapter(
 				entry.id === id ? { ...entry, content, updatedAt: now } : entry,
 			),
 		);
+
+		const page = allPages().find((p) => p.id === id);
+		if (page) {
+			const excerpt = existing
+				? excerptFromDiff(existing.content, content)
+				: null;
+			const metadata = excerpt ? { excerpt } : undefined;
+			await logActivity(
+				page.workspaceId,
+				"page",
+				id,
+				"page_edit",
+				metadata as Json,
+			);
+		}
 	};
 
 	const duplicatePage = async (id: string) => {
@@ -589,6 +634,7 @@ export function usePagesAdapter(
 				content: contentToString(source.kind, content),
 				createdAt: page.created_at,
 				updatedAt: page.updated_at,
+				ownerId: source.ownerId,
 			};
 			setAllPages((prev) =>
 				prev.some((p) => p.id === page.id) ? prev : [...prev, mapped],

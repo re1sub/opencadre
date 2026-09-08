@@ -27,6 +27,7 @@ export interface Page {
 	content: string;
 	createdAt: string;
 	updatedAt: string;
+	ownerId: string | null;
 }
 
 export type TrashEntry =

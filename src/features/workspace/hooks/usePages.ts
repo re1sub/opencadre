@@ -34,6 +34,7 @@ export const usePages = (
 			content: "",
 			createdAt: now,
 			updatedAt: now,
+			ownerId: null,
 		};
 	};
 
@@ -91,6 +92,7 @@ export const usePages = (
 			content: initialContent,
 			createdAt: now,
 			updatedAt: now,
+			ownerId: null,
 		};
 
 		setAllPages((prev) => [...prev, newPage]);

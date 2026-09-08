@@ -56,6 +56,7 @@ export function useWorkspaceRealtime(options: UseWorkspaceRealtimeOptions) {
 				case "pages":
 				case "tags":
 				case "workspace_members":
+				case "activity_logs":
 					return row.workspace_id === wsId;
 				case "user_settings":
 					return true;
@@ -91,6 +92,7 @@ export function useWorkspaceRealtime(options: UseWorkspaceRealtimeOptions) {
 		subscribe("pages", `workspace_id=eq.${wsId}`);
 		subscribe("tags", `workspace_id=eq.${wsId}`);
 		subscribe("workspace_members", `workspace_id=eq.${wsId}`);
+		subscribe("activity_logs", `workspace_id=eq.${wsId}`);
 		subscribe("workspaces");
 		subscribe("user_settings");
 

@@ -163,14 +163,6 @@ export const pageMenuTrigger = style({
 	},
 });
 
-export const editedBadge = style({
-	marginLeft: "var(--wa-space-2xs)",
-	fontSize: "var(--wa-font-size-2xs, 0.75rem)",
-	color: "var(--wa-color-text-quiet)",
-	whiteSpace: "nowrap",
-	flexShrink: 0,
-});
-
 export const pageButton = style({
 	flexGrow: 1,
 	minWidth: 0,

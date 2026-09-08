@@ -405,6 +405,7 @@ export type Database = {
 					is_deleted: boolean;
 					is_favorite: boolean;
 					kind: string;
+					owner_id: string | null;
 					position: number | null;
 					title: string;
 					updated_at: string;
@@ -418,6 +419,7 @@ export type Database = {
 					is_deleted?: boolean;
 					is_favorite?: boolean;
 					kind: string;
+					owner_id?: string | null;
 					position?: number | null;
 					title?: string;
 					updated_at?: string;
@@ -431,6 +433,7 @@ export type Database = {
 					is_deleted?: boolean;
 					is_favorite?: boolean;
 					kind?: string;
+					owner_id?: string | null;
 					position?: number | null;
 					title?: string;
 					updated_at?: string;

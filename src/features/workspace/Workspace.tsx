@@ -4,13 +4,13 @@ import { createSignal, Show } from "solid-js";
 import { useAuth } from "#/features/auth/AuthContext";
 import ConfirmDialog from "#/features/ui/ConfirmDialog";
 import EditableText from "#/features/ui/EditableText";
-import { formatTimestamp } from "#/utils/date";
 import { useDebouncedPush } from "#/utils/realtime/useDebouncedPush";
 import { useWorkspaceRealtime } from "#/utils/realtime/useWorkspaceRealtime";
 import { useHotkey } from "#/utils/useHotkey";
 import LoadingSpinner from "../ui/LoadingSpinner";
 import CreateWorkspace from "./components/CreateWorkspace";
 import NewWorkspaceDialog from "./components/NewWorkspaceDialog";
+import PageDetails from "./components/PageDetails";
 import PageView from "./components/PageView";
 import TrashDialog from "./components/TrashDialog";
 import WorkspaceFooter from "./components/WorkspaceFooter";
@@ -18,7 +18,6 @@ import WorkspaceHeader from "./components/WorkspaceHeader";
 import WorkspaceHome from "./components/WorkspaceHome";
 import WorkspaceSidebar from "./components/WorkspaceSidebar";
 import {
-	editedBadge,
 	mainContent,
 	mainHeader,
 	page,
@@ -72,6 +71,7 @@ const Workspace = () => {
 	>(null);
 	const [isTrashOpen, setIsTrashOpen] = createSignal(false);
 	const [isNewWorkspaceOpen, setIsNewWorkspaceOpen] = createSignal(false);
+	const [isEditingTitle, setIsEditingTitle] = createSignal(false);
 
 	const selectWorkspace = (id: string) => {
 		wsHook.setActiveWorkspaceId(id);
@@ -93,7 +93,9 @@ const Workspace = () => {
 
 	const handleAddPage = async (kind: PageKind, options?: AddPageOptions) => {
 		await PAGE_KIND_LOADERS[kind]();
-		return pagesHook.addPage(kind, options);
+		const page = await pagesHook.addPage(kind, options);
+		setIsEditingTitle(true);
+		return page;
 	};
 
 	const handleCreateFromTemplate = async (templateId: string) => {
@@ -308,10 +310,10 @@ const Workspace = () => {
 									{pagesHook.activePage()?.title}
 								</wa-button>
 							</div>
-							<span class={editedBadge}>
-								Edited{" "}
-								{formatTimestamp(pagesHook.activePage()?.updatedAt ?? "")}
-							</span>
+							<PageDetails
+								page={pagesHook.activePage()!}
+								members={membersHook.members()}
+							/>
 							<wa-copy-button
 								value={`${window.location.origin}/workspace/p/${pagesHook.activePage()?.id}`}
 								copy-label="Copy page link"
@@ -420,7 +422,6 @@ const Workspace = () => {
 							}
 						>
 							{(active) => {
-								const [isEditingTitle, setIsEditingTitle] = createSignal(false);
 								const {
 									setPush,
 									push,
