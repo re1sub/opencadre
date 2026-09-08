@@ -163,9 +163,6 @@ const SettingsDialog = (props: SettingsDialogProps) => {
 
 			<div slot="footer">
 				<div class={settingsFooter}>
-					<Show when={section() === "notifications"}>
-						<wa-tag variant="warning">Planned</wa-tag>
-					</Show>
 					<span class={settingsFooterSpacer}></span>
 					<wa-button variant="brand" onClick={dialog.close}>
 						Done

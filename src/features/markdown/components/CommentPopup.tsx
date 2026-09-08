@@ -5,6 +5,7 @@ import type {
 	WorkspaceMember,
 	WorkspaceRole,
 } from "#/features/workspace/types";
+import type { EntityContext } from "#/types/ai";
 import { usePopup } from "#/utils/usePopup";
 
 interface CommentPopupProps {
@@ -16,6 +17,7 @@ interface CommentPopupProps {
 	authorNames?: Record<string, string>;
 	myRole?: WorkspaceRole;
 	members?: WorkspaceMember[];
+	entity?: (() => EntityContext | null) | EntityContext | null;
 	onAddComment: (text: string) => void | Promise<void>;
 	onToggleReaction: (commentId: string, reaction: string) => void;
 	onDeleteComment: (commentId: string) => void;
@@ -89,6 +91,11 @@ const CommentPopup = (props: CommentPopupProps) => {
 						authorNames={props.authorNames}
 						myRole={props.myRole}
 						members={props.members}
+						entity={
+							typeof props.entity === "function"
+								? (props.entity() ?? undefined)
+								: (props.entity ?? undefined)
+						}
 						onAddComment={props.onAddComment}
 						onToggleReaction={props.onToggleReaction}
 						onDelete={props.onDeleteComment}

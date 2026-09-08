@@ -9,6 +9,7 @@ import type {
 import type { EntityContext } from "#/types/ai";
 import { formatTimestamp } from "#/utils/date";
 import { dropdownItemValue, getInitials } from "#/utils/misc";
+import { supabase } from "#/utils/supabase";
 import { REACTIONS_LIST } from "../constants/reactions";
 import type { Comment, CommentReaction } from "../types";
 import * as styles from "./commentsPanel.css";
@@ -27,14 +28,45 @@ interface CommentsPanelProps {
 	members?: WorkspaceMember[];
 }
 
+const MENTION_HREF = /mention:([0-9a-fA-F-]{36})/g;
+
+function resolveEntityPageId(entity?: EntityContext): string | null {
+	if (!entity) return null;
+	return entity.type === "page" ? entity.id : (entity.pageId ?? null);
+}
+
+function extractMentionIds(markdown: string): string[] {
+	const ids: string[] = [];
+	for (const match of markdown.matchAll(MENTION_HREF)) {
+		ids.push(match[1]);
+	}
+	return ids;
+}
+
 const CommentsPanel = (props: CommentsPanelProps) => {
 	const [commentDraft, setCommentDraft] = createSignal("");
 
-	const submitComment = () => {
+	const submitComment = async () => {
 		const text = commentDraft().trim();
 		if (!text) return;
 		setCommentDraft("");
-		void props.onAddComment(text);
+		try {
+			await props.onAddComment(text);
+		} catch {
+			return;
+		}
+		const pageId = resolveEntityPageId(props.entity);
+		if (!pageId) return;
+		for (const recipientId of new Set(extractMentionIds(text))) {
+			const { error } = await supabase.rpc("create_mention_notification", {
+				p_page_id: pageId,
+				p_recipient_id: recipientId,
+				p_excerpt: text,
+			});
+			if (error) {
+				console.error("create_mention_notification failed", error);
+			}
+		}
 	};
 
 	return (
@@ -93,7 +125,11 @@ const CommentsPanel = (props: CommentsPanelProps) => {
 				>
 					<For each={props.comments}>
 						{(comment) => {
-							const initials = getInitials(comment.author);
+							const getDisplayName = (userId: string) =>
+								props.authorNames?.[userId] ?? userId.slice(0, 8);
+
+							const name = () => getDisplayName(comment.authorId);
+							const initials = () => getInitials(name());
 
 							// reactions grouped by icon, with the users who reacted
 							const reactionGroups = () => {
@@ -120,9 +156,6 @@ const CommentsPanel = (props: CommentsPanelProps) => {
 										),
 								);
 
-							const getDisplayName = (userId: string) =>
-								props.authorNames?.[userId] ?? userId.slice(0, 8);
-
 							const canDelete = (comment: Comment) =>
 								Boolean(
 									props.onDelete &&
@@ -139,8 +172,8 @@ const CommentsPanel = (props: CommentsPanelProps) => {
 									}}
 								>
 									<wa-avatar
-										initials={initials}
-										label={`Avatar with initials: ${initials}`}
+										initials={initials()}
+										label={`Avatar with initials: ${initials()}`}
 										style={{ "--size": "40px" }}
 									></wa-avatar>
 									<div class={styles.commentBubble}>
@@ -154,7 +187,7 @@ const CommentsPanel = (props: CommentsPanelProps) => {
 														color: "var(--wa-color-text-normal)",
 													}}
 												>
-													{comment.author}
+													{name()}
 												</span>
 												<span style={{ color: "var(--wa-color-text-quiet)" }}>
 													{formatTimestamp(comment.createdAt)}

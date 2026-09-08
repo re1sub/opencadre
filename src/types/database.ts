@@ -322,6 +322,54 @@ export type Database = {
 					},
 				];
 			};
+			notifications: {
+				Row: {
+					actor_id: string | null;
+					body: string | null;
+					created_at: string;
+					data: Json;
+					entity_id: string;
+					entity_type: string;
+					id: string;
+					page_id: string | null;
+					read_at: string | null;
+					title: string;
+					type: Database["public"]["Enums"]["notification_type"];
+					user_id: string;
+					workspace_id: string;
+				};
+				Insert: {
+					actor_id?: string | null;
+					body?: string | null;
+					created_at?: string;
+					data?: Json;
+					entity_id: string;
+					entity_type: string;
+					id?: string;
+					page_id?: string | null;
+					read_at?: string | null;
+					title: string;
+					type: Database["public"]["Enums"]["notification_type"];
+					user_id: string;
+					workspace_id: string;
+				};
+				Update: {
+					actor_id?: string | null;
+					body?: string | null;
+					created_at?: string;
+					data?: Json;
+					entity_id?: string;
+					entity_type?: string;
+					id?: string;
+					page_id?: string | null;
+					read_at?: string | null;
+					title?: string;
+					type?: Database["public"]["Enums"]["notification_type"];
+					user_id?: string;
+					workspace_id?: string;
+				};
+				Relationships: [];
+			};
 			page_content: {
 				Row: {
 					content: Json;
@@ -505,18 +553,21 @@ export type Database = {
 			user_settings: {
 				Row: {
 					created_at: string;
+					notifications: Json | null;
 					shortcuts: Json;
 					updated_at: string;
 					user_id: string;
 				};
 				Insert: {
 					created_at?: string;
+					notifications?: Json | null;
 					shortcuts?: Json;
 					updated_at?: string;
 					user_id: string;
 				};
 				Update: {
 					created_at?: string;
+					notifications?: Json | null;
 					shortcuts?: Json;
 					updated_at?: string;
 					user_id?: string;
@@ -642,6 +693,15 @@ export type Database = {
 		};
 		Functions: {
 			accept_invite: { Args: { token: string }; Returns: string };
+			create_mention_notification: {
+				Args: {
+					p_excerpt?: string;
+					p_page_id: string;
+					p_page_title?: string;
+					p_recipient_id: string;
+				};
+				Returns: undefined;
+			};
 			get_invite_details: {
 				Args: { p_token: string };
 				Returns: {
@@ -664,9 +724,10 @@ export type Database = {
 				Returns: boolean;
 			};
 			lookup_confirmed_user_id: { Args: { p_email: string }; Returns: string };
+			mark_notifications_read: { Args: never; Returns: undefined };
 		};
 		Enums: {
-			[_ in never]: never;
+			notification_type: "mention" | "comment";
 		};
 		CompositeTypes: {
 			[_ in never]: never;
@@ -796,6 +857,8 @@ export type CompositeTypes<
 
 export const Constants = {
 	public: {
-		Enums: {},
+		Enums: {
+			notification_type: ["mention", "comment"],
+		},
 	},
 } as const;

@@ -3,11 +3,13 @@ interface DeleteButtonProps {
 	label?: string;
 	iconOnly?: boolean;
 	disabled?: boolean;
+	class?: string;
 }
 
 const DeleteButton = (props: DeleteButtonProps) => {
 	return (
 		<wa-button
+			class={props.class}
 			variant="danger"
 			appearance={props.iconOnly ? "plain" : "filled-outlined"}
 			onClick={props.onDelete}

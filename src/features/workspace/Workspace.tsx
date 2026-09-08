@@ -10,6 +10,7 @@ import { useHotkey } from "#/utils/useHotkey";
 import LoadingSpinner from "../ui/LoadingSpinner";
 import CreateWorkspace from "./components/CreateWorkspace";
 import NewWorkspaceDialog from "./components/NewWorkspaceDialog";
+import NotificationsPanel from "./components/NotificationsPanel";
 import PageDetails from "./components/PageDetails";
 import PageView from "./components/PageView";
 import TrashDialog from "./components/TrashDialog";
@@ -28,6 +29,7 @@ import {
 } from "./components/workspace.css";
 import { PAGE_KIND_LOADERS } from "./constants/pageViewLoaders";
 import { PAGE_TEMPLATES } from "./constants/templates";
+import { useNotifications } from "./hooks/useNotifications";
 import type { AddPageOptions } from "./hooks/usePagesAdapter";
 import { usePagesAdapter } from "./hooks/usePagesAdapter";
 import { useShortcuts } from "./hooks/useShortcuts";
@@ -206,6 +208,7 @@ const Workspace = () => {
 	});
 
 	const { shortcuts } = useShortcuts();
+	useNotifications();
 	useHotkey(
 		() => {
 			const config = shortcuts()["toggle-sidebar"];
@@ -325,6 +328,7 @@ const Workspace = () => {
 									variant="regular"
 								></wa-icon>
 							</wa-copy-button>
+							<NotificationsPanel />
 						</Show>
 					</nav>
 

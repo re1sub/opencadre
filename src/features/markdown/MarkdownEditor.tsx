@@ -389,6 +389,9 @@ const MarkdownEditor = (props: MarkdownEditorProps) => {
 				reactions={pageComments.reactions()}
 				currentUserId={pageComments.currentUserId()}
 				authorNames={pageComments.authorNames()}
+				entity={
+					props.pageId ? { type: "page" as const, id: props.pageId } : null
+				}
 				myRole={myRole()}
 				members={members()}
 				onAddComment={async (text) => {
