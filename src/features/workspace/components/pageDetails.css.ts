@@ -107,6 +107,8 @@ export const timeline = style({
 	display: "flex",
 	flexDirection: "column",
 	gap: "0",
+	maxHeight: "40vh",
+	overflow: "auto",
 });
 
 export const timelineItem = style({
