@@ -1,7 +1,8 @@
 import { createEffect, createSignal, For, onCleanup, Show } from "solid-js";
 import { useAuth } from "#/features/auth/AuthContext";
 import type { Tables } from "#/types/database";
-import { formatTimestamp } from "#/utils/date";
+import { uniqueValues } from "#/utils/array";
+import { formatDateTime, formatTimestamp } from "#/utils/date";
 import { registerRealtimeHandlers } from "#/utils/realtime/registrar";
 import { supabase } from "#/utils/supabase";
 import { useLastEdit } from "../hooks/useLastEdit";
@@ -39,11 +40,6 @@ const PageDetails = (props: PageDetailsProps) => {
 	const lastEdit = useLastEdit(() => props.page.id);
 	const [logs, setLogs] = createSignal<ActivityRow[]>([]);
 	const { user } = useAuth();
-
-	const dateFormatter = new Intl.DateTimeFormat("en-US", {
-		dateStyle: "medium",
-		timeStyle: "short",
-	});
 
 	const getActorName = (log: ActivityRow) => {
 		if (!log.user_id) return "Someone";
@@ -104,7 +100,7 @@ const PageDetails = (props: PageDetailsProps) => {
 				setLogs([]);
 				return;
 			}
-			const userIds = [...new Set(data.map((l) => l.user_id).filter(Boolean))];
+			const userIds = uniqueValues(data, (l) => l.user_id);
 			let profileMap = new Map<string, string | null>();
 			if (userIds.length > 0) {
 				const { data: profiles } = await supabase
@@ -294,7 +290,7 @@ const PageDetails = (props: PageDetailsProps) => {
 														{text}
 													</span>
 													<span class={timelineTime}>
-														{dateFormatter.format(new Date(log.created_at))}
+														{formatDateTime(log.created_at)}
 													</span>
 												</div>
 											</div>

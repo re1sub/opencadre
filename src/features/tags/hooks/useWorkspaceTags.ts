@@ -1,4 +1,5 @@
 import { createSignal } from "solid-js";
+import { nowIso } from "#/utils/date";
 import { uid } from "#/utils/misc";
 import type { Tag } from "../types";
 
@@ -49,7 +50,7 @@ export function useWorkspaceTags(workspaceId: string) {
 			id: uid(),
 			name,
 			color,
-			createdAt: new Date().toISOString(),
+			createdAt: nowIso(),
 		};
 		store!.set((current) => [...current, tag]);
 		return tag;

@@ -1,5 +1,6 @@
 import { createEffect, createSignal, onCleanup } from "solid-js";
 import type { Tables } from "#/types/database";
+import { nowIso } from "#/utils/date";
 import { registerRealtimeHandlers } from "#/utils/realtime/registrar";
 import { supabase } from "#/utils/supabase";
 import type { PageKind, Workspace } from "../types";
@@ -136,9 +137,7 @@ export function useWorkspaceAdapter() {
 		if (error) throw error;
 
 		setWorkspaces((prev) =>
-			prev.map((w) =>
-				w.id === id ? { ...w, name, updatedAt: new Date().toISOString() } : w,
-			),
+			prev.map((w) => (w.id === id ? { ...w, name, updatedAt: nowIso() } : w)),
 		);
 	};
 
@@ -180,7 +179,7 @@ export function useWorkspaceAdapter() {
 									? undefined
 									: (fields.description ?? w.description),
 							defaultPageKind: fields.defaultPageKind ?? w.defaultPageKind,
-							updatedAt: new Date().toISOString(),
+							updatedAt: nowIso(),
 						}
 					: w,
 			),

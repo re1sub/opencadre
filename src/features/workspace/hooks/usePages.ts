@@ -2,6 +2,7 @@ import { useNavigate, useParams } from "@solidjs/router";
 import { createEffect, createSignal } from "solid-js";
 import { KANBAN_EMPTY_COLUMNS } from "#/features/kanban/constants/data";
 import { TABLE_EMPTY_ROWS } from "#/features/table/constants/data";
+import { nowIso } from "#/utils/date";
 import { uid } from "#/utils/misc";
 import type { Page, PageKind } from "../types";
 
@@ -25,7 +26,7 @@ export const usePages = (
 		activePages().find((entry) => entry.id === activePageId()) ?? null;
 
 	const createEmptyMarkdownPage = (): Page => {
-		const now = new Date().toISOString();
+		const now = nowIso();
 		return {
 			id: uid(),
 			workspaceId: activeWorkspaceId(),
@@ -83,7 +84,7 @@ export const usePages = (
 						})
 					: "";
 
-		const now = new Date().toISOString();
+		const now = nowIso();
 		const newPage: Page = {
 			id: uid(),
 			workspaceId: activeWorkspaceId(),

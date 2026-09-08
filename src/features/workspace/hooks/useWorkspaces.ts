@@ -1,12 +1,13 @@
 import { createSignal } from "solid-js";
+import { nowIso } from "#/utils/date";
 import { uid } from "#/utils/misc";
 import type { Workspace } from "../types";
 
 const createWorkspace = (name: string): Workspace => ({
 	id: uid(),
 	name,
-	createdAt: new Date().toISOString(),
-	updatedAt: new Date().toISOString(),
+	createdAt: nowIso(),
+	updatedAt: nowIso(),
 });
 
 export const useWorkspaces = (initialWorkspaces: Workspace[]) => {
@@ -42,9 +43,7 @@ export const useWorkspaces = (initialWorkspaces: Workspace[]) => {
 
 	const renameWorkspace = (id: string, name: string) => {
 		setWorkspaces((prev) =>
-			prev.map((w) =>
-				w.id === id ? { ...w, name, updatedAt: new Date().toISOString() } : w,
-			),
+			prev.map((w) => (w.id === id ? { ...w, name, updatedAt: nowIso() } : w)),
 		);
 	};
 

@@ -2,6 +2,7 @@ import type { RealtimeChannel } from "@supabase/supabase-js";
 import { createEffect, createMemo, createSignal, onCleanup } from "solid-js";
 import * as Y from "yjs";
 import { supabase } from "#/utils/supabase";
+import { nowIso } from "../date";
 import { base64ToUint8Array, uint8ArrayToBase64 } from "./base64";
 import type { YjsUpdateOrigin } from "./types";
 
@@ -66,7 +67,7 @@ export function useYjsDoc(options: UseYjsDocOptions) {
 					entity_type: type,
 					entity_id: id,
 					state: stateBase64,
-					updated_at: new Date().toISOString(),
+					updated_at: nowIso(),
 				},
 				{ onConflict: "entity_type,entity_id" },
 			);

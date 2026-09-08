@@ -1,5 +1,7 @@
 import { createSignal, For, onMount } from "solid-js";
 import type { Tables } from "#/types/database";
+import { uniqueValues } from "#/utils/array";
+import { formatDateTime } from "#/utils/date";
 import { supabase } from "#/utils/supabase";
 import {
 	dialogBody,
@@ -18,11 +20,6 @@ interface SettingsActivitySectionProps {
 const SettingsActivitySection = (props: SettingsActivitySectionProps) => {
 	const [logs, setLogs] = createSignal<ActivityLogRow[]>([]);
 
-	const dateFormatter = new Intl.DateTimeFormat("en-US", {
-		dateStyle: "medium",
-		timeStyle: "short",
-	});
-
 	const fetchLogs = async () => {
 		const { data, error } = await supabase
 			.from("activity_logs")
@@ -35,7 +32,7 @@ const SettingsActivitySection = (props: SettingsActivitySectionProps) => {
 			return;
 		}
 
-		const userIds = [...new Set(data.map((l) => l.user_id).filter(Boolean))];
+		const userIds = uniqueValues(data, (l) => l.user_id);
 		const { data: profiles } = await supabase
 			.from("profiles")
 			.select("id, display_name")
@@ -81,7 +78,7 @@ const SettingsActivitySection = (props: SettingsActivitySectionProps) => {
 										color: "var(--wa-color-text-quiet)",
 									}}
 								>
-									{dateFormatter.format(new Date(log.created_at))}
+									{formatDateTime(log.created_at)}
 								</span>
 							</div>
 							<span style={{ "font-size": "0.9em" }}>{log.action}</span>

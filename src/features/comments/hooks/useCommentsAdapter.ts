@@ -1,6 +1,8 @@
 import { createEffect, createSignal, onCleanup } from "solid-js";
 import type { Tables } from "#/types/database";
+import { nowIso } from "#/utils/date";
 import { logActivity } from "#/utils/log";
+import { uid } from "#/utils/misc";
 import { registerRealtimeHandlers } from "#/utils/realtime/registrar";
 import { supabase } from "#/utils/supabase";
 import type {
@@ -293,13 +295,13 @@ export function useCommentsAdapter(entity: () => CommentEntity | null) {
 		const e = entity();
 		if (!e) throw new Error("Cannot create thread without an entity");
 
-		const id = crypto.randomUUID();
+		const id = uid();
 		const thread: CommentThread = {
 			id,
 			entityType: e.type,
 			entityId: e.id,
 			anchorText,
-			createdAt: new Date().toISOString(),
+			createdAt: nowIso(),
 			comments: [],
 		};
 
@@ -318,7 +320,7 @@ export function useCommentsAdapter(entity: () => CommentEntity | null) {
 		);
 		if (existing) return existing;
 
-		const id = crypto.randomUUID();
+		const id = uid();
 		const { error } = await supabase.from("comment_threads").insert({
 			id,
 			entity_type: e.type,
@@ -331,7 +333,7 @@ export function useCommentsAdapter(entity: () => CommentEntity | null) {
 			entityType: e.type,
 			entityId: e.id,
 			anchorText: "",
-			createdAt: new Date().toISOString(),
+			createdAt: nowIso(),
 			comments: [],
 		};
 		setThreads((prev) =>

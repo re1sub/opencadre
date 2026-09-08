@@ -4,7 +4,8 @@ import { isSortable } from "@dnd-kit/solid/sortable";
 import { createEffect, createSignal, onCleanup } from "solid-js";
 import * as Y from "yjs";
 import type { Database, Tables } from "#/types/database";
-import { toIsoDate } from "#/utils/date";
+import { indexBy } from "#/utils/array";
+import { nowIso, toIsoDate } from "#/utils/date";
 import { logActivity } from "#/utils/log";
 import { uid } from "#/utils/misc";
 import { supabase } from "#/utils/supabase";
@@ -203,7 +204,7 @@ export function useKanbanBoardAdapter(options: UseKanbanBoardAdapterOptions) {
 		try {
 			await supabase
 				.from("pages")
-				.update({ updated_at: new Date().toISOString() })
+				.update({ updated_at: nowIso() })
 				.eq("id", options.pageId);
 		} catch {
 			// best-effort
@@ -324,7 +325,11 @@ export function useKanbanBoardAdapter(options: UseKanbanBoardAdapterOptions) {
 	});
 
 	const itemsRecord = () =>
-		Object.fromEntries(columns().map((column) => [column.id, column.cards]));
+		indexBy(
+			columns(),
+			(column) => column.id,
+			(column) => column.cards,
+		);
 
 	const reorderColumns = useDragReorder(
 		() => columns(),

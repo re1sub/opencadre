@@ -1,4 +1,5 @@
 import { createSignal } from "solid-js";
+import { nowIso } from "#/utils/date";
 import type { Page, TrashEntry, Workspace } from "../types";
 
 export const useTrash = (
@@ -14,7 +15,7 @@ export const useTrash = (
 	) => {
 		setTrash((prev) => [
 			...prev,
-			{ ...entry, deletedAt: new Date().toISOString() } as TrashEntry,
+			{ ...entry, deletedAt: nowIso() } as TrashEntry,
 		]);
 	};
 

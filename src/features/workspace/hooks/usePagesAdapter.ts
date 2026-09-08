@@ -2,6 +2,7 @@ import { useNavigate, useParams } from "@solidjs/router";
 import { createEffect, createSignal, onCleanup } from "solid-js";
 import { DEFAULT_MARKDOWN_CONTENT } from "#/features/markdown/constants";
 import type { Json, Tables } from "#/types/database";
+import { nowIso } from "#/utils/date";
 import { logActivity } from "#/utils/log";
 import { createReconcileGuard } from "#/utils/realtime/reconcile";
 import { registerRealtimeHandlers } from "#/utils/realtime/registrar";
@@ -198,7 +199,7 @@ export function usePagesAdapter(
 					user_id: user.id,
 					page_id: pageId,
 					workspace_id: workspaceId,
-					viewed_at: new Date().toISOString(),
+					viewed_at: nowIso(),
 				},
 				{ onConflict: "user_id,page_id" },
 			);
@@ -371,7 +372,7 @@ export function usePagesAdapter(
 
 		const { error } = await supabase
 			.from("pages")
-			.update({ is_deleted: true, deleted_at: new Date().toISOString() })
+			.update({ is_deleted: true, deleted_at: nowIso() })
 			.eq("id", id);
 		if (error) throw error;
 
@@ -396,9 +397,7 @@ export function usePagesAdapter(
 	const renamePage = (id: string, title: string) => {
 		setAllPages((prev) =>
 			prev.map((entry) =>
-				entry.id === id
-					? { ...entry, title, updatedAt: new Date().toISOString() }
-					: entry,
+				entry.id === id ? { ...entry, title, updatedAt: nowIso() } : entry,
 			),
 		);
 	};
@@ -406,7 +405,7 @@ export function usePagesAdapter(
 	const persistPageTitle = async (id: string, title: string) => {
 		const { error } = await supabase
 			.from("pages")
-			.update({ title, updated_at: new Date().toISOString() })
+			.update({ title, updated_at: nowIso() })
 			.eq("id", id);
 		if (error) throw error;
 
@@ -491,7 +490,7 @@ export function usePagesAdapter(
 			});
 		}
 
-		const now = new Date().toISOString();
+		const now = nowIso();
 		const { error: pageError } = await supabase
 			.from("pages")
 			.update({ updated_at: now })

@@ -1,5 +1,7 @@
 import { unzipSync, zipSync } from "fflate";
 import type { Page, PageKind, Workspace } from "#/features/workspace/types";
+import { nowIso } from "#/utils/date";
+import { toSlug } from "#/utils/string";
 import { supabase } from "#/utils/supabase";
 
 interface KanbanExportColumn {
@@ -20,8 +22,7 @@ interface PageManifestEntry {
 	filename: string;
 }
 
-const slugify = (name: string) =>
-	name.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+const slugify = toSlug;
 
 const downloadBlob = (blob: Blob, filename: string) => {
 	const url = URL.createObjectURL(blob);
@@ -116,7 +117,7 @@ export const exportAllPages = async (workspace: Workspace, pages: Page[]) => {
 			{
 				name: workspace.name,
 				workspaceId: workspace.id,
-				exportedAt: new Date().toISOString(),
+				exportedAt: nowIso(),
 			},
 			null,
 			2,

@@ -1,5 +1,7 @@
 export type DueDateStatus = "overdue" | "today" | "soon" | "future";
 
+export const nowIso = () => new Date().toISOString();
+
 const startOfDay = (date: Date) =>
 	new Date(date.getFullYear(), date.getMonth(), date.getDate());
 
@@ -43,13 +45,21 @@ export const formatDueDate = (iso: string): string => {
 	if (diffDays === 1) return "Tomorrow";
 	if (diffDays === -1) return "Yesterday";
 	const sameYear = due.getFullYear() === today.getFullYear();
-	const formatter = new Intl.DateTimeFormat("en-US", {
+	const formatter = new Intl.DateTimeFormat(undefined, {
 		month: "short",
 		day: "numeric",
 		...(sameYear ? {} : { year: "numeric" }),
 	});
 	return formatter.format(due);
 };
+
+const dateTimeFormatter = new Intl.DateTimeFormat(undefined, {
+	dateStyle: "medium",
+	timeStyle: "short",
+});
+
+export const formatDateTime = (iso: string) =>
+	dateTimeFormatter.format(new Date(iso));
 
 export const formatTimestamp = (iso: string) => {
 	const date = new Date(iso);
