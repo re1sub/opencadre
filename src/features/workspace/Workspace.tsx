@@ -5,6 +5,7 @@ import { useAuth } from "#/features/auth/AuthContext";
 import ConfirmDialog from "#/features/ui/ConfirmDialog";
 import EditableText from "#/features/ui/EditableText";
 import { formatTimestamp } from "#/utils/date";
+import { useDebouncedPush } from "#/utils/realtime/useDebouncedPush";
 import { useWorkspaceRealtime } from "#/utils/realtime/useWorkspaceRealtime";
 import { useHotkey } from "#/utils/useHotkey";
 import LoadingSpinner from "../ui/LoadingSpinner";
@@ -420,6 +421,11 @@ const Workspace = () => {
 						>
 							{(active) => {
 								const [isEditingTitle, setIsEditingTitle] = createSignal(false);
+								const {
+									setPush,
+									push,
+									pushNow: persistTitleNow,
+								} = useDebouncedPush(400);
 
 								return (
 									<>
@@ -437,10 +443,18 @@ const Workspace = () => {
 												fallback={
 													<EditableText
 														value={active().title}
-														onChange={(title) =>
-															pagesHook.renamePage(active().id, title)
-														}
-														onConfirm={() => setIsEditingTitle(false)}
+														onChange={(title) => {
+															const pageId = active().id;
+															pagesHook.renamePage(pageId, title);
+															setPush(() => () => {
+																void pagesHook.persistPageTitle(pageId, title);
+															});
+															push();
+														}}
+														onConfirm={() => {
+															persistTitleNow();
+															setIsEditingTitle(false);
+														}}
 														onCancel={() => setIsEditingTitle(false)}
 														class={pageTitleStyle}
 														ariaLabel="Page title"

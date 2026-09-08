@@ -378,19 +378,24 @@ export function usePagesAdapter(
 		return page;
 	};
 
-	const renamePage = async (id: string, title: string) => {
-		const { error } = await supabase
-			.from("pages")
-			.update({ title })
-			.eq("id", id);
-		if (error) throw error;
-
-		const now = new Date().toISOString();
+	// Optimistic local rename; persistence is debounced by the caller
+	// (see Workspace page-title editing) to avoid one DB round-trip per keystroke.
+	const renamePage = (id: string, title: string) => {
 		setAllPages((prev) =>
 			prev.map((entry) =>
-				entry.id === id ? { ...entry, title, updatedAt: now } : entry,
+				entry.id === id
+					? { ...entry, title, updatedAt: new Date().toISOString() }
+					: entry,
 			),
 		);
+	};
+
+	const persistPageTitle = async (id: string, title: string) => {
+		const { error } = await supabase
+			.from("pages")
+			.update({ title, updated_at: new Date().toISOString() })
+			.eq("id", id);
+		if (error) throw error;
 	};
 
 	const reorderPages = async (pageId: string, newIndex: number) => {
@@ -587,6 +592,7 @@ export function usePagesAdapter(
 		addPage,
 		removePage,
 		renamePage,
+		persistPageTitle,
 		reorderPages,
 		updatePageContent,
 		duplicatePage,
