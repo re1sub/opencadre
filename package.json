@@ -1,7 +1,7 @@
 {
-	"name": "vite-template-solid",
+	"name": "opencadre",
 	"version": "0.0.0",
-	"description": "",
+	"description": "A flexible, real-time, collaborative, and AI-powered workspace built with SolidJS for organizing ideas, projects, and knowledge.",
 	"type": "module",
 	"scripts": {
 		"start": "vite",
@@ -53,7 +53,6 @@
 		"@tiptap/extension-bubble-menu": "^3.29.2",
 		"@tiptap/extension-collaboration": "^3.31.2",
 		"@tiptap/extension-collaboration-cursor": "^2.26.2",
-		"@tiptap/extension-document": "^3.29.2",
 		"@tiptap/extension-placeholder": "^3.30.0",
 		"@tiptap/markdown": "^3.29.2",
 		"@tiptap/pm": "^3.29.2",

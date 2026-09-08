@@ -17,6 +17,7 @@ import { useWorkspaceMembersAdapter } from "#/features/workspace/hooks/useWorksp
 import { useDebouncedPush } from "#/utils/realtime/useDebouncedPush";
 import { useYjsDoc } from "#/utils/yjs/useYjsDoc";
 import CommentPopup from "./components/CommentPopup";
+import { DEFAULT_MARKDOWN_CONTENT } from "./constants";
 import { bubbleMenu, bubbleMenuContent } from "./editorBubbleMenu.css";
 import { useEditorComments } from "./hooks/useEditorComments";
 import { useSlashCommand } from "./hooks/useSlashCommand";
@@ -125,20 +126,18 @@ const MarkdownEditor = (props: MarkdownEditorProps) => {
 			shift: { padding: 8 },
 		};
 
-		const CustomDocument = Document.extend({
-			content: "heading block*",
-		});
-
 		// Fixes 'Duplicate extension names found' warning
 		const selectBubbleMenu = BubbleMenu.extend({ name: "editorBubbleMenu" });
 		const slashCommandMenu = BubbleMenu.extend({ name: "editorCommandMenu" });
 
+		const effectiveContent = props.content.trim()
+			? props.content
+			: DEFAULT_MARKDOWN_CONTENT;
+
 		instance = new Editor({
 			element: editorRef,
 			extensions: [
-				CustomDocument,
 				StarterKit.configure({
-					document: false,
 					trailingNode: { node: "paragraph" },
 					undoRedo: false,
 				}),
@@ -177,7 +176,7 @@ const MarkdownEditor = (props: MarkdownEditorProps) => {
 					},
 				}),
 			],
-			content: props.content.trim() ? props.content : "#\n",
+			content: effectiveContent,
 			contentType: "markdown",
 			editable: props.editable ?? true,
 			onUpdate: ({ editor: editorInstance, transaction }) => {
@@ -260,6 +259,16 @@ const MarkdownEditor = (props: MarkdownEditorProps) => {
 				}
 			},
 		});
+
+		// Fallback: Collaboration with an empty YDoc can discard the initial
+		// markdown content. Force it via markdown parsing so new pages start
+		// with the empty heading and it remains deletable (block+).
+		if (instance.isEmpty && effectiveContent.trim()) {
+			const parsed = instance.markdown?.parse(effectiveContent);
+			if (parsed?.content?.length) {
+				instance.chain().focus().insertContent(parsed.content).run();
+			}
+		}
 
 		actions = {
 			...createMarkdownActions(instance),
