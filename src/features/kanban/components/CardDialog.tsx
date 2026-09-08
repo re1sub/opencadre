@@ -13,6 +13,7 @@ import type {
 	WorkspaceRole,
 } from "#/features/workspace/types";
 import type { EntityContext } from "#/types/ai";
+import { resolveRefs } from "#/utils/array";
 import { useDialog } from "#/utils/useDialog";
 import type { Card } from "../types";
 import AssigneePicker from "./AssigneePicker";
@@ -103,9 +104,7 @@ const CardDialog = (props: CardDialogProps) => {
 	});
 
 	const attachedTags = () =>
-		(card().tagIds ?? [])
-			.map((id) => tags().find((tag) => tag.id === id))
-			.filter((tag): tag is Tag => !!tag);
+		resolveRefs(card().tagIds, tags()).filter((tag): tag is Tag => !!tag);
 
 	const updateAndSaveCard = (updates: Partial<Card>) => {
 		const updated = { ...card(), ...updates };

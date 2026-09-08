@@ -1,6 +1,7 @@
 import { createEffect, createSignal, onCleanup } from "solid-js";
 import { logActivity } from "#/utils/log";
 import { registerRealtimeHandlers } from "#/utils/realtime/registrar";
+import { isEmail } from "#/utils/string";
 import { supabase } from "#/utils/supabase";
 import type { WorkspaceMember, WorkspaceRole } from "../types";
 
@@ -162,12 +163,12 @@ export function useWorkspaceMembersAdapter(workspaceId: () => string) {
 		if (memberId === meUserId()) {
 			throw new Error("You can't change your own role.");
 		}
-		const isEmail = memberId.includes("@");
+		const isEmailAddress = isEmail(memberId);
 		let query = supabase
 			.from("workspace_members")
 			.update({ role })
 			.eq("workspace_id", workspaceId());
-		query = isEmail
+		query = isEmailAddress
 			? query.eq("email", memberId)
 			: query.eq("user_id", memberId);
 		const { error } = await query;
@@ -185,19 +186,19 @@ export function useWorkspaceMembersAdapter(workspaceId: () => string) {
 			data: { user },
 		} = await supabase.auth.getUser();
 		if (user?.id === memberId) setMyRole(role);
-		if (isEmail) await fetchMembers(workspaceId());
+		if (isEmailAddress) await fetchMembers(workspaceId());
 	};
 
 	const removeMember = async (memberId: string) => {
 		if (memberId === meUserId()) {
 			throw new Error("You can't remove yourself from the workspace.");
 		}
-		const isEmail = memberId.includes("@");
+		const isEmailAddress = isEmail(memberId);
 		let query = supabase
 			.from("workspace_members")
 			.delete()
 			.eq("workspace_id", workspaceId());
-		query = isEmail
+		query = isEmailAddress
 			? query.eq("email", memberId)
 			: query.eq("user_id", memberId);
 		const { error } = await query;

@@ -1,7 +1,7 @@
 import { marked } from "marked";
 import { createEffect, createSignal, For, splitProps } from "solid-js";
 import type { WorkspaceMember } from "#/features/workspace/types";
-import { getInitials, uid } from "#/utils/misc";
+import { cn, getInitials, uid } from "#/utils/misc";
 import { view } from "./markdownView.css";
 
 interface MarkdownViewProps {
@@ -113,7 +113,7 @@ const MarkdownView = (props: MarkdownViewProps) => {
 
 	return (
 		<>
-			<div ref={ref} class={`${view} ${local.class ?? ""}`} {...rest} />
+			<div ref={ref} class={cn(view, local.class)} {...rest} />
 			<For each={tooltips()}>
 				{(tip) => {
 					const member = getMember(tip.userId);

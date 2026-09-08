@@ -4,6 +4,7 @@ import { createEffect, createSignal, Show } from "solid-js";
 import { useAuth } from "#/features/auth/AuthContext";
 import { logo } from "#/features/home/components/navbar.css";
 import { useTheme } from "#/theme/ThemeProvider";
+import { toStringOrNull } from "#/utils/misc";
 import {
 	card,
 	linkButton,
@@ -46,8 +47,7 @@ const Auth = (props: { view?: "signin" | "signup" | "forgot" | "reset" }) => {
 	const [sent, setSent] = createSignal(false);
 
 	const inviteToken = () => {
-		const t = searchParams.invite_token;
-		return typeof t === "string" && t ? t : null;
+		return toStringOrNull(searchParams.invite_token);
 	};
 
 	createEffect(() => {

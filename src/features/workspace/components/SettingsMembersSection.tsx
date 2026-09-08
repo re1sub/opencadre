@@ -1,6 +1,6 @@
 import { createSignal, For, Show } from "solid-js";
 import DeleteButton from "#/features/ui/DeleteButton";
-import { dropdownItemValue, getInitials } from "#/utils/misc";
+import { dropdownItemValue, getErrorMessage, getInitials } from "#/utils/misc";
 import {
 	ASSIGNABLE_ROLES,
 	canManageMembers,
@@ -71,9 +71,7 @@ const SettingsMembersSection = (props: SettingsMembersSectionProps) => {
 			setNewEmail("");
 			setNewRole("member");
 		} catch (err) {
-			setMemberError(
-				err instanceof Error ? err.message : "Failed to send the invite.",
-			);
+			setMemberError(getErrorMessage(err, "Failed to send the invite."));
 		} finally {
 			setInviting(false);
 		}

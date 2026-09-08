@@ -1,6 +1,7 @@
 import { createSignal, For } from "solid-js";
 import { useAuth } from "#/features/auth/AuthContext";
 import { dropdownItemValue, getInitials } from "#/utils/misc";
+import { emailPrefix } from "#/utils/string";
 import { supabase } from "#/utils/supabase";
 import { type ThemePreference, useTheme } from "#theme/ThemeProvider";
 import { useProfile } from "../hooks/useProfile";
@@ -38,9 +39,9 @@ const SettingsGeneralSection = () => {
 		THEME_PREFERENCES.find((option) => option.value === themePreference()) ??
 		THEME_PREFERENCES[0];
 
-	const emailPrefix = () => {
+	const emailPrefixOf = () => {
 		const email = user()?.email;
-		return email ? email.split("@")[0] : "";
+		return email ? emailPrefix(email) : "";
 	};
 
 	const displayNameValue = () => nameDraft() ?? profileName();
@@ -141,7 +142,7 @@ const SettingsGeneralSection = () => {
 					<wa-input
 						style={{ "flex-grow": "1" }}
 						label="Display name"
-						placeholder={emailPrefix() || "Your name"}
+						placeholder={emailPrefixOf() || "Your name"}
 						value={displayNameValue()}
 						onInput={handleDisplayNameInput}
 						onChange={handleDisplayNameCommit}

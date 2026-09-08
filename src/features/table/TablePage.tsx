@@ -31,6 +31,7 @@ import type {
 import ConfirmDialog from "#/features/ui/ConfirmDialog";
 import { useTheme } from "#/theme/ThemeProvider";
 import { useDebouncedPush } from "#/utils/realtime/useDebouncedPush";
+import { toSlug } from "#/utils/string";
 import type { YjsUpdateOrigin } from "#/utils/yjs/types";
 import { useYjsDoc } from "#/utils/yjs/useYjsDoc";
 import { initTableDoc, mutateTableDoc, parseTableDoc } from "./hooks/tableYjs";
@@ -132,10 +133,7 @@ const TablePage = (props: TablePageProps) => {
 
 	const exportCsv = () => {
 		tableApi?.exportToCSV({
-			filename: `${(props.title ?? "table")
-				.toLowerCase()
-				.replace(/[^a-z0-9]+/g, "-")
-				.replace(/^-+|-+$/g, "")}.csv`,
+			filename: `${toSlug(props.title ?? "table")}.csv`,
 		});
 	};
 

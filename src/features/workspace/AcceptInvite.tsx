@@ -1,6 +1,7 @@
 import { Navigate, useNavigate, useSearchParams } from "@solidjs/router";
 import { createEffect, createSignal, Show } from "solid-js";
 import { useAuth } from "#/features/auth/AuthContext";
+import { toStringOrNull } from "#/utils/misc";
 import { supabase } from "#/utils/supabase";
 
 type InviteDetails = {
@@ -23,8 +24,7 @@ const AcceptInvite = () => {
 	const [acceptError, setAcceptError] = createSignal<string | null>(null);
 
 	const token = () => {
-		const t = searchParams.token;
-		return typeof t === "string" && t ? t : null;
+		return toStringOrNull(searchParams.token);
 	};
 
 	createEffect(() => {

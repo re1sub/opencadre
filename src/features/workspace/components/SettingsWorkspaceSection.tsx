@@ -1,6 +1,6 @@
 import { createSignal, For, Show } from "solid-js";
 import ConfirmDialog from "#/features/ui/ConfirmDialog";
-import { dropdownItemValue } from "#/utils/misc";
+import { dropdownItemValue, getErrorMessage } from "#/utils/misc";
 import { canDeleteWorkspace, canRenameWorkspace } from "../constants/roles";
 import { useWorkspaceMembersAdapter } from "../hooks/useWorkspaceMembersAdapter";
 import {
@@ -80,9 +80,7 @@ const SettingsWorkspaceSection = (props: SettingsWorkspaceSectionProps) => {
 			});
 			setImportedCount(count);
 		} catch (err) {
-			setImportError(
-				err instanceof Error ? err.message : "Import failed unexpectedly.",
-			);
+			setImportError(getErrorMessage(err, "Import failed unexpectedly."));
 		}
 	};
 

@@ -13,7 +13,7 @@ import {
 import AiPopup from "#/features/ai/components/AiPopup";
 import type { WorkspaceMember } from "#/features/workspace/types";
 import type { EntityContext } from "#/types/ai";
-import { dropdownItemValue, uid } from "#/utils/misc";
+import { cn, dropdownItemValue, uid } from "#/utils/misc";
 import { useMentions } from "../hooks/useMentions";
 import { insertMarkdown } from "../insertMarkdown";
 import {
@@ -201,9 +201,13 @@ const MarkdownField = (props: MarkdownFieldProps) => {
 		setAiRect(null);
 	};
 
+	const handleMentionSelect = (member: WorkspaceMember) => {
+		mentions.insertMention(member);
+	};
+
 	return (
 		<>
-			<div class={`${field} ${props.class ?? ""}`}>
+			<div class={cn(field, props.class)}>
 				<div ref={toolbarRef} class={toolbar} role="toolbar">
 					<For each={visibleInlineButtons}>
 						{(button) => (
@@ -379,7 +383,7 @@ const MarkdownField = (props: MarkdownFieldProps) => {
 				anchorRect={mentions.mentionRect}
 				members={mentions.filteredMembers(props.members ?? [])}
 				selectedIndex={mentions.selectedIndex}
-				onSelect={(member) => mentions.insertMention(member)}
+				onSelect={handleMentionSelect}
 				onClose={() => mentions.setMentionVisible(false)}
 			/>
 			<Show when={isFocused() && !props.noControlsFooter}>

@@ -1,5 +1,6 @@
 import { Index, Show } from "solid-js";
 import type { WorkspaceMember } from "#/features/workspace/types";
+import { resolveRefs } from "#/utils/array";
 import { getInitials } from "#/utils/misc";
 import { memberChipsRow } from "./cardDialog.css";
 
@@ -11,9 +12,9 @@ interface MemberChipsProps {
 
 const MemberChips = (props: MemberChipsProps) => {
 	const assignedMembers = () =>
-		props.assigneeIds
-			.map((id) => props.members.find((member) => member.id === id))
-			.filter((member): member is WorkspaceMember => !!member);
+		resolveRefs(props.assigneeIds, props.members).filter(
+			(member): member is WorkspaceMember => !!member,
+		);
 
 	return (
 		<Show when={assignedMembers().length}>

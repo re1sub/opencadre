@@ -1,6 +1,7 @@
 import { createSignal } from "solid-js";
 import { useAuth } from "#/features/auth/AuthContext";
 import { uid } from "#/utils/misc";
+import { emailPrefix } from "#/utils/string";
 import {
 	CURRENT_MEMBER_ID,
 	MEMBER_COLOR_POOL,
@@ -55,7 +56,7 @@ export function useWorkspaceMembers(workspaceId: string) {
 		const trimmed = (parsed.success ? parsed.data : email).trim().toLowerCase();
 		const member: WorkspaceMember = {
 			id: uid(),
-			name: trimmed.split("@")[0],
+			name: emailPrefix(trimmed),
 			email: trimmed,
 			role,
 			color: nextColor(),

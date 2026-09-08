@@ -1,5 +1,5 @@
 import { createEffect } from "solid-js";
-import { colorMix } from "#/utils/misc";
+import { colorMix, deferFocus } from "#/utils/misc";
 import type { Tag } from "../types";
 import TagColorSwatches from "./TagColorSwatches";
 import TagPopup from "./TagPopup";
@@ -35,8 +35,7 @@ const TagEditor = (props: TagEditorProps) => {
 			content={({ open }) => {
 				createEffect(() => {
 					if (!open()) return;
-					const frame = requestAnimationFrame(() => inputRef?.focus());
-					return () => cancelAnimationFrame(frame);
+					return deferFocus(inputRef);
 				});
 
 				return (

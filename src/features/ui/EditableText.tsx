@@ -1,5 +1,6 @@
 import type WaInput from "@awesome.me/webawesome/dist/components/input/input.js";
 import { onCleanup, onMount, Show } from "solid-js";
+import { cn } from "#/utils/misc";
 import { inlineInputStyle } from "./editableText.css";
 
 interface EditableTextProps {
@@ -88,7 +89,7 @@ export function EditableText(props: EditableTextProps) {
 			ref={(el) => {
 				inputRef = el;
 			}}
-			class={`${inlineInputStyle} ${props.class ?? ""}`}
+			class={cn(inlineInputStyle, props.class)}
 			type="text"
 			value={props.value}
 			placeholder={props.placeholder ?? "Untitled"}

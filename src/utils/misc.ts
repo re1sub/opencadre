@@ -1,5 +1,3 @@
-import Papa from "papaparse";
-
 export const uid = () => crypto.randomUUID();
 
 export const colorMix = (color: string, opacity: number = 30) =>
@@ -19,21 +17,31 @@ export function getInitials(name: string): string {
 	return `${firstInitial}${lastInitial}`.toUpperCase();
 }
 
-export type CsvRow = Record<string, string>;
-
-export const parseCsv = (text: string): CsvRow[] => {
-	const result = Papa.parse(text, {
-		header: true,
-		skipEmptyLines: true,
-		delimiter: ",",
-		transformHeader: (h) => h.trim(),
-	});
-	return result.data as CsvRow[];
-};
-
 export function dropdownItemValue(e: Event) {
 	const selectEvent = e as unknown as {
 		detail: { item: { value?: string } | null };
 	};
 	return selectEvent.detail.item?.value;
 }
+
+export function getErrorMessage(err: unknown, fallback: string): string {
+	return err instanceof Error ? err.message : fallback;
+}
+
+export function isPlainObject(
+	value: unknown,
+): value is Record<string, unknown> {
+	return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+export function toStringOrNull(value: unknown): string | null {
+	return typeof value === "string" && value ? value : null;
+}
+
+export const cn = (...classes: Array<string | false | null | undefined>) =>
+	classes.filter(Boolean).join(" ");
+
+export const deferFocus = (el: HTMLElement | null | undefined) => {
+	const frame = requestAnimationFrame(() => el?.focus());
+	return () => cancelAnimationFrame(frame);
+};

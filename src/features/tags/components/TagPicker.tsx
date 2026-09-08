@@ -1,5 +1,5 @@
 import { createEffect, createSignal, For, Show } from "solid-js";
-import { colorMix } from "#/utils/misc";
+import { colorMix, deferFocus } from "#/utils/misc";
 import { DEFAULT_TAG_COLOR } from "../constants/colors";
 import { tagSchema } from "../schemas";
 import type { Tag } from "../types";
@@ -63,8 +63,7 @@ const TagPicker = (props: TagPickerProps) => {
 
 				createEffect(() => {
 					if (!creating()) return;
-					const frame = requestAnimationFrame(() => nameInputRef?.focus());
-					return () => cancelAnimationFrame(frame);
+					return deferFocus(nameInputRef);
 				});
 
 				return (
