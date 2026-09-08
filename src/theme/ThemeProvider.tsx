@@ -3,11 +3,12 @@ import {
 	createContext,
 	createEffect,
 	createSignal,
-	onCleanup,
 	useContext,
 } from "solid-js";
 import { useShortcuts } from "#/features/workspace/hooks/useShortcuts";
+import { useEventListener } from "#/utils/useEventListener";
 import { useHotkey } from "#/utils/useHotkey";
+import { useLocalStorage } from "#/utils/useLocalStorage";
 
 export type Theme = "light" | "dark";
 export type ThemePreference = "system" | "light" | "dark";
@@ -23,14 +24,15 @@ const ThemeContext = createContext<ThemeContextValue>();
 
 const STORAGE_KEY = "theme";
 
-function getInitialPreference(): ThemePreference {
-	if (typeof window === "undefined") return "system";
-	const stored = window.localStorage.getItem(STORAGE_KEY);
-	if (stored === "light" || stored === "dark" || stored === "system") {
-		return stored;
+const parsePreference = (
+	raw: string | null,
+	fallback: ThemePreference,
+): ThemePreference => {
+	if (raw === "light" || raw === "dark" || raw === "system") {
+		return raw;
 	}
-	return "system";
-}
+	return fallback;
+};
 
 function getSystemTheme(): Theme {
 	return window.matchMedia?.("(prefers-color-scheme: dark)").matches
@@ -46,8 +48,10 @@ function applyThemeClass(theme: Theme) {
 }
 
 const ThemeProvider = (props: { children: JSX.Element }) => {
-	const [preference, setPreference] = createSignal<ThemePreference>(
-		getInitialPreference(),
+	const [preference, setPreference] = useLocalStorage<ThemePreference>(
+		STORAGE_KEY,
+		"system",
+		parsePreference,
 	);
 	const [systemTheme, setSystemTheme] = createSignal<Theme>(
 		typeof window === "undefined" ? "light" : getSystemTheme(),
@@ -60,16 +64,16 @@ const ThemeProvider = (props: { children: JSX.Element }) => {
 
 	createEffect(() => {
 		applyThemeClass(theme());
-		window.localStorage.setItem(STORAGE_KEY, preference());
 	});
 
-	createEffect(() => {
-		if (preference() !== "system") return;
-		const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
-		const onChange = () => setSystemTheme(getSystemTheme());
-		mediaQuery.addEventListener("change", onChange);
-		onCleanup(() => mediaQuery.removeEventListener("change", onChange));
-	});
+	useEventListener(
+		() =>
+			preference() === "system"
+				? window.matchMedia("(prefers-color-scheme: dark)")
+				: null,
+		"change",
+		() => setSystemTheme(getSystemTheme()),
+	);
 
 	const toggleTheme = () =>
 		setPreference(theme() === "light" ? "dark" : "light");

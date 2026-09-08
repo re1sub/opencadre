@@ -1,4 +1,5 @@
-import { createSignal, For, onCleanup, Show } from "solid-js";
+import { createSignal, For, Show } from "solid-js";
+import { useEventListener } from "#/utils/useEventListener";
 import {
 	buildComboParts,
 	formatComboKeys,
@@ -31,11 +32,8 @@ const SettingsKeyboardSection = () => {
 		createSignal<ShortcutAction | null>(null);
 	const [recordingKeys, setRecordingKeys] = createSignal<string[]>([]);
 	const [shortcutError, setShortcutError] = createSignal<string | null>(null);
-	let removeRecordListener: (() => void) | null = null;
 
 	const stopRecording = () => {
-		removeRecordListener?.();
-		removeRecordListener = null;
 		setRecordingAction(null);
 		setRecordingKeys([]);
 		setShortcutError(null);
@@ -90,13 +88,14 @@ const SettingsKeyboardSection = () => {
 		stopRecording();
 		setRecordingAction(action);
 		setShortcutError(null);
-		const listen = (e: KeyboardEvent) => handleRecordKeyDown(e);
-		document.addEventListener("keydown", listen, true);
-		removeRecordListener = () =>
-			document.removeEventListener("keydown", listen, true);
 	};
 
-	onCleanup(() => removeRecordListener?.());
+	useEventListener(
+		() => (recordingAction() ? document : null),
+		"keydown",
+		handleRecordKeyDown as EventListener,
+		true,
+	);
 
 	const isCustomized = (action: ShortcutAction) => {
 		const config = shortcuts()[action];

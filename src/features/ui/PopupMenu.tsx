@@ -1,6 +1,7 @@
 import type WaPopup from "@awesome.me/webawesome/dist/components/popup/popup.js";
-import { For, type JSX, onCleanup, onMount } from "solid-js";
+import { For, type JSX } from "solid-js";
 import ToolbarButton from "#/features/markdown/components/ToolbarButton";
+import { useEventListener } from "#/utils/useEventListener";
 import { usePopup } from "#/utils/usePopup";
 import { popupMenuContent } from "./popupMenu.css";
 
@@ -52,14 +53,11 @@ const PopupMenu = (props: PopupMenuProps) => {
 		queueMicrotask(() => popupEl?.reposition());
 	};
 
-	onMount(() => {
-		const target = props.contextMenuTarget?.();
-		if (!target) return;
-		target.addEventListener("contextmenu", onContextMenu as EventListener);
-		onCleanup(() => {
-			target.removeEventListener("contextmenu", onContextMenu as EventListener);
-		});
-	});
+	useEventListener(
+		() => props.contextMenuTarget?.() ?? null,
+		"contextmenu",
+		onContextMenu as EventListener,
+	);
 
 	return (
 		<>

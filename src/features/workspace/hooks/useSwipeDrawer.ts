@@ -1,4 +1,5 @@
-import { onCleanup, onMount } from "solid-js";
+import { useDebouncedCallback } from "#/utils/useDebouncedCallback";
+import { useEventListener } from "#/utils/useEventListener";
 
 interface SwipeDrawerOptions {
 	isOpen: () => boolean;
@@ -20,14 +21,14 @@ export function useSwipeDrawer({
 	let tracking = false;
 	let horizontalGesture = false;
 	let isScrolling = false;
-	let scrollTimeout: ReturnType<typeof setTimeout> | null = null;
+
+	const endScroll = useDebouncedCallback(() => {
+		isScrolling = false;
+	}, 150);
 
 	const handleScroll = () => {
 		isScrolling = true;
-		if (scrollTimeout) clearTimeout(scrollTimeout);
-		scrollTimeout = setTimeout(() => {
-			isScrolling = false;
-		}, 150);
+		endScroll();
 	};
 
 	const isInteractive = (target: EventTarget | null) => {
@@ -140,46 +141,30 @@ export function useSwipeDrawer({
 		}
 	};
 
-	onMount(() => {
-		// Capture scroll events at root so sub-container scrolling triggers handleScroll
-		document.addEventListener("scroll", handleScroll, {
-			capture: true,
-			passive: true,
-		});
-
-		document.addEventListener("touchstart", handleTouchStart, {
-			capture: true,
-			passive: true,
-		});
-
-		document.addEventListener("touchmove", handleTouchMove, {
-			capture: true,
-			passive: false,
-		});
-
-		document.addEventListener("touchend", handleTouchEnd, {
-			capture: true,
-			passive: true,
-		});
+	// Capture scroll events at root so sub-container scrolling triggers handleScroll
+	useEventListener(() => document, "scroll", handleScroll, {
+		capture: true,
+		passive: true,
 	});
 
-	onCleanup(() => {
-		if (scrollTimeout) clearTimeout(scrollTimeout);
+	useEventListener(
+		() => document,
+		"touchstart",
+		handleTouchStart as EventListener,
+		{ capture: true, passive: true },
+	);
 
-		document.removeEventListener("scroll", handleScroll, {
-			capture: true,
-		});
+	useEventListener(
+		() => document,
+		"touchmove",
+		handleTouchMove as EventListener,
+		{ capture: true, passive: false },
+	);
 
-		document.removeEventListener("touchstart", handleTouchStart, {
-			capture: true,
-		});
-
-		document.removeEventListener("touchmove", handleTouchMove, {
-			capture: true,
-		});
-
-		document.removeEventListener("touchend", handleTouchEnd, {
-			capture: true,
-		});
-	});
+	useEventListener(
+		() => document,
+		"touchend",
+		handleTouchEnd as EventListener,
+		{ capture: true, passive: true },
+	);
 }

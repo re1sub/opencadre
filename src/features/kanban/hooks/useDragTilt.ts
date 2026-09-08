@@ -1,4 +1,5 @@
 import { createEffect, createSignal, onCleanup } from "solid-js";
+import { useEventListener } from "#/utils/useEventListener";
 
 const TILT_FACTOR = 0.005;
 const MAX_TILT = 6;
@@ -70,26 +71,25 @@ export function useDragTilt(isDragging: () => boolean) {
 		rafId = requestAnimationFrame(tick);
 	};
 
+	useEventListener(
+		() => (isDragging() ? window : null),
+		"pointermove",
+		onPointerMove as EventListener,
+		{ capture: true },
+	);
+
 	createEffect(() => {
 		if (isDragging()) {
 			pointerVelocity = 0;
 			lastMoveTime = 0;
 			lastX = 0;
-
-			window.addEventListener("pointermove", onPointerMove, { capture: true });
 			startLoop();
-		} else {
-			window.removeEventListener("pointermove", onPointerMove, {
-				capture: true,
-			});
-			if (angle !== 0 || angularVelocity !== 0) {
-				startLoop();
-			}
+		} else if (angle !== 0 || angularVelocity !== 0) {
+			startLoop();
 		}
 	});
 
 	onCleanup(() => {
-		window.removeEventListener("pointermove", onPointerMove, { capture: true });
 		if (rafId !== null) cancelAnimationFrame(rafId);
 	});
 
