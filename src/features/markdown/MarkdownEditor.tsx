@@ -1,7 +1,6 @@
 import { Editor, posToDOMRect } from "@tiptap/core";
 import BubbleMenu from "@tiptap/extension-bubble-menu";
 import Collaboration from "@tiptap/extension-collaboration";
-import Document from "@tiptap/extension-document";
 import { Placeholder } from "@tiptap/extension-placeholder";
 import { Markdown } from "@tiptap/markdown";
 import StarterKit from "@tiptap/starter-kit";
