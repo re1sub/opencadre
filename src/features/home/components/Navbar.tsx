@@ -22,11 +22,11 @@ const Navbar = () => {
 					</Show>
 
 					<Show when={!user() && !loading()}>
-						<wa-button href="/auth" appearance="plain">
+						<wa-button href="/auth/signin" appearance="plain">
 							Sign in
 						</wa-button>
 
-						<wa-button href="/auth?register" variant="brand">
+						<wa-button href="/auth/signup" variant="brand">
 							Get started
 						</wa-button>
 					</Show>
@@ -75,14 +75,14 @@ const Navbar = () => {
 
 						<Show when={!user() && !loading()}>
 							<wa-button
-								href="/auth?register"
+								href="/auth/signup"
 								variant="brand"
 								style={{ width: "100%", "margin-bottom": "0.5rem" }}
 							>
 								Get started
 							</wa-button>
 							<wa-button
-								href="/auth"
+								href="/auth/signin"
 								appearance="outlined"
 								style={{ width: "100%" }}
 							>

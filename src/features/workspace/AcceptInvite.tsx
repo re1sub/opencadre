@@ -81,10 +81,12 @@ const AcceptInvite = () => {
 
 	const goAuth = (mode: "signin" | "signup") => {
 		const t = token();
-		const params = new URLSearchParams();
-		if (t) params.set("invite_token", t);
-		if (mode === "signup") params.set("register", "1");
-		navigate(`/auth?${params.toString()}`);
+		const qs = new URLSearchParams();
+		if (t) qs.set("invite_token", t);
+		const query = qs.toString() ? `?${qs.toString()}` : "";
+		navigate(
+			mode === "signup" ? `/auth/signup${query}` : `/auth/signin${query}`,
+		);
 	};
 
 	return (
@@ -141,7 +143,7 @@ const AcceptInvite = () => {
 										appearance="outlined"
 										onClick={async () => {
 											await supabase.auth.signOut();
-											navigate(`/auth?invite_token=${token()}`);
+											navigate(`/auth/signin?invite_token=${token()}`);
 										}}
 									>
 										Switch account

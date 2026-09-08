@@ -11,7 +11,7 @@ const RequireAuth: ParentComponent = (props) => {
 			when={!loading() && user()}
 			fallback={
 				<Show when={!loading() && !user()}>
-					<Navigate href="/auth" />
+					<Navigate href="/auth/signin" />
 				</Show>
 			}
 		>

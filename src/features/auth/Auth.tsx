@@ -21,9 +21,9 @@ import {
 
 type View = "signin" | "signup" | "forgot" | "reset" | "confirm";
 
-const Auth = (props: { view?: "forgot" | "reset" }) => {
+const Auth = (props: { view?: "signin" | "signup" | "forgot" | "reset" }) => {
 	const { theme, toggleTheme } = useTheme();
-	const [searchParams, setSearchParams] = useSearchParams();
+	const [searchParams] = useSearchParams();
 	const navigate = useNavigate();
 	const { user, loading, login, signUp, sendPasswordReset, updatePassword } =
 		useAuth();
@@ -33,7 +33,7 @@ const Auth = (props: { view?: "forgot" | "reset" }) => {
 			? "forgot"
 			: props.view === "reset"
 				? "reset"
-				: searchParams.register
+				: props.view === "signup"
 					? "signup"
 					: "signin",
 	);
@@ -63,13 +63,15 @@ const Auth = (props: { view?: "forgot" | "reset" }) => {
 
 	const switchMode = (e: Event, next: "signin" | "signup") => {
 		e.preventDefault();
-		setView(next);
 		setError(null);
 		const t = inviteToken();
-		const nextParams: Record<string, string> = {};
-		if (next === "signup") nextParams.register = "1";
-		if (t) nextParams.invite_token = t;
-		setSearchParams(nextParams, { replace: true });
+		const query = t ? `?invite_token=${encodeURIComponent(t)}` : "";
+		navigate(
+			next === "signup" ? `/auth/signup${query}` : `/auth/signin${query}`,
+			{
+				replace: true,
+			},
+		);
 	};
 
 	const authenticate = async (
@@ -240,7 +242,7 @@ const Auth = (props: { view?: "forgot" | "reset" }) => {
 					<Show when={!loading() && !user()}>
 						<p>This reset link is invalid or has expired.</p>
 						<a
-							href="/auth"
+							href="/auth/signin"
 							style={{
 								color: "var(--wa-color-brand)",
 								"text-decoration": "underline",
@@ -292,7 +294,7 @@ const Auth = (props: { view?: "forgot" | "reset" }) => {
 								its way.
 							</p>
 							<a
-								href="/auth"
+								href="/auth/signin"
 								style={{
 									color: "var(--wa-color-brand)",
 									"text-decoration": "underline",
@@ -329,7 +331,11 @@ const Auth = (props: { view?: "forgot" | "reset" }) => {
 								type="button"
 								onClick={(e) => {
 									e.preventDefault();
-									setView("signin");
+									const t = inviteToken();
+									const query = t
+										? `?invite_token=${encodeURIComponent(t)}`
+										: "";
+									navigate(`/auth/signin${query}`);
 								}}
 								class={linkButton}
 							>

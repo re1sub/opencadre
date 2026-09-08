@@ -9,7 +9,9 @@ const AcceptInvite = lazy(() => import("#/features/workspace/AcceptInvite"));
 
 export const routes: RouteDefinition[] = [
 	{ path: "/", component: Home },
-	{ path: "/auth", component: Auth },
+	{ path: "/auth", component: () => <Navigate href="/auth/signin" /> },
+	{ path: "/auth/signin", component: () => <Auth view="signin" /> },
+	{ path: "/auth/signup", component: () => <Auth view="signup" /> },
 	{ path: "/auth/forgot-password", component: () => <Auth view="forgot" /> },
 	{ path: "/auth/reset-password", component: () => <Auth view="reset" /> },
 	{
