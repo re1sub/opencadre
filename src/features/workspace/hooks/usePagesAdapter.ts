@@ -215,7 +215,7 @@ export function usePagesAdapter(
 			.select("*")
 			.eq("workspace_id", workspaceId)
 			.eq("is_deleted", false)
-			.order("created_at", { ascending: true });
+			.order("position", { ascending: true });
 		if (pagesError) throw pagesError;
 
 		if (!pages || pages.length === 0) {
@@ -315,12 +315,16 @@ export function usePagesAdapter(
 		const targetWorkspaceId = activeWorkspaceId();
 		const defaultTitle = "Untitled";
 
+		const currentPages = activePages();
+		const nextPosition = currentPages.length;
+
 		const { data: page, error: pageError } = await supabase
 			.from("pages")
 			.insert({
 				workspace_id: targetWorkspaceId,
 				title: options?.title ?? defaultTitle,
 				kind,
+				position: nextPosition,
 			})
 			.select()
 			.single();
@@ -398,7 +402,19 @@ export function usePagesAdapter(
 		if (error) throw error;
 	};
 
+	const persistPagePositions = async (workspaceId: string, pages: Page[]) => {
+		const workspacePages = pages.filter((p) => p.workspaceId === workspaceId);
+		if (workspacePages.length === 0) return;
+
+		await Promise.all(
+			workspacePages.map((p, index) =>
+				supabase.from("pages").update({ position: index }).eq("id", p.id),
+			),
+		);
+	};
+
 	const reorderPages = async (pageId: string, newIndex: number) => {
+		let updatedPages: Page[] = [];
 		setAllPages((prev) => {
 			const currentWsId = activeWorkspaceId();
 			const workspacePages = prev.filter((p) => p.workspaceId === currentWsId);
@@ -411,8 +427,13 @@ export function usePagesAdapter(
 			const [moved] = reordered.splice(oldIndex, 1);
 			reordered.splice(newIndex, 0, moved);
 
-			return [...otherPages, ...reordered];
+			updatedPages = [...otherPages, ...reordered];
+			return updatedPages;
 		});
+
+		if (updatedPages.length > 0) {
+			await persistPagePositions(activeWorkspaceId(), updatedPages);
+		}
 	};
 
 	const updatePageContent = async (id: string, content: string) => {

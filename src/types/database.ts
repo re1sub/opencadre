@@ -405,6 +405,7 @@ export type Database = {
 					is_deleted: boolean;
 					is_favorite: boolean;
 					kind: string;
+					position: number | null;
 					title: string;
 					updated_at: string;
 					workspace_id: string;
@@ -417,6 +418,7 @@ export type Database = {
 					is_deleted?: boolean;
 					is_favorite?: boolean;
 					kind: string;
+					position?: number | null;
 					title?: string;
 					updated_at?: string;
 					workspace_id: string;
@@ -429,6 +431,7 @@ export type Database = {
 					is_deleted?: boolean;
 					is_favorite?: boolean;
 					kind?: string;
+					position?: number | null;
 					title?: string;
 					updated_at?: string;
 					workspace_id?: string;
@@ -651,6 +654,10 @@ export type Database = {
 			};
 			is_workspace_member: {
 				Args: { user_id: string; workspace_id: string };
+				Returns: boolean;
+			};
+			is_workspace_owner_or_admin: {
+				Args: { uid: string; ws_id: string };
 				Returns: boolean;
 			};
 			lookup_confirmed_user_id: { Args: { p_email: string }; Returns: string };
