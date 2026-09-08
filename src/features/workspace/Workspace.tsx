@@ -446,7 +446,7 @@ const Workspace = () => {
 														onChange={(title) => {
 															const pageId = active().id;
 															pagesHook.renamePage(pageId, title);
-															setPush(() => () => {
+															setPush(() => {
 																void pagesHook.persistPageTitle(pageId, title);
 															});
 															push();
