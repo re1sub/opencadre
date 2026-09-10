@@ -20,6 +20,7 @@ type AuthContextType = {
 	) => Promise<User | null>;
 	sendPasswordReset: (email: string) => Promise<void>;
 	updatePassword: (password: string) => Promise<void>;
+	deleteAccount: () => Promise<void>;
 	logout: () => Promise<void>;
 };
 
@@ -120,6 +121,44 @@ export function AuthProvider(props: { children: JSXElement }) {
 		}
 	};
 
+	const deleteAccount = async (): Promise<void> => {
+		setError(null);
+
+		const {
+			data: { session },
+		} = await supabase.auth.getSession();
+
+		if (!session?.access_token) {
+			throw new Error("Not authenticated");
+		}
+
+		const { data, error: functionError } = await supabase.functions.invoke(
+			"delete-account",
+			{
+				body: {},
+			},
+		);
+
+		if (functionError) {
+			setError(functionError);
+			throw functionError;
+		}
+
+		if (data?.error) {
+			const err = new Error(data.error);
+			setError(err as AuthError);
+			throw err;
+		}
+
+		try {
+			await supabase.auth.signOut();
+		} catch {
+			// ignore: tokens may already be invalid after the server-side delete
+		}
+
+		setUser(null);
+	};
+
 	const logout = async (): Promise<void> => {
 		setError(null);
 
@@ -143,6 +182,7 @@ export function AuthProvider(props: { children: JSXElement }) {
 				signUp,
 				sendPasswordReset,
 				updatePassword,
+				deleteAccount,
 				logout,
 			}}
 		>
