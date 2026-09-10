@@ -1,4 +1,4 @@
-import { createSignal, For, onMount } from "solid-js";
+import { createSignal, For, onMount, Show } from "solid-js";
 import type { Tables } from "#/types/database";
 import { uniqueValues } from "#/utils/array";
 import { formatDateTime } from "#/utils/date";
@@ -55,36 +55,54 @@ const SettingsActivitySection = (props: SettingsActivitySectionProps) => {
 			<h3 class={settingsSectionTitle}>Activity</h3>
 			<wa-divider style={{ "--spacing": "0" }}></wa-divider>
 			<div class={settingsSection}>
-				<For each={logs()}>
-					{(log) => (
-						<div
+				<Show
+					when={logs().length > 0}
+					fallback={
+						<p
 							style={{
 								padding: "var(--wa-space-s)",
-								"border-bottom": "1px solid var(--wa-color-surface-border)",
-								display: "flex",
-								"flex-direction": "column",
-								gap: "var(--wa-space-3xs)",
+								color: "var(--wa-color-text-quiet)",
+								margin: "0 auto",
 							}}
 						>
+							No activity yet
+						</p>
+					}
+				>
+					<For each={logs()}>
+						{(log) => (
 							<div
-								style={{ display: "flex", "justify-content": "space-between" }}
+								style={{
+									padding: "var(--wa-space-s)",
+									"border-bottom": "1px solid var(--wa-color-surface-border)",
+									display: "flex",
+									"flex-direction": "column",
+									gap: "var(--wa-space-3xs)",
+								}}
 							>
-								<span style={{ "font-weight": "bold" }}>
-									{log.display_name ?? "System"}
-								</span>
-								<span
+								<div
 									style={{
-										"font-size": "0.8em",
-										color: "var(--wa-color-text-quiet)",
+										display: "flex",
+										"justify-content": "space-between",
 									}}
 								>
-									{formatDateTime(log.created_at)}
-								</span>
+									<span style={{ "font-weight": "bold" }}>
+										{log.display_name ?? "System"}
+									</span>
+									<span
+										style={{
+											"font-size": "0.8em",
+											color: "var(--wa-color-text-quiet)",
+										}}
+									>
+										{formatDateTime(log.created_at)}
+									</span>
+								</div>
+								<span style={{ "font-size": "0.9em" }}>{log.action}</span>
 							</div>
-							<span style={{ "font-size": "0.9em" }}>{log.action}</span>
-						</div>
-					)}
-				</For>
+						)}
+					</For>
+				</Show>
 			</div>
 		</div>
 	);

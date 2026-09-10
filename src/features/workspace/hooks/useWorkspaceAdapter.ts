@@ -107,7 +107,7 @@ export function useWorkspaceAdapter() {
 				email: user.email ?? "",
 				role: "owner",
 			});
-		if (memberError) throw memberError;
+		if (memberError && memberError.code !== "23505") throw memberError;
 
 		const mapped = toWorkspace(workspace);
 		setWorkspaces((prev) => [...prev, mapped]);

@@ -1,16 +1,19 @@
-import { createSignal, For } from "solid-js";
+import { createSignal, For, Show } from "solid-js";
 import { useAuth } from "#/features/auth/AuthContext";
+import ConfirmDialog from "#/features/ui/ConfirmDialog";
 import { dropdownItemValue, getInitials } from "#/utils/misc";
 import { emailPrefix } from "#/utils/string";
 import { supabase } from "#/utils/supabase";
 import { type ThemePreference, useTheme } from "#theme/ThemeProvider";
 import { useProfile } from "../hooks/useProfile";
 import {
+	dangerZone,
 	dialogBody,
 	dialogLabel,
 	memberAvatar,
 	settingsSection,
 	settingsSectionTitle,
+	workspaceDangerRow,
 } from "./workspace.css";
 
 const THEME_PREFERENCES: {
@@ -29,11 +32,13 @@ const isThemePreference = (
 	value === "system" || value === "light" || value === "dark";
 
 const SettingsGeneralSection = () => {
-	const { user } = useAuth();
+	const { user, deleteAccount } = useAuth();
 	const { themePreference, setThemePreference } = useTheme();
 	const { name: profileName, setCustomName } = useProfile(user);
 
 	const [nameDraft, setNameDraft] = createSignal<string | null>(null);
+	const [showDeleteDialog, setShowDeleteDialog] = createSignal(false);
+	const [deleteError, setDeleteError] = createSignal<string | null>(null);
 
 	const currentTheme = () =>
 		THEME_PREFERENCES.find((option) => option.value === themePreference()) ??
@@ -64,6 +69,20 @@ const SettingsGeneralSection = () => {
 	const handleThemeSelect = (e: Event) => {
 		const value = dropdownItemValue(e);
 		if (isThemePreference(value)) setThemePreference(value);
+	};
+
+	const handleDeleteAccount = async () => {
+		setDeleteError(null);
+		try {
+			await deleteAccount();
+			window.location.href = "/";
+		} catch (err) {
+			setDeleteError(
+				err instanceof Error
+					? err.message
+					: "Something went wrong deleting your account. Please try again.",
+			);
+		}
 	};
 
 	return (
@@ -153,6 +172,52 @@ const SettingsGeneralSection = () => {
 					Your display name appears on comments, assignees and the members list.
 				</p>
 			</div>
+
+			<h3 class={settingsSectionTitle}>Danger Zone</h3>
+			<wa-divider style={{ "--spacing": "0" }}></wa-divider>
+			<div class={dangerZone}>
+				<div class={workspaceDangerRow}>
+					<div>
+						<strong>Delete account</strong>
+						<p class={dialogLabel} style={{ "margin-block": "0" }}>
+							Permanently delete your account and all associated data. This
+							action cannot be undone. Once deleted you will be redirected to
+							the login page.
+						</p>
+					</div>
+					<wa-button
+						variant="danger"
+						appearance="outlined"
+						onClick={() => setShowDeleteDialog(true)}
+					>
+						<wa-icon slot="start" name="trash-2" label="Delete"></wa-icon>
+						Delete Account
+					</wa-button>
+				</div>
+			</div>
+
+			<Show when={showDeleteDialog()}>
+				<ConfirmDialog
+					label="Delete Account"
+					message="This will permanently delete your account and all data including workspaces you own. Members will lose access. This cannot be undone."
+					confirmText={user()?.email}
+					onConfirm={handleDeleteAccount}
+					onClose={() => setShowDeleteDialog(false)}
+				/>
+			</Show>
+
+			<Show when={deleteError()}>
+				<p
+					style={{
+						"margin-block": "var(--wa-space-s)",
+						"padding-inline": "var(--wa-space-s)",
+						color: "var(--wa-color-danger-text)",
+						"font-size": "var(--wa-font-size-small)",
+					}}
+				>
+					{deleteError()}
+				</p>
+			</Show>
 		</div>
 	);
 };
