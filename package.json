@@ -16,6 +16,8 @@
 		"format": "biome format . --write --config-path ./biome.jsonc",
 		"prepare": "husky",
 		"check:staged": "lint-staged",
+		"test": "vitest",
+		"test:run": "vitest run",
 		"supabase:start": "supabase start",
 		"supabase:stop": "supabase stop",
 		"supabase:status": "supabase status"
@@ -25,16 +27,21 @@
 		"@biomejs/biome": "^2.5.8",
 		"@commitlint/cli": "^21.2.2",
 		"@commitlint/config-conventional": "^21.2.2",
+		"@solidjs/testing-library": "^0.8.10",
+		"@testing-library/jest-dom": "^7.0.1",
+		"@testing-library/user-event": "^14.6.7",
 		"@types/papaparse": "^5.5.2",
 		"@vanilla-extract/vite-plugin": "^5.2.5",
 		"husky": "^9.1.7",
+		"jsdom": "^30.0.1",
 		"lint-staged": "^17.3.0",
 		"solid-devtools": "^0.34.3",
 		"supabase": "^2.111.0",
 		"typescript": "^7.0.2",
 		"vite": "^8.2.0",
 		"vite-plugin-qrcode": "^0.4.1",
-		"vite-plugin-solid": "^2.11.8"
+		"vite-plugin-solid": "^2.11.8",
+		"vitest": "^5.0.0"
 	},
 	"dependencies": {
 		"@awesome.me/webawesome": "^3.11.0",
