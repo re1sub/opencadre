@@ -14,14 +14,14 @@ const legalLinks = [
 	{ label: "Privacy Policy", href: "/privacy" },
 ];
 const resourceLinks = [
-	{ label: "GitHub", href: "https://github.com/opencadre/opencadre" },
+	{ label: "GitHub", href: "https://github.com/re1sub/opencadre" },
 	{
 		label: "Releases",
-		href: "https://github.com/opencadre/opencadre/releases",
+		href: "https://github.com/re1sub/opencadre/releases",
 	},
 	{
 		label: "Report an issue",
-		href: "https://github.com/opencadre/opencadre/issues",
+		href: "https://github.com/re1sub/opencadre/issues",
 	},
 ];
 
