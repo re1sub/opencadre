@@ -42,3 +42,4 @@ import "@awesome.me/webawesome/dist/components/tag/tag.js";
 import "@awesome.me/webawesome/dist/components/popup/popup.js";
 import "@awesome.me/webawesome/dist/components/animation/animation.js";
 import "@awesome.me/webawesome/dist/components/copy-button/copy-button.js";
+import "@awesome.me/webawesome/dist/components/checkbox/checkbox.js";
