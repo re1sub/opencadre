@@ -1,8 +1,10 @@
+import type WaCheckbox from "@awesome.me/webawesome/dist/components/checkbox/checkbox.js";
 import { useNavigate, useSearchParams } from "@solidjs/router";
 import { AuthApiError } from "@supabase/supabase-js";
 import { createEffect, createSignal, Show } from "solid-js";
 import { useAuth } from "#/features/auth/AuthContext";
 import { logo } from "#/features/home/components/navbar.css";
+import { consentCheckboxRow } from "#/features/legal/legal.css";
 import { useTheme } from "#/theme/ThemeProvider";
 import { toStringOrNull } from "#/utils/misc";
 import {
@@ -45,6 +47,7 @@ const Auth = (props: { view?: "signin" | "signup" | "forgot" | "reset" }) => {
 	const [error, setError] = createSignal<string | null>(null);
 	const [pending, setPending] = createSignal(false);
 	const [sent, setSent] = createSignal(false);
+	const [consent, setConsent] = createSignal(false);
 
 	const inviteToken = () => {
 		return toStringOrNull(searchParams.invite_token);
@@ -120,7 +123,9 @@ const Auth = (props: { view?: "signin" | "signup" | "forgot" | "reset" }) => {
 		const result = schema.safeParse({
 			email: email(),
 			password: password(),
-			...(view() === "signup" ? { displayName: displayName() } : {}),
+			...(view() === "signup"
+				? { displayName: displayName(), consent: consent() }
+				: {}),
 		});
 		if (!result.success) {
 			setError(result.error.issues[0].message);
@@ -415,6 +420,37 @@ const Auth = (props: { view?: "signin" | "signup" | "forgot" | "reset" }) => {
 								Forgot password?
 							</a>
 						</Show>
+						<Show when={view() === "signup"}>
+							<wa-checkbox
+								checked={consent()}
+								onChange={(e) =>
+									setConsent((e.currentTarget as WaCheckbox).checked)
+								}
+								required
+								class={consentCheckboxRow}
+							>
+								<span>
+									I have read and agree to the{" "}
+									<a
+										href="/terms"
+										target="_blank"
+										rel="noopener noreferrer"
+										class={linkButton}
+									>
+										Terms & Conditions
+									</a>{" "}
+									and{" "}
+									<a
+										href="/privacy"
+										target="_blank"
+										rel="noopener noreferrer"
+										class={linkButton}
+									>
+										Privacy Policy.
+									</a>
+								</span>
+							</wa-checkbox>
+						</Show>
 						<wa-button type="submit" variant="brand" disabled={pending()}>
 							{pending()
 								? view() === "signup"
@@ -430,6 +466,7 @@ const Auth = (props: { view?: "signin" | "signup" | "forgot" | "reset" }) => {
 								variant="warning"
 								disabled={pending()}
 								onClick={handleLocalSignIn}
+								style={{ position: "fixed", bottom: "1rem", right: "1rem" }}
 							>
 								Sign in with dev account
 							</wa-button>

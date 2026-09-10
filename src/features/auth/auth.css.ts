@@ -13,13 +13,15 @@ export const card = style({
 	display: "flex",
 	flexDirection: "column",
 	alignItems: "stretch",
-	justifyContent: "center",
+	justifyContent: "flex-start",
 	textAlign: "center",
 	gap: "1rem",
 	backgroundColor: "var(--wa-color-surface-default)",
 	border: "var(--wa-border-width-s) solid var(--wa-color-surface-border)",
 	borderRadius: "var(--wa-border-radius-l)",
 	width: "400px",
+	maxHeight: "95vh",
+	overflow: "auto",
 	"@media": {
 		"(max-width: 600px)": {
 			width: "85vw",

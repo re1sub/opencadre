@@ -11,7 +11,10 @@ export const signUpSchema = z.object({
 		.min(1, "Display name is required.")
 		.max(50, "Display name must be 50 characters or fewer."),
 	email: z.email("Enter a valid email address."),
-	password: z.string().min(6, "Password must be at least 6 characters."),
+	password: z.string().min(8, "Password must be at least 8 characters."),
+	consent: z.literal(true, {
+		message: "You must accept the terms and privacy policy.",
+	}),
 });
 
 export const forgotPasswordSchema = z.object({
@@ -19,5 +22,5 @@ export const forgotPasswordSchema = z.object({
 });
 
 export const resetPasswordSchema = z.object({
-	password: z.string().min(6, "Password must be at least 6 characters."),
+	password: z.string().min(8, "Password must be at least 8 characters."),
 });
