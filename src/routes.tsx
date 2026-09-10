@@ -6,6 +6,8 @@ const Auth = lazy(() => import("#/features/auth/Auth"));
 const Home = lazy(() => import("#/features/home/Home"));
 const Workspace = lazy(() => import("#/features/workspace/Workspace"));
 const AcceptInvite = lazy(() => import("#/features/workspace/AcceptInvite"));
+const PrivacyPage = lazy(() => import("#/features/legal/PrivacyPage"));
+const TermsPage = lazy(() => import("#/features/legal/TermsPage"));
 
 export const routes: RouteDefinition[] = [
 	{ path: "/", component: Home },
@@ -26,5 +28,7 @@ export const routes: RouteDefinition[] = [
 			</RequireAuth>
 		),
 	},
+	{ path: "/privacy", component: PrivacyPage },
+	{ path: "/terms", component: TermsPage },
 	{ path: "**", component: () => <Navigate href="/" /> },
 ];

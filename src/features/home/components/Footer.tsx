@@ -10,7 +10,7 @@ import {
 } from "./footer.css";
 
 const legalLinks = [
-	{ label: "Legal Notice", href: "/legal" },
+	{ label: "Terms & Conditions", href: "/terms" },
 	{ label: "Privacy Policy", href: "/privacy" },
 ];
 const resourceLinks = [
