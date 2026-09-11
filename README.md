@@ -6,6 +6,13 @@ A flexible, real-time, collaborative, and AI-powered workspace built with SolidJ
 
 OpenCadre lets you create pages that adapt to the way you work. Write documents in Markdown, manage projects with Kanban boards, and build your own systems using simple, composable blocks.
 
+## Live previews
+
+| Environment | Branch | URL |
+| --- | --- | --- |
+| Production | `main` | https://opencadre.pages.dev |
+| Preview | `dev` | https://dev.opencadre.pages.dev |
+
 ## Tech Stack
 
 - SolidJS 1.9 + @solidjs/router 1.0
