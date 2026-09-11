@@ -9,6 +9,7 @@
 		"dev:supabase": "supabase start && vite",
 		"build": "vite build",
 		"serve": "vite preview",
+		"deploy": "vite build && wrangler pages deploy dist --project-name=opencadre --branch=dev",
 		"typecheck": "tsc --noEmit",
 		"lint": "biome lint . --config-path ./biome.jsonc",
 		"lint:full": "biome check . --config-path ./biome.jsonc",
