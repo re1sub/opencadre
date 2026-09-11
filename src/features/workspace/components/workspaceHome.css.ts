@@ -22,12 +22,18 @@ export const stats = style({
 });
 
 export const actionGrid = style({
-	display: "grid",
-	gridTemplateColumns: "repeat(auto-fill, minmax(12rem, 1fr))",
+	display: "flex",
 	gap: "var(--wa-space-s)",
+	width: "min(100%, 600px)",
+	overflowX: "auto",
+	overflowY: "hidden",
+	paddingBottom: "var(--wa-space-s)",
+	scrollSnapType: "x mandatory",
 });
 
 export const actionCard = style({
+	scrollSnapAlign: "start",
+	flex: "0 0 12rem",
 	height: "100%",
 	borderRadius: "var(--wa-border-radius-m)",
 	border: "var(--wa-border-width-s) solid var(--wa-color-surface-border)",

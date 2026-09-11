@@ -54,7 +54,10 @@ const SettingsActivitySection = (props: SettingsActivitySectionProps) => {
 		<div class={dialogBody}>
 			<h3 class={settingsSectionTitle}>Activity</h3>
 			<wa-divider style={{ "--spacing": "0" }}></wa-divider>
-			<div class={settingsSection}>
+			<div
+				class={settingsSection}
+				style={{ "max-height": "50vh", overflow: "auto" }}
+			>
 				<Show
 					when={logs().length > 0}
 					fallback={
