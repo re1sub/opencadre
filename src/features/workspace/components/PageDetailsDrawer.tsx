@@ -15,7 +15,6 @@ import {
 	detailSection,
 	detailValue,
 	drawerBody,
-	editedBadge,
 	kindBadge,
 	sectionTitle,
 	timeline,
@@ -23,20 +22,16 @@ import {
 	timelineHeader,
 	timelineItem,
 	timelineTime,
-	tooltipCard,
-	tooltipLabel,
-	tooltipTime,
-	tooltipTimeSpaced,
 } from "./pageDetails.css";
 
-interface PageDetailsProps {
+interface PageDetailsDrawerProps {
 	page: Page;
 	members: WorkspaceMember[];
 }
 
 type ActivityRow = Tables<"activity_logs"> & { display_name?: string | null };
 
-const PageDetails = (props: PageDetailsProps) => {
+const PageDetailsDrawer = (props: PageDetailsDrawerProps) => {
 	const lastEdit = useLastEdit(() => props.page.id);
 	const [logs, setLogs] = createSignal<ActivityRow[]>([]);
 	const { user } = useAuth();
@@ -173,137 +168,106 @@ const PageDetails = (props: PageDetailsProps) => {
 	});
 
 	return (
-		<>
-			<wa-button
-				id="edited-badge"
-				class={editedBadge}
-				appearance="plain"
-				variant="neutral"
-				data-drawer="open page-info-drawer"
-				style={{ padding: "0 4px", "min-height": "auto" }}
-			>
-				Edited {formatTimestamp(props.page.updatedAt)}
-			</wa-button>
-			<wa-tooltip for="edited-badge" placement="bottom">
-				<div class={tooltipCard}>
-					<div>
-						<div class={tooltipLabel}>Created by {ownerName()}</div>
-						<div class={tooltipTimeSpaced}>
-							{formatTimestamp(props.page.createdAt)}
+		<wa-drawer
+			id="page-info-drawer"
+			label={`Page details : ${props.page.title || "Untitled"}`}
+			placement="end"
+			light-dismiss
+			style={{ "--size": "28rem" }}
+		>
+			<div class={drawerBody}>
+				<div class={detailSection}>
+					<h3 class={sectionTitle}>
+						<wa-icon name="file-text" label="Page"></wa-icon> Overview
+					</h3>
+					<wa-divider style={{ "--spacing": "0" }}></wa-divider>
+					<div class={detailGrid}>
+						<div class={detailRow}>
+							<span class={detailLabel}>Title</span>
+							<span class={detailValue}>{props.page.title || "Untitled"}</span>
 						</div>
-					</div>
-					<div>
-						<div class={tooltipLabel}>Last edited by {lastEditorName()}</div>
-						<div class={tooltipTime}>
-							{lastEdit() ? formatTimestamp(lastEdit()!.at) : ""}
+						<div class={detailRow}>
+							<span class={detailLabel}>Type</span>
+							<span class={`${detailValue} ${kindBadge}`}>
+								<wa-icon
+									name={kindMeta().icon}
+									label={kindMeta().label}
+								></wa-icon>
+								{kindMeta().label}
+							</span>
+						</div>
+						<div class={detailRow}>
+							<span class={detailLabel}>Created</span>
+							<span class={detailValue}>
+								{formatTimestamp(props.page.createdAt)}
+							</span>
+						</div>
+						<div class={detailRow}>
+							<span class={detailLabel}>Created by</span>
+							<span class={detailValue}>{ownerName()}</span>
+						</div>
+						<div class={detailRow}>
+							<span class={detailLabel}>Last edited</span>
+							<span class={detailValue}>
+								{lastEdit() ? formatTimestamp(lastEdit()!.at) : "—"}
+							</span>
+						</div>
+						<div class={detailRow}>
+							<span class={detailLabel}>Last edited by</span>
+							<span class={detailValue}>{lastEditorName()}</span>
+						</div>
+						<div class={detailRow}>
+							<span class={detailLabel}>Page ID</span>
+							<span class={detailValue} style={{ "font-size": "0.7rem" }}>
+								{props.page.id}
+							</span>
 						</div>
 					</div>
 				</div>
-			</wa-tooltip>
 
-			<wa-drawer
-				id="page-info-drawer"
-				label={`Page details : ${props.page.title || "Untitled"}`}
-				placement="end"
-				light-dismiss
-				style={{ "--size": "28rem" }}
-			>
-				<div class={drawerBody}>
-					<div class={detailSection}>
-						<h3 class={sectionTitle}>
-							<wa-icon name="file-text" label="Page"></wa-icon> Overview
-						</h3>
-						<wa-divider style={{ "--spacing": "0" }}></wa-divider>
-						<div class={detailGrid}>
-							<div class={detailRow}>
-								<span class={detailLabel}>Title</span>
-								<span class={detailValue}>
-									{props.page.title || "Untitled"}
-								</span>
-							</div>
-							<div class={detailRow}>
-								<span class={detailLabel}>Type</span>
-								<span class={`${detailValue} ${kindBadge}`}>
-									<wa-icon
-										name={kindMeta().icon}
-										label={kindMeta().label}
-									></wa-icon>
-									{kindMeta().label}
-								</span>
-							</div>
-							<div class={detailRow}>
-								<span class={detailLabel}>Created</span>
-								<span class={detailValue}>
-									{formatTimestamp(props.page.createdAt)}
-								</span>
-							</div>
-							<div class={detailRow}>
-								<span class={detailLabel}>Created by</span>
-								<span class={detailValue}>{ownerName()}</span>
-							</div>
-							<div class={detailRow}>
-								<span class={detailLabel}>Last edited</span>
-								<span class={detailValue}>
-									{lastEdit() ? formatTimestamp(lastEdit()!.at) : "—"}
-								</span>
-							</div>
-							<div class={detailRow}>
-								<span class={detailLabel}>Last edited by</span>
-								<span class={detailValue}>{lastEditorName()}</span>
-							</div>
-							<div class={detailRow}>
-								<span class={detailLabel}>Page ID</span>
-								<span class={detailValue} style={{ "font-size": "0.7rem" }}>
-									{props.page.id}
-								</span>
-							</div>
-						</div>
-					</div>
-
-					<div class={detailSection}>
-						<h3 class={sectionTitle}>
-							<wa-icon name="clock"></wa-icon> Activity
-						</h3>
-						<wa-divider style={{ "--spacing": "0" }}></wa-divider>
-						<Show
-							when={logs().length > 0}
-							fallback={
-								<p
-									style={{
-										color: "var(--wa-color-text-quiet)",
-										"font-size": "var(--wa-font-size-xs)",
-										margin: "0",
-									}}
-								>
-									No activity yet for this page.
-								</p>
-							}
-						>
-							<div class={timeline}>
-								<For each={logs()}>
-									{(log) => {
-										const text = humanizeAction(log);
-										return (
-											<div class={timelineItem}>
-												<div class={timelineHeader}>
-													<span class={timelineAction} title={text}>
-														{text}
-													</span>
-													<span class={timelineTime}>
-														{formatDateTime(log.created_at)}
-													</span>
-												</div>
+				<div class={detailSection}>
+					<h3 class={sectionTitle}>
+						<wa-icon name="clock"></wa-icon> Activity
+					</h3>
+					<wa-divider style={{ "--spacing": "0" }}></wa-divider>
+					<Show
+						when={logs().length > 0}
+						fallback={
+							<p
+								style={{
+									color: "var(--wa-color-text-quiet)",
+									"font-size": "var(--wa-font-size-xs)",
+									margin: "0",
+								}}
+							>
+								No activity yet for this page.
+							</p>
+						}
+					>
+						<div class={timeline}>
+							<For each={logs()}>
+								{(log) => {
+									const text = humanizeAction(log);
+									return (
+										<div class={timelineItem}>
+											<div class={timelineHeader}>
+												<span class={timelineAction} title={text}>
+													{text}
+												</span>
+												<span class={timelineTime}>
+													{formatDateTime(log.created_at)}
+												</span>
 											</div>
-										);
-									}}
-								</For>
-							</div>
-						</Show>
-					</div>
+										</div>
+									);
+								}}
+							</For>
+						</div>
+					</Show>
 				</div>
-			</wa-drawer>
-		</>
+			</div>
+		</wa-drawer>
 	);
 };
 
-export default PageDetails;
+export default PageDetailsDrawer;

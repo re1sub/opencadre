@@ -29,6 +29,14 @@ export const sidebar = style({
 	overflowX: "hidden",
 });
 
+export const homeButton = style({
+	selectors: {
+		"&::part(button)": {
+			justifyContent: "flex-start",
+		},
+	},
+});
+
 export const sidebarResizer = style({
 	position: "absolute",
 	top: 0,
@@ -62,9 +70,27 @@ export const mainHeader = style({
 	borderBottom: "0.5px solid var(--wa-color-surface-border)",
 	"@media": {
 		"(max-width: 768px)": {
-			padding: 0,
+			paddingTop: "env(safe-area-inset-top)",
 		},
 	},
+});
+
+globalStyle(`.${mainHeader}:has(wa-drawer[open]) wa-tooltip::part(tooltip)`, {
+	display: "none",
+});
+
+export const mainHeaderActionsDropdown = style({
+	display: "none",
+	order: "1",
+	"@media": {
+		"(max-width: 768px)": {
+			display: "flex",
+		},
+	},
+});
+
+globalStyle(`${mainHeaderActionsDropdown} wa-dropdown-item`, {
+	padding: "0",
 });
 
 export const navHeader = style({
@@ -389,8 +415,8 @@ export const settingsBack = style({
 export const settingsSection = style({
 	display: "flex",
 	flexDirection: "column",
-	gap: "var(--wa-space-s)",
-	padding: "var(--wa-space-s)",
+	gap: "var(--wa-space-m)",
+	padding: "var(--wa-space-xs)",
 });
 
 export const settingsSectionTitle = style({
@@ -604,4 +630,10 @@ export const workspaceDangerRow = style({
 	justifyContent: "space-between",
 	gap: "var(--wa-space-s)",
 	padding: "var(--wa-space-xs) 0",
+	"@media": {
+		"(max-width: 768px)": {
+			flexDirection: "column",
+			alignItems: "stretch",
+		},
+	},
 });
