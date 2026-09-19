@@ -19,8 +19,8 @@ jobs:
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: "22"
-          cache: "pnpm"
+          node-version: '22'
+          cache: 'pnpm'
       - run: pnpm install --frozen-lockfile
 
       - name: Current latest tag
@@ -66,17 +66,17 @@ jobs:
       matrix:
         include:
           - platform: ubuntu-latest
-            args: ""
+            args: ''
           - platform: windows-latest
-            args: ""
+            args: ''
     runs-on: ${{ matrix.platform }}
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: "22"
-          cache: "pnpm"
+          node-version: '22'
+          cache: 'pnpm'
       - run: pnpm install --frozen-lockfile
 
       - if: matrix.platform == 'ubuntu-latest'
@@ -91,7 +91,7 @@ jobs:
       - name: Rust cache
         uses: swatinem/rust-cache@v2
         with:
-          workspaces: "./src-tauri -> target"
+          workspaces: './src-tauri -> target'
 
       - name: Sync version to release tag
         run: node scripts/sync-release-version.mjs "${{ needs.create-release.outputs.tag }}"
@@ -103,7 +103,7 @@ jobs:
         with:
           tagName: ${{ needs.create-release.outputs.tag }}
           releaseName: ${{ needs.create-release.outputs.tag }}
-          releaseBody: "See the changelog for details."
+          releaseBody: 'See the changelog for details.'
           releaseDraft: false
           prerelease: false
           args: ${{ matrix.args }}
@@ -117,8 +117,8 @@ jobs:
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: "22"
-          cache: "pnpm"
+          node-version: '22'
+          cache: 'pnpm'
       - run: pnpm install --frozen-lockfile
 
       - name: Install Linux dependencies
@@ -134,16 +134,21 @@ jobs:
       - name: Rust cache
         uses: swatinem/rust-cache@v2
         with:
-          workspaces: "./src-tauri -> target"
+          workspaces: './src-tauri -> target'
 
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
-          distribution: "temurin"
-          java-version: "21"
+          distribution: 'temurin'
+          java-version: '21'
 
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
+      - name: Accept Android SDK licenses
+        # sdkmanager --licenses prints the pending licenses and exits 1 even
+        # after accepting them, so don't fail the step on its exit code.
+        # The licenses are recorded under $ANDROID_HOME/licenses either way.
+        run: |
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
+          ls "$ANDROID_HOME/licenses"
 
       - name: Setup Android NDK
         uses: nttld/setup-ndk@v1
@@ -163,14 +168,14 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
-          TAURI_ANDROID_KEY_STORE_PATH: "./src-tauri/android-upload.jks"
+          TAURI_ANDROID_KEY_STORE_PATH: './src-tauri/android-upload.jks'
           TAURI_ANDROID_KEY_STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           TAURI_ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           TAURI_ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         with:
           tagName: ${{ needs.create-release.outputs.tag }}
           releaseName: ${{ needs.create-release.outputs.tag }}
-          releaseBody: "See the changelog for details."
+          releaseBody: 'See the changelog for details.'
           releaseDraft: false
           prerelease: false
           mobile: android
