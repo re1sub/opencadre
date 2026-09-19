@@ -5,6 +5,7 @@ export const bellButton = style({
 		"&::part(base)": {
 			position: "relative",
 			paddingInline: "var(--wa-space-s)",
+			justifyContent: "flex-start",
 		},
 	},
 });

@@ -300,6 +300,8 @@ const SettingsWorkspaceSection = (props: SettingsWorkspaceSectionProps) => {
 					</div>
 				</div>
 
+				<wa-divider style={{ "--color": "transparent" }}></wa-divider>
+
 				<Show when={confirmAction() === "delete"}>
 					<ConfirmDialog
 						label="Delete workspace"

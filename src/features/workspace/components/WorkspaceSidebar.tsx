@@ -1,7 +1,7 @@
 import type { Page, PageKind } from "../types";
 import AddPageButton from "./AddPageButton";
 import PageList from "./PageList";
-import { sidebar } from "./workspace.css";
+import { homeButton, sidebar } from "./workspace.css";
 
 interface WorkspaceSidebarProps {
 	pages: Page[];
@@ -16,6 +16,19 @@ interface WorkspaceSidebarProps {
 const WorkspaceSidebar = (props: WorkspaceSidebarProps) => {
 	return (
 		<nav slot="navigation" class={sidebar}>
+			<wa-button
+				type="button"
+				variant="neutral"
+				appearance="plain"
+				aria-label="Home"
+				href="/workspace"
+				class={homeButton}
+				onClick={() => {
+					document.querySelector("wa-page")?.hideNavigation();
+				}}
+			>
+				<wa-icon name="house" slot="start"></wa-icon> Home
+			</wa-button>
 			<AddPageButton
 				onAddPage={props.onAddPage}
 				defaultKind={props.defaultKind}

@@ -10,7 +10,6 @@ import {
 	dangerZone,
 	dialogBody,
 	dialogLabel,
-	memberAvatar,
 	settingsSection,
 	settingsSectionTitle,
 	workspaceDangerRow,
@@ -145,19 +144,10 @@ const SettingsGeneralSection = () => {
 				<div
 					style={{
 						display: "flex",
-						"align-items": "center",
+						"align-items": "flex-end",
 						gap: "var(--wa-space-s)",
 					}}
 				>
-					<span
-						class={memberAvatar}
-						style={{
-							"background-color":
-								"var(--wa-color-brand-fill-loud, var(--wa-color-brand))",
-						}}
-					>
-						{profileName() ? getInitials(profileName()) : "?"}
-					</span>
 					<wa-input
 						style={{ "flex-grow": "1" }}
 						label="Display name"
@@ -195,6 +185,8 @@ const SettingsGeneralSection = () => {
 					</wa-button>
 				</div>
 			</div>
+
+			<wa-divider style={{ "--color": "transparent" }}></wa-divider>
 
 			<Show when={showDeleteDialog()}>
 				<ConfirmDialog
