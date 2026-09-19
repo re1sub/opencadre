@@ -24,6 +24,13 @@ jobs:
           cache: 'pnpm'
       - run: pnpm install --frozen-lockfile
 
+      # Linux dependencies (only for ubuntu-latest)
+      - if: matrix.os == 'ubuntu-latest'
+        name: Install Linux dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev build-essential curl wget file libssl-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev
+
       # Android setup (only for ubuntu-latest)
       - if: matrix.os == 'ubuntu-latest'
         name: Setup Java
