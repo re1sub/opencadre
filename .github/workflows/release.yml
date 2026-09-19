@@ -2,13 +2,74 @@ name: Release
 on:
   push:
     branches: [main]
+  workflow_dispatch:
 jobs:
-  release:
+  create-release:
     runs-on: ubuntu-latest
     permissions:
       contents: write
       issues: write
       pull-requests: write
+    outputs:
+      tag: ${{ steps.tag.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+      - run: pnpm install --frozen-lockfile
+
+      - name: Current latest tag
+        id: current
+        run: echo "tag=$(git describe --tags --abbrev=0 2>/dev/null || true)" >> "$GITHUB_OUTPUT"
+
+      - name: Semantic Release
+        if: github.event_name == 'push'
+        uses: cycjimmy/semantic-release-action@v4
+        with:
+          extra_plugins: |
+            @semantic-release/changelog
+            @semantic-release/git
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+
+      - name: Fetch new tag
+        if: github.event_name == 'push'
+        run: git fetch --tags --force
+
+      - name: Compute release tag
+        id: tag
+        env:
+          RUN: ${{ github.event_name }}
+          CURRENT: ${{ steps.current.outputs.tag }}
+        run: |
+          TAG=$(git describe --tags --abbrev=0 2>/dev/null || true)
+          if [ -z "$TAG" ]; then
+            echo "No tags found, skipping binary build"
+            echo "tag=" >> "$GITHUB_OUTPUT"
+          elif [ "$RUN" = "push" ] && [ "$TAG" = "$CURRENT" ]; then
+            echo "No new release, skipping binary build"
+            echo "tag=" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+          fi
+
+  build-desktop:
+    needs: create-release
+    if: needs.create-release.outputs.tag != ''
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: ubuntu-latest
+            args: ''
+          - platform: windows-latest
+            args: ''
+    runs-on: ${{ matrix.platform }}
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -17,11 +78,64 @@ jobs:
           node-version: '22'
           cache: 'pnpm'
       - run: pnpm install --frozen-lockfile
-      - name: Semantic Release
-        uses: cycjimmy/semantic-release-action@v4
-        with:
-          extra_plugins: |
-            @semantic-release/changelog
-            @semantic-release/git
+
+      - if: matrix.platform == 'ubuntu-latest'
+        name: Install Linux dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev build-essential curl wget file libssl-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev
+
+      - name: Build and upload binaries
+        uses: tauri-apps/tauri-action@v0
         env:
-          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: ${{ needs.create-release.outputs.tag }}
+          releaseName: ${{ needs.create-release.outputs.tag }}
+          releaseBody: 'See the changelog for details.'
+          releaseDraft: false
+          prerelease: false
+          args: ${{ matrix.args }}
+
+  build-android:
+    needs: create-release
+    if: needs.create-release.outputs.tag != ''
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+      - run: pnpm install --frozen-lockfile
+
+      - name: Install Linux dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev build-essential curl wget file libssl-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Decode keystore
+        run: echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > src-tauri/android-upload.jks
+
+      - name: Build and upload APK
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_ANDROID_KEY_STORE_PATH: './src-tauri/android-upload.jks'
+          TAURI_ANDROID_KEY_STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          TAURI_ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          TAURI_ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        with:
+          tagName: ${{ needs.create-release.outputs.tag }}
+          releaseName: ${{ needs.create-release.outputs.tag }}
+          releaseBody: 'See the changelog for details.'
+          releaseDraft: false
+          prerelease: false
+          args: '--target android'
