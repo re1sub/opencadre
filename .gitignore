@@ -6,3 +6,4 @@ dist
 .opencode
 *.fig
 .zvec-grep/
+android-upload.jks

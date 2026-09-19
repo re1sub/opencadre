@@ -25,11 +25,18 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '21'
+      - if: matrix.os == 'ubuntu-latest'
+        name: Decode keystore
+        run: echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > src-tauri/android-upload.jks
 
       - name: Build with Tauri
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+          TAURI_ANDROID_KEY_STORE_PATH: ${{ matrix.os == 'ubuntu-latest' && './src-tauri/android-upload.jks' || '' }}
+          TAURI_ANDROID_KEY_STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          TAURI_ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          TAURI_ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         with:
           tagName: ${{ github.ref_name }}
           releaseName: 'v__VERSION__'
