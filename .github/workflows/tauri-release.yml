@@ -13,7 +13,13 @@ jobs:
     if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name != 'workflow_run' }}
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        include:
+          - os: ubuntu-latest
+            args: ''
+          - os: ubuntu-latest
+            args: '--target android'
+          - os: windows-latest
+            args: ''
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -31,14 +37,14 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libwebkit2gtk-4.1-dev build-essential curl wget file libssl-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev
 
-      # Android setup (only for ubuntu-latest)
-      - if: matrix.os == 'ubuntu-latest'
+      # Android setup (only for ubuntu-latest Android build)
+      - if: matrix.os == 'ubuntu-latest' && matrix.args == '--target android'
         name: Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '21'
-      - if: matrix.os == 'ubuntu-latest'
+      - if: matrix.os == 'ubuntu-latest' && matrix.args == '--target android'
         name: Decode keystore
         run: echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > src-tauri/android-upload.jks
 
@@ -56,3 +62,4 @@ jobs:
           releaseBody: 'See the changelog for details.'
           releaseDraft: false
           prerelease: false
+          args: ${{ matrix.args }}
