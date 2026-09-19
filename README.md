@@ -8,10 +8,20 @@ OpenCadre lets you create pages that adapt to the way you work. Write documents 
 
 ## Live previews
 
-| Environment | Branch | URL |
-| --- | --- | --- |
-| Production | `main` | https://opencadre.pages.dev |
-| Preview | `dev` | https://dev.opencadre.pages.dev |
+| Environment | Branch | URL                             |
+| ----------- | ------ | ------------------------------- |
+| Production  | `main` | https://opencadre.pages.dev     |
+| Preview     | `dev`  | https://dev.opencadre.pages.dev |
+
+## Documentation
+
+| Document                                     | Description                                                                       |
+| -------------------------------------------- | --------------------------------------------------------------------------------- |
+| [Requirements](docs/requirements.md)         | Personas, user stories, user journeys, functional and non-functional requirements |
+| [Architecture](docs/architecture.md)         | Layered architecture, repository pattern, realtime, deployment topology, ADRs     |
+| [API](docs/api.md)                           | Edge functions, RPC functions, realtime channels, env secrets                     |
+| [Database](docs/database.md)                 | ER diagram, 18 tables, RLS matrix, triggers, retention                            |
+| [Project tracking](docs/project-tracking.md) | Git workflow, commit conventions, changelog, roadmap                              |
 
 ## Tech Stack
 
@@ -131,17 +141,17 @@ npx supabase secrets set \
 
 #### Edge function secrets reference
 
-| Secret | Function | Required | Notes |
-| --- | --- | --- | --- |
-| `OPENROUTER_API_KEY` | ai-generate | Yes | Get from [openrouter.ai](https://openrouter.ai) |
-| `SUPABASE_SERVICE_ROLE_KEY` | invite-member, delete-account, cleanup-retention | Yes | From Supabase project settings |
-| `SMTP_HOST` | invite-member | No | If missing, invite emails are skipped (token still created) |
-| `SMTP_PORT` | invite-member | No | |
-| `SMTP_USER` | invite-member | No | |
-| `SMTP_PASS` | invite-member | No | |
-| `SMTP_FROM` | invite-member | No | Defaults to SMTP_USER |
-| `SMTP_FROM_NAME` | invite-member | No | Defaults to "OpenCadre" |
-| `CRON_SECRET` | cleanup-retention | No | Alternative auth for cron jobs (vs service role key) |
+| Secret                      | Function                                         | Required | Notes                                                       |
+| --------------------------- | ------------------------------------------------ | -------- | ----------------------------------------------------------- |
+| `OPENROUTER_API_KEY`        | ai-generate                                      | Yes      | Get from [openrouter.ai](https://openrouter.ai)             |
+| `SUPABASE_SERVICE_ROLE_KEY` | invite-member, delete-account, cleanup-retention | Yes      | From Supabase project settings                              |
+| `SMTP_HOST`                 | invite-member                                    | No       | If missing, invite emails are skipped (token still created) |
+| `SMTP_PORT`                 | invite-member                                    | No       |                                                             |
+| `SMTP_USER`                 | invite-member                                    | No       |                                                             |
+| `SMTP_PASS`                 | invite-member                                    | No       |                                                             |
+| `SMTP_FROM`                 | invite-member                                    | No       | Defaults to SMTP_USER                                       |
+| `SMTP_FROM_NAME`            | invite-member                                    | No       | Defaults to "OpenCadre"                                     |
+| `CRON_SECRET`               | cleanup-retention                                | No       | Alternative auth for cron jobs (vs service role key)        |
 
 ### 6. Configure auth settings (dashboard)
 
@@ -166,12 +176,12 @@ pnpm dev                # connects to local Supabase
 
 #### Local Supabase endpoints
 
-| Service | URL |
-| --- | --- |
-| API (REST/Auth) | http://127.0.0.1:54321 |
-| Studio (GUI) | http://127.0.0.1:54323 |
-| Postgres | postgresql://postgres:postgres@127.0.0.1:54322/postgres |
-| Mailpit (email) | http://127.0.0.1:54324 |
+| Service         | URL                                                     |
+| --------------- | ------------------------------------------------------- |
+| API (REST/Auth) | http://127.0.0.1:54321                                  |
+| Studio (GUI)    | http://127.0.0.1:54323                                  |
+| Postgres        | postgresql://postgres:postgres@127.0.0.1:54322/postgres |
+| Mailpit (email) | http://127.0.0.1:54324                                  |
 
 #### Local dev account
 
@@ -182,57 +192,110 @@ When running locally, a dev user is auto-created via `supabase/seed.sql`:
 
 A "Sign in with dev account" button appears on the auth page in development mode.
 
+## Deployment
+
+OpenCadre is hosted on **Cloudflare Pages**. Production deploys come from the
+`main` branch, and preview deploys come from the `dev` branch.
+
+```mermaid
+flowchart LR
+    Dev[dev branch] --> Preview[Preview<br/>dev.opencadre.pages.dev]
+    Main[main branch] --> Production[Production<br/>opencadre.pages.dev]
+```
+
+| Trigger        | Deployment | URL                             |
+| -------------- | ---------- | ------------------------------- |
+| Push to `main` | Production | https://opencadre.pages.dev     |
+| Push to `dev`  | Preview    | https://dev.opencadre.pages.dev |
+
+Deploy manually from the CLI:
+
+```bash
+pnpm deploy        # build + deploy dist/ to production (branch=main)
+make deploy-dev    # build + deploy dist/ to preview (branch=dev)
+```
+
+Every deploy runs `pnpm build`, which enforces Biome lint + format, TypeScript
+type checking, and the Vitest test suite before the `dist/` bundle is
+published.
+
+## Desktop App Build (Tauri)
+
+### Android Build (Arch Linux)
+
+The Android build uses Gradle/AGP, which requires a compatible JDK. The bundled Android Studio JBR (Java 25+) is too new for Gradle 8.14.3.
+
+1.  **Install JDK 21:** `sudo pacman -S jdk21-openjdk`
+2.  **Build:**
+    ```bash
+    export JAVA_HOME=/usr/lib/jvm/java-21-openjdk
+    pnpm tauri android dev
+    ```
+
+### Linux AppImage Build
+
+AppImage bundling fails on modern Arch due to `linuxdeploy` incompatibilities with newer ELF formats. Bypass symbol stripping to resolve:
+
+```bash
+NO_STRIP=true pnpm tauri build
+```
+
+### Icon Management
+
+Generate icons with `pnpm tauri icon <source-svg> --ios-color "#9097e2"`.
+The color is the brand color.
+
 ## Scripts
 
-| Command | Description |
-| --- | --- |
-| `pnpm dev` | Start the Vite dev server (port 3000) |
-| `pnpm build` | Production build |
-| `pnpm serve` | Preview the production build |
-| `pnpm typecheck` | TypeScript check (`tsc --noEmit`) |
-| `pnpm lint` | Biome lint |
-| `pnpm lint:fix` | Biome check + autofix |
-| `pnpm format` | Biome format |
-| `pnpm test` | Run tests (watch mode) |
-| `pnpm test:run` | Run tests (single run) |
-| `pnpm check:staged` | Lint staged files (via lint-staged) |
-| `pnpm supabase:start` | Start the local Supabase stack |
-| `pnpm supabase:stop` | Stop the local Supabase stack |
-| `pnpm supabase:status` | Show local Supabase status/keys |
+| Command                | Description                           |
+| ---------------------- | ------------------------------------- |
+| `pnpm dev`             | Start the Vite dev server (port 3000) |
+| `pnpm build`           | Production build                      |
+| `pnpm serve`           | Preview the production build          |
+| `pnpm typecheck`       | TypeScript check (`tsc --noEmit`)     |
+| `pnpm lint`            | Biome lint                            |
+| `pnpm lint:fix`        | Biome check + autofix                 |
+| `pnpm format`          | Biome format                          |
+| `pnpm test`            | Run tests (watch mode)                |
+| `pnpm test:run`        | Run tests (single run)                |
+| `pnpm check:staged`    | Lint staged files (via lint-staged)   |
+| `pnpm supabase:start`  | Start the local Supabase stack        |
+| `pnpm supabase:stop`   | Stop the local Supabase stack         |
+| `pnpm supabase:status` | Show local Supabase status/keys       |
 
 ## Edge Functions
 
-| Function | Auth | Description |
-| --- | --- | --- |
-| `ai-generate` | Yes (JWT) | AI content generation via TanStack AI / OpenRouter |
-| `invite-member` | Yes (JWT) | Send workspace invite emails |
-| `delete-account` | Yes (JWT) | Atomic account deletion (auth.users + all data) |
+| Function            | Auth      | Description                                           |
+| ------------------- | --------- | ----------------------------------------------------- |
+| `ai-generate`       | Yes (JWT) | AI content generation via TanStack AI / OpenRouter    |
+| `invite-member`     | Yes (JWT) | Send workspace invite emails                          |
+| `delete-account`    | Yes (JWT) | Atomic account deletion (auth.users + all data)       |
 | `cleanup-retention` | No (cron) | Purge old page visits, activity logs, and AI requests |
 
 ## Database
 
 The full schema lives in `supabase/migrations/20260910132550_remote_schema.sql`. Key tables:
 
-| Table | Purpose |
-| --- | --- |
-| `workspaces` | Top-level containers for pages and members |
+| Table               | Purpose                                                       |
+| ------------------- | ------------------------------------------------------------- |
+| `workspaces`        | Top-level containers for pages and members                    |
 | `workspace_members` | Member roles (owner, admin, member, guest) with invite tokens |
-| `pages` | Workspace pages (markdown, kanban, or table kind) |
-| `page_content` | Versioned page body (Yjs state + markdown) |
-| `cards` | Kanban card items |
-| `columns` | Kanban board columns |
-| `card_tags` | Many-to-many: cards <-> tags |
-| `tags` | Reusable colored tags per workspace |
-| `comments` | Page/card comments with threading |
-| `comment_threads` | Thread groupings for comments |
-| `comment_reactions` | Emoji reactions on comments |
-| `notifications` | In-app notifications (mention, comment, invite) |
-| `profiles` | User profiles (display name, avatar) |
-| `user_settings` | Per-user shortcuts and notification prefs |
-| `activity_logs` | Workspace audit trail |
-| `ai_requests` | AI generation request log |
-| `page_visits` | Page view tracking |
-| `ydocs` | Yjs document state for collaborative editing |
+| `pages`             | Workspace pages (markdown, kanban, or table kind)             |
+| `page_content`      | Versioned page body (Yjs state + markdown)                    |
+| `cards`             | Kanban card items                                             |
+| `columns`           | Kanban board columns                                          |
+| `card_tags`         | Many-to-many: cards <-> tags                                  |
+| `tags`              | Reusable colored tags per workspace                           |
+| `comments`          | Page/card comments with threading                             |
+| `comment_threads`   | Thread groupings for comments                                 |
+| `comment_reactions` | Emoji reactions on comments                                   |
+| `notifications`     | In-app notifications (mention, comment, invite)               |
+| `profiles`          | User profiles (display name, avatar)                          |
+| `user_settings`     | Per-user shortcuts and notification prefs                     |
+| `activity_logs`     | Workspace audit trail                                         |
+| `ai_requests`       | AI generation request log                                     |
+| `page_visits`       | Page view tracking                                            |
+| `ydocs`             | Yjs document state for collaborative editing                  |
 
 To regenerate TypeScript types after schema changes:
 
