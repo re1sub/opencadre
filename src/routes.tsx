@@ -10,7 +10,17 @@ const PrivacyPage = lazy(() => import("#/features/legal/PrivacyPage"));
 const TermsPage = lazy(() => import("#/features/legal/TermsPage"));
 
 export const routes: RouteDefinition[] = [
-	{ path: "/", component: Home },
+	{
+		path: "/",
+		component: () => {
+			// @ts-expect-error: window.__TAURI__ is only available in Tauri context
+			// Hide homepage for native Tauri builds
+			if (typeof window !== "undefined" && window.__TAURI__) {
+				return <Navigate href="/workspace" />;
+			}
+			return <Home />;
+		},
+	},
 	{ path: "/auth", component: () => <Navigate href="/auth/signin" /> },
 	{ path: "/auth/signin", component: () => <Auth view="signin" /> },
 	{ path: "/auth/signup", component: () => <Auth view="signup" /> },
