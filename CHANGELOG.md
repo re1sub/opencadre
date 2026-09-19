@@ -1,3 +1,10 @@
+## [1.0.2](https://github.com/re1sub/opencadre/compare/v1.0.1...v1.0.2) (2026-09-19)
+
+
+### Bug Fixes
+
+* **android:** sign release APK/AAB via keystore.properties ([3b05845](https://github.com/re1sub/opencadre/commit/3b05845fb8444538dd5d5da7ec4f772bd88c8b75))
+
 ## [1.0.1](https://github.com/re1sub/opencadre/compare/v1.0.0...v1.0.1) (2026-09-19)
 
 
