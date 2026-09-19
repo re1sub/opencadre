@@ -1,3 +1,10 @@
+## [1.0.1](https://github.com/re1sub/opencadre/compare/v1.0.0...v1.0.1) (2026-09-19)
+
+
+### Bug Fixes
+
+* **android:** drop local org.gradle.java.home from gradle.properties ([d034aa4](https://github.com/re1sub/opencadre/commit/d034aa4acddf1ff1580e4fd8522691fb43b32fc1))
+
 # 1.0.0 (2026-09-19)
 
 
