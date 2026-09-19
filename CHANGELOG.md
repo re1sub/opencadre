@@ -1,3 +1,10 @@
+## [1.0.3](https://github.com/re1sub/opencadre/compare/v1.0.2...v1.0.3) (2026-09-19)
+
+
+### Bug Fixes
+
+* provide supabase env to CI builds ([3b92aff](https://github.com/re1sub/opencadre/commit/3b92aff8c3b1e066f4e7ae15e67b095101ed3d01))
+
 ## [1.0.2](https://github.com/re1sub/opencadre/compare/v1.0.1...v1.0.2) (2026-09-19)
 
 

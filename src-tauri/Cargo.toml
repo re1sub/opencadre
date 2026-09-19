@@ -1,6 +1,6 @@
 [package]
 name = "opencadre"
-version = "1.0.2"
+version = "1.0.3"
 description = "A flexible, real-time, collaborative, and AI-powered workspace for organizing ideas, projects, and knowledge"
 authors = ["you"]
 license = ""
