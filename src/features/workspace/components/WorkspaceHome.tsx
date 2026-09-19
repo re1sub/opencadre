@@ -27,7 +27,9 @@ const WorkspaceHome = (props: WorkspaceHomeProps) => {
 	return (
 		<div class={wrapper}>
 			<div>
-				<h1 class={heading}>{props.workspaceName || "This Workspace"}</h1>
+				<h1 class={heading}>
+					{props.workspaceName || "This Workspace"} CLOUDFLARE TEST
+				</h1>
 				<p class={stats}>
 					{props.pages.length} {props.pages.length === 1 ? "page" : "pages"} ·{" "}
 					{props.memberCount} {props.memberCount === 1 ? "member" : "members"}
