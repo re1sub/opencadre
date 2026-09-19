@@ -3,13 +3,13 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
 jobs:
   create-release:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      issues: write
-      pull-requests: write
     outputs:
       tag: ${{ steps.tag.outputs.tag }}
     steps:
@@ -19,8 +19,8 @@ jobs:
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: '22'
-          cache: 'pnpm'
+          node-version: "22"
+          cache: "pnpm"
       - run: pnpm install --frozen-lockfile
 
       - name: Current latest tag
@@ -66,17 +66,17 @@ jobs:
       matrix:
         include:
           - platform: ubuntu-latest
-            args: ''
+            args: ""
           - platform: windows-latest
-            args: ''
+            args: ""
     runs-on: ${{ matrix.platform }}
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: '22'
-          cache: 'pnpm'
+          node-version: "22"
+          cache: "pnpm"
       - run: pnpm install --frozen-lockfile
 
       - if: matrix.platform == 'ubuntu-latest'
@@ -85,14 +85,25 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libwebkit2gtk-4.1-dev build-essential curl wget file libssl-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev
 
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: "./src-tauri -> target"
+
+      - name: Sync version to release tag
+        run: node scripts/sync-release-version.mjs "${{ needs.create-release.outputs.tag }}"
+
       - name: Build and upload binaries
-        uses: tauri-apps/tauri-action@v0
+        uses: tauri-apps/tauri-action@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tagName: ${{ needs.create-release.outputs.tag }}
           releaseName: ${{ needs.create-release.outputs.tag }}
-          releaseBody: 'See the changelog for details.'
+          releaseBody: "See the changelog for details."
           releaseDraft: false
           prerelease: false
           args: ${{ matrix.args }}
@@ -106,36 +117,60 @@ jobs:
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: '22'
-          cache: 'pnpm'
+          node-version: "22"
+          cache: "pnpm"
       - run: pnpm install --frozen-lockfile
 
       - name: Install Linux dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev build-essential curl wget file libssl-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev
+          sudo apt-get install -y build-essential curl wget file libssl-dev
+
+      - name: Install Rust stable (android)
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android,armv7-linux-androideabi,i686-linux-android,x86_64-linux-android
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: "./src-tauri -> target"
 
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
-          java-version: '21'
+          distribution: "temurin"
+          java-version: "21"
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Setup Android NDK
+        uses: nttld/setup-ndk@v1
+        id: setup-ndk
+        with:
+          ndk-version: r29
+          link-to-sdk: true
 
       - name: Decode keystore
         run: echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > src-tauri/android-upload.jks
 
+      - name: Sync version to release tag
+        run: node scripts/sync-release-version.mjs "${{ needs.create-release.outputs.tag }}"
+
       - name: Build and upload APK
-        uses: tauri-apps/tauri-action@v0
+        uses: tauri-apps/tauri-action@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAURI_ANDROID_KEY_STORE_PATH: './src-tauri/android-upload.jks'
+          NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
+          TAURI_ANDROID_KEY_STORE_PATH: "./src-tauri/android-upload.jks"
           TAURI_ANDROID_KEY_STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           TAURI_ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           TAURI_ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         with:
           tagName: ${{ needs.create-release.outputs.tag }}
           releaseName: ${{ needs.create-release.outputs.tag }}
-          releaseBody: 'See the changelog for details.'
+          releaseBody: "See the changelog for details."
           releaseDraft: false
           prerelease: false
-          args: '--target android'
+          mobile: android
