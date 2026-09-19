@@ -157,8 +157,15 @@ jobs:
           ndk-version: r29
           link-to-sdk: true
 
-      - name: Decode keystore
-        run: echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > src-tauri/android-upload.jks
+      - name: Setup Android signing
+        # https://v2.tauri.app/distribute/sign/android/
+        working-directory: src-tauri/gen/android
+        run: |
+          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > "$RUNNER_TEMP/android-upload.jks"
+          echo "keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}" > keystore.properties
+          echo "keyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}" >> keystore.properties
+          echo "storePassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" >> keystore.properties
+          echo "storeFile=$RUNNER_TEMP/android-upload.jks" >> keystore.properties
 
       - name: Sync version to release tag
         run: node scripts/sync-release-version.mjs "${{ needs.create-release.outputs.tag }}"
@@ -168,10 +175,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
-          TAURI_ANDROID_KEY_STORE_PATH: './src-tauri/android-upload.jks'
-          TAURI_ANDROID_KEY_STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          TAURI_ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
-          TAURI_ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         with:
           tagName: ${{ needs.create-release.outputs.tag }}
           releaseName: ${{ needs.create-release.outputs.tag }}
