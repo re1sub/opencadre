@@ -1,0 +1,5 @@
+{
+	"default": "../../public/brand/favicon.svg",
+	"android_fg": "../../public/brand/favicon-fg.svg",
+	"android_fg_scale": 50
+}
