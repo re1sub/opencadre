@@ -1,6 +1,13 @@
 import type WaPage from "@awesome.me/webawesome/dist/components/page/page.js";
 import { useNavigate } from "@solidjs/router";
-import { createSignal, Show } from "solid-js";
+import {
+	createEffect,
+	createSignal,
+	For,
+	onCleanup,
+	onMount,
+	Show,
+} from "solid-js";
 import { useAuth } from "#/features/auth/AuthContext";
 import ConfirmDialog from "#/features/ui/ConfirmDialog";
 import EditableText from "#/features/ui/EditableText";
@@ -11,22 +18,23 @@ import LoadingSpinner from "../ui/LoadingSpinner";
 import CreateWorkspace from "./components/CreateWorkspace";
 import NewWorkspaceDialog from "./components/NewWorkspaceDialog";
 import NotificationsPanel from "./components/NotificationsPanel";
-import PageDetails from "./components/PageDetails";
+import PageDetailsDrawer from "./components/PageDetailsDrawer";
+import PageDetailsTrigger from "./components/PageDetailsTrigger";
 import PageView from "./components/PageView";
 import TrashDialog from "./components/TrashDialog";
 import WorkspaceFooter from "./components/WorkspaceFooter";
 import WorkspaceHeader from "./components/WorkspaceHeader";
 import WorkspaceHome from "./components/WorkspaceHome";
+import WorkspaceMainHeader from "./components/WorkspaceMainHeader";
 import WorkspaceSidebar from "./components/WorkspaceSidebar";
 import {
 	mainContent,
-	mainHeader,
 	page,
-	pageButton,
 	pageTitlePlaceholder,
 	pageTitleStyle,
 	sidebarResizer,
 } from "./components/workspace.css";
+
 import { PAGE_KIND_LOADERS } from "./constants/pageViewLoaders";
 import { PAGE_TEMPLATES } from "./constants/templates";
 import { useNotifications } from "./hooks/useNotifications";
@@ -45,6 +53,14 @@ const Workspace = () => {
 	const navigate = useNavigate();
 	const [error, setError] = createSignal<string | null>(null);
 
+	const [isMobile, setIsMobile] = createSignal(window.innerWidth < 768);
+
+	onMount(() => {
+		const handleResize = () => setIsMobile(window.innerWidth < 768);
+		window.addEventListener("resize", handleResize);
+		onCleanup(() => window.removeEventListener("resize", handleResize));
+	});
+
 	// Ref to wa-page element to pierce Shadow DOM for internal drawer
 	let pageRef!: WaPage;
 
@@ -55,6 +71,11 @@ const Workspace = () => {
 	);
 	const trashHook = useTrash(wsHook.setWorkspaces, pagesHook.setAllPages);
 	const membersHook = useWorkspaceMembersAdapter(wsHook.activeWorkspaceId);
+
+	createEffect(() => {
+		const page = pagesHook.activePage();
+		document.title = `${page?.title ? `${page.title} · ` : ""}OpenCadre`;
+	});
 
 	// Realtime: one channel per active workspace; pages scoped by membership.
 	useWorkspaceRealtime({
@@ -228,6 +249,21 @@ const Workspace = () => {
 		},
 	);
 
+	onMount(() => {
+		setTimeout(() => {
+			const page = document.querySelector("wa-page") as WaPage | null;
+			const drawer = page?.shadowRoot?.querySelector('[part="drawer"]');
+			const dialog = drawer?.shadowRoot?.querySelector(
+				'[part="dialog"]',
+			) as HTMLElement | null;
+
+			if (!dialog) return;
+
+			dialog.style.paddingTop = "env(safe-area-inset-top)";
+			dialog.style.paddingBottom = "env(safe-area-inset-bottom)";
+		}, 1000);
+	});
+
 	return (
 		<Show when={wsHook.loaded()} fallback={<LoadingSpinner fullscreen />}>
 			<Show
@@ -258,79 +294,14 @@ const Workspace = () => {
 							setSidebarHovered(false);
 					}}
 				>
-					<nav
-						slot="main-header"
-						class={mainHeader}
-						style={{
-							padding: sidebarCollapsed() ? 0 : "",
-						}}
-						ref={(el) => {
-							requestAnimationFrame(() => {
-								const height = el.getBoundingClientRect().height;
-								const finalHeight = height > 1 ? height : 44;
-
-								pageRef?.style.setProperty(
-									"--main-header-height",
-									`${finalHeight}px`,
-								);
-							});
-						}}
-					>
-						<wa-button
-							appearance="plain"
-							variant="neutral"
-							data-toggle-nav
-							style={{
-								padding: "0",
-								display: sidebarCollapsed() ? "block" : "",
-							}}
-							onClick={() => setSidebarCollapsed(false)}
-						>
-							<wa-icon name="menu" label="Toggle navigation"></wa-icon>
-						</wa-button>
-
-						<Show when={pagesHook.activePage()}>
-							<div
-								style={{
-									"margin-right": "auto",
-									"--wa-form-control-padding-inline": "var(--wa-space-2xs)",
-								}}
-							>
-								<wa-button
-									type="button"
-									variant="neutral"
-									appearance="plain"
-									aria-label="Home"
-									href="/workspace"
-								>
-									<wa-icon name="house" label="Home"></wa-icon>
-								</wa-button>
-								<wa-button
-									variant="neutral"
-									appearance="plain"
-									class={pageButton}
-								>
-									{pagesHook.activePage()?.title}
-								</wa-button>
-							</div>
-							<PageDetails
-								page={pagesHook.activePage()!}
-								members={membersHook.members()}
-							/>
-							<wa-copy-button
-								value={`${window.location.origin}/workspace/p/${pagesHook.activePage()?.id}`}
-								copy-label="Copy page link"
-								success-label="Page link copied!"
-							>
-								<wa-icon
-									slot="copy-icon"
-									name="link"
-									variant="regular"
-								></wa-icon>
-							</wa-copy-button>
-							<NotificationsPanel />
-						</Show>
-					</nav>
+					<WorkspaceMainHeader
+						activePage={pagesHook.activePage}
+						members={membersHook.members}
+						sidebarCollapsed={sidebarCollapsed}
+						setSidebarCollapsed={setSidebarCollapsed}
+						isMobile={isMobile}
+						pageRef={pageRef}
+					/>
 
 					<WorkspaceHeader
 						collapsed={sidebarCollapsed}
@@ -532,6 +503,12 @@ const Workspace = () => {
 						<NewWorkspaceDialog
 							onCreate={handleCreateNewWorkspace}
 							onClose={() => setIsNewWorkspaceOpen(false)}
+						/>
+					</Show>
+					<Show when={pagesHook.activePage()}>
+						<PageDetailsDrawer
+							page={pagesHook.activePage()!}
+							members={membersHook.members()}
 						/>
 					</Show>
 				</wa-page>

@@ -1,6 +1,6 @@
 import { useDroppable } from "@dnd-kit/solid";
 import { useSortable } from "@dnd-kit/solid/sortable";
-import { createSignal, For } from "solid-js";
+import { createSignal, For, Show } from "solid-js";
 import type { Tag } from "#/features/tags/types";
 import PopupMenu from "#/features/ui/PopupMenu";
 import type { WorkspaceMember } from "#/features/workspace/types";
@@ -147,7 +147,9 @@ const BoardColumn = (props: BoardColumnProps) => {
 				</For>
 			</div>
 
-			<wa-divider></wa-divider>
+			<Show when={props.column.cards.length > 0}>
+				<wa-divider></wa-divider>
+			</Show>
 
 			<wa-button
 				type="button"

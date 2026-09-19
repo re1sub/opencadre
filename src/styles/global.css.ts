@@ -126,11 +126,11 @@ globalStyle("wa-dialog::part(footer)", {
 	padding: "var(--wa-space-s)",
 });
 
-globalStyle("wa-tooltip", {
+globalStyle("wa-tooltip, wa-copy-button::part(feedback)", {
 	vars: {
 		"--wa-tooltip-background-color": "var(--wa-color-surface-raised)",
 		"--wa-tooltip-content-color": "var(--wa-color-text-normal)",
 		"--wa-tooltip-border-color":
-			"color-mix(in srgb, var(--wa-color-text-quiet) 50%, transparent)",
+			"color-mix(in srgb, var(--wa-color-text-quiet) 30%, transparent)",
 	},
 });

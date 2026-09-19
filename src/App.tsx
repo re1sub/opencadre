@@ -1,8 +1,13 @@
 import { Router } from "@solidjs/router";
+import ErrorBoundary from "#/features/ui/ErrorBoundary";
 import { routes } from "#/routes";
 
 function App() {
-	return <Router>{routes}</Router>;
+	return (
+		<ErrorBoundary>
+			<Router>{routes}</Router>
+		</ErrorBoundary>
+	);
 }
 
 export default App;
