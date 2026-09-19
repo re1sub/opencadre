@@ -9,7 +9,14 @@ import "@awesome.me/webawesome/dist/styles/webawesome.css";
 // Register icon libraries
 registerIconLibrary("default", {
 	resolver: (name) => {
-		const iconName = name === "bars" ? "menu" : name;
+		const iconName =
+			{
+				xmark: "x",
+				bars: "menu",
+				"eye-slash": "eye-off",
+				"circle-xmark": "circle-x",
+			}[name] ?? name;
+
 		return `https://cdn.jsdelivr.net/npm/lucide-static@1.31.0/icons/${iconName}.svg`;
 	},
 	mutator: (svg) =>
