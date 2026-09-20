@@ -1,3 +1,10 @@
+# [1.1.0](https://github.com/re1sub/opencadre/compare/v1.0.3...v1.1.0) (2026-09-20)
+
+
+### Features
+
+* **MobileApp:** fetch latest APK version and download link from GitHub ([24218cc](https://github.com/re1sub/opencadre/commit/24218ccc292edd024ee488cbe48c630dadee2e72))
+
 ## [1.0.3](https://github.com/re1sub/opencadre/compare/v1.0.2...v1.0.3) (2026-09-19)
 
 
