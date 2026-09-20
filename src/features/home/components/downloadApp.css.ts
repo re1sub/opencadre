@@ -41,24 +41,8 @@ export const description = style({
 
 export const cta = style({
 	display: "flex",
-	flexDirection: "column",
 	gap: "10px",
-});
-
-export const downloadButton = style({
-	width: "fit-content",
-	selectors: {
-		"&::part(button)": {
-			backgroundColor: "var(--wa-color-neutral-90)",
-			color: "var(--wa-color-neutral-05)",
-		},
-	},
-});
-
-export const comingSoon = style({
-	fontSize: "16px",
-	fontWeight: 200,
-	color: "#FAFBFC",
+	flexDirection: "column",
 });
 
 export const screenshotWrapper = style({
@@ -69,3 +53,5 @@ export const screenshotWrapper = style({
 	alignItems: "center",
 	justifyContent: "center",
 });
+
+export const downloadButton = style({});
