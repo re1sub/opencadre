@@ -598,6 +598,9 @@ export const settingsDialogContainer = style({
 					borderRadius: "0",
 					marginLeft: "auto",
 					marginRight: "auto",
+					padding: "var(--wa-space-xs)",
+					paddingTop: "env(safe-area-inset-top)",
+					paddingBottom: "env(safe-area-inset-bottom)",
 				},
 			},
 			vars: {

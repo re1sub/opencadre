@@ -16,6 +16,7 @@ import { useWorkspaceRealtime } from "#/utils/realtime/useWorkspaceRealtime";
 import { useHotkey } from "#/utils/useHotkey";
 import LoadingSpinner from "../ui/LoadingSpinner";
 import CreateWorkspace from "./components/CreateWorkspace";
+import { card } from "./components/createWorkspace.css";
 import NewWorkspaceDialog from "./components/NewWorkspaceDialog";
 import NotificationsPanel from "./components/NotificationsPanel";
 import PageDetailsDrawer from "./components/PageDetailsDrawer";
@@ -269,10 +270,34 @@ const Workspace = () => {
 			<Show
 				when={wsHook.workspaces().length > 0}
 				fallback={
-					<CreateWorkspace
-						onCreate={handleAddWorkspace}
-						onSignOut={handleSignOut}
-					/>
+					<main
+						class={page}
+						style={{
+							display: "flex",
+							"align-items": "center",
+							"justify-content": "center",
+							height: "100vh",
+						}}
+					>
+						<div class={card}>
+							<h2 style={{ "font-size": "1.5rem" }}>
+								Create your first workspace
+							</h2>
+							<p
+								style={{
+									"font-size": "0.875rem",
+									color: "var(--wa-color-text-quiet)",
+									margin: 0,
+								}}
+							>
+								Get started by creating a workspace for your team or project.
+							</p>
+							<CreateWorkspace
+								onCreate={handleAddWorkspace}
+								onSignOut={handleSignOut}
+							/>
+						</div>
+					</main>
 				}
 			>
 				<wa-page

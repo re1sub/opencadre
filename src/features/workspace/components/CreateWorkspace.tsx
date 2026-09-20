@@ -1,6 +1,6 @@
 import { createSignal, Show } from "solid-js";
 import { workspaceNameSchema } from "../schemas";
-import { card, linkButton, page } from "./createWorkspace.css";
+import { linkButton } from "./createWorkspace.css";
 
 interface CreateWorkspaceProps {
 	onCreate: (name: string) => Promise<void>;
@@ -41,24 +41,11 @@ const CreateWorkspace = (props: CreateWorkspaceProps) => {
 		}
 	};
 
-	const form = () => (
-		<form onSubmit={handleSubmit} class={card}>
-			<h2 style={{ "font-size": "1.5rem" }}>
-				{mode() === "first"
-					? "Create your first workspace"
-					: "Create a new workspace"}
-			</h2>
-			<p
-				style={{
-					"font-size": "0.875rem",
-					color: "var(--wa-color-text-quiet)",
-					margin: 0,
-				}}
-			>
-				{mode() === "first"
-					? "Get started by creating a workspace for your team or project."
-					: "Workspaces group your pages, boards, and tables together."}
-			</p>
+	return (
+		<form
+			onSubmit={handleSubmit}
+			style={{ display: "flex", "flex-direction": "column", gap: "1rem" }}
+		>
 			<wa-input
 				type="text"
 				label="Workspace name"
@@ -70,23 +57,21 @@ const CreateWorkspace = (props: CreateWorkspaceProps) => {
 				onInput={(e) => setName((e.currentTarget as HTMLInputElement).value)}
 			></wa-input>
 			<Show when={error()}>
-				<p style={{ color: "var(--wa-color-danger)" }}>{error()}</p>
+				<p style={{ color: "var(--wa-color-danger)", margin: 0 }}>{error()}</p>
 			</Show>
 			<wa-button type="submit" variant="brand" disabled={pending()}>
 				{pending() ? "Creating..." : "Create workspace"}
 			</wa-button>
 			{mode() === "first" ? (
-				<span>
-					<wa-button
-						type="button"
-						variant="neutral"
-						appearance="plain"
-						class={linkButton}
-						onClick={props.onSignOut}
-					>
-						Sign out
-					</wa-button>
-				</span>
+				<wa-button
+					type="button"
+					variant="neutral"
+					appearance="plain"
+					class={linkButton}
+					onClick={props.onSignOut}
+				>
+					Sign out
+				</wa-button>
 			) : (
 				<wa-button
 					type="button"
@@ -99,12 +84,6 @@ const CreateWorkspace = (props: CreateWorkspaceProps) => {
 				</wa-button>
 			)}
 		</form>
-	);
-
-	return (
-		<Show when={mode() === "first"} fallback={form()}>
-			<main class={page}>{form()}</main>
-		</Show>
 	);
 };
 
