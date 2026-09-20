@@ -1,3 +1,4 @@
+import { createResource, Show } from "solid-js";
 import { Motion } from "solid-motionone";
 import mobileAppImg from "#assets/img/home/mobile.png";
 import {
@@ -13,7 +14,29 @@ import {
 	titleColumn,
 } from "./mobileApp.css";
 
+async function fetchLatestRelease() {
+	const response = await fetch(
+		"https://api.github.com/repos/re1sub/opencadre/releases/latest",
+	);
+
+	if (!response.ok) {
+		throw new Error("Failed to fetch latest release");
+	}
+
+	const data = await response.json();
+	const apkAsset = data.assets.find((asset: { name: string }) =>
+		asset.name.endsWith(".apk"),
+	);
+
+	return {
+		url: apkAsset ? apkAsset.browser_download_url : null,
+		version: data.tag_name,
+	};
+}
+
 const MobileApp = () => {
+	const [release] = createResource(fetchLatestRelease);
+
 	return (
 		<section class={mobileApp}>
 			<div class={inner}>
@@ -35,14 +58,20 @@ const MobileApp = () => {
 					</div>
 					<div class={cta}>
 						<wa-button
-							href="https://github.com/re1sub/opencadre/releases"
+							href={
+								release()?.url ||
+								"https://github.com/re1sub/opencadre/releases/latest"
+							}
+							disabled={release.loading}
 							variant="neutral"
 							class={downloadButton}
 						>
 							<wa-icon slot="start" name="download"></wa-icon>
-							Download
+							{release.loading
+								? "Loading..."
+								: `Download APK (${release()?.version ?? ""})`}
 						</wa-button>
-						<span class={comingSoon}>Coming soon</span>
+						<span class={comingSoon}>Android version only*</span>
 					</div>
 				</Motion.div>
 				<Motion.div
