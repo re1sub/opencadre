@@ -1,3 +1,10 @@
+# [1.2.0](https://github.com/re1sub/opencadre/compare/v1.1.1...v1.2.0) (2026-09-20)
+
+
+### Features
+
+* add macos .dmg build matrix ([dbaf6a9](https://github.com/re1sub/opencadre/commit/dbaf6a9e04f98173600ef9b5f010af56e6c7f95f))
+
 ## [1.1.1](https://github.com/re1sub/opencadre/compare/v1.1.0...v1.1.1) (2026-09-20)
 
 
