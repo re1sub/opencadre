@@ -1,3 +1,10 @@
+## [1.1.1](https://github.com/re1sub/opencadre/compare/v1.1.0...v1.1.1) (2026-09-20)
+
+
+### Bug Fixes
+
+* **security:** allow GitHub API connections in CSP ([5045b85](https://github.com/re1sub/opencadre/commit/5045b855dea5f49810677eed0bcde107c67f9570))
+
 # [1.1.0](https://github.com/re1sub/opencadre/compare/v1.0.3...v1.1.0) (2026-09-20)
 
 
