@@ -1,3 +1,17 @@
+# [1.3.0](https://github.com/re1sub/opencadre/compare/v1.2.0...v1.3.0) (2026-09-22)
+
+
+### Bug Fixes
+
+* deploy script ([46d52d0](https://github.com/re1sub/opencadre/commit/46d52d0a48a67529b9071d2a06fa30c7e64b2496))
+* **release:** detect Cargo.lock already-synced per opencadre entry ([905544c](https://github.com/re1sub/opencadre/commit/905544cbf88f996fff7af2877980a4241c767b2c))
+
+
+### Features
+
+* **tauri:** add prevent-default plugin ([a8346e7](https://github.com/re1sub/opencadre/commit/a8346e73ad6692a926145b7cff00afb3985bb54e))
+* **tauri:** add window-state plugin ([983e21c](https://github.com/re1sub/opencadre/commit/983e21ce464c62240dc4dc1397429ed5d7704621))
+
 # [1.2.0](https://github.com/re1sub/opencadre/compare/v1.1.1...v1.2.0) (2026-09-20)
 
 
