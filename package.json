@@ -11,8 +11,8 @@
 		"serve": "vite preview",
 		"deploy": "vite build && wrangler pages deploy dist --project-name=opencadre --branch=dev",
 		"typecheck": "tsc --noEmit",
-		"lint": "biome lint . --config-path ./biome.jsonc",
-		"lint:full": "biome check . --config-path ./biome.jsonc",
+		"lint": "biome lint . --error-on-warnings --config-path ./biome.jsonc",
+		"lint:full": "biome check . --error-on-warnings --config-path ./biome.jsonc",
 		"lint:fix": "biome check . --write --config-path ./biome.jsonc",
 		"format": "biome format . --write --config-path ./biome.jsonc",
 		"prepare": "husky",
@@ -86,7 +86,7 @@
 	},
 	"lint-staged": {
 		"*.{ts,tsx,js,jsx,json,jsonc,css,html}": [
-			"biome check --write --config-path ./biome.jsonc"
+			"biome check --write --error-on-warnings --config-path ./biome.jsonc"
 		]
 	},
 	"commitlint": {
