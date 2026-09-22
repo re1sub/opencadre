@@ -67,7 +67,7 @@ patch(
 );
 patch(
 	"src-tauri/Cargo.lock",
-	(c) => c.includes(tomlVersion),
+	(c) => c.includes(`name = "opencadre"\nversion = "${plainVersion}"`),
 	(c) =>
 		c.replace(
 			/(name = "opencadre"\n)(version = ")[^"]+(")/,
