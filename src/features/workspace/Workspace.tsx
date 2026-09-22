@@ -1,13 +1,6 @@
 import type WaPage from "@awesome.me/webawesome/dist/components/page/page.js";
 import { useNavigate } from "@solidjs/router";
-import {
-	createEffect,
-	createSignal,
-	For,
-	onCleanup,
-	onMount,
-	Show,
-} from "solid-js";
+import { createEffect, createSignal, onCleanup, onMount, Show } from "solid-js";
 import { useAuth } from "#/features/auth/AuthContext";
 import ConfirmDialog from "#/features/ui/ConfirmDialog";
 import EditableText from "#/features/ui/EditableText";
@@ -18,9 +11,7 @@ import LoadingSpinner from "../ui/LoadingSpinner";
 import CreateWorkspace from "./components/CreateWorkspace";
 import { card } from "./components/createWorkspace.css";
 import NewWorkspaceDialog from "./components/NewWorkspaceDialog";
-import NotificationsPanel from "./components/NotificationsPanel";
 import PageDetailsDrawer from "./components/PageDetailsDrawer";
-import PageDetailsTrigger from "./components/PageDetailsTrigger";
 import PageView from "./components/PageView";
 import TrashDialog from "./components/TrashDialog";
 import WorkspaceFooter from "./components/WorkspaceFooter";

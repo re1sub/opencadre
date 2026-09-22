@@ -1,7 +1,7 @@
 import { createSignal, For, Show } from "solid-js";
 import { useAuth } from "#/features/auth/AuthContext";
 import ConfirmDialog from "#/features/ui/ConfirmDialog";
-import { dropdownItemValue, getInitials } from "#/utils/misc";
+import { dropdownItemValue } from "#/utils/misc";
 import { emailPrefix } from "#/utils/string";
 import { supabase } from "#/utils/supabase";
 import { type ThemePreference, useTheme } from "#theme/ThemeProvider";
