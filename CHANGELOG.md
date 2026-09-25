@@ -1,3 +1,10 @@
+## [1.3.1](https://github.com/re1sub/opencadre/compare/v1.3.0...v1.3.1) (2026-09-25)
+
+
+### Bug Fixes
+
+* **scripts:** handle CRLF line endings in Cargo.lock version sync ([8a3da19](https://github.com/re1sub/opencadre/commit/8a3da19058e876e9b4b3a293852a66b81929c4a9))
+
 # [1.3.0](https://github.com/re1sub/opencadre/compare/v1.2.0...v1.3.0) (2026-09-22)
 
 
