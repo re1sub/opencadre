@@ -1,3 +1,17 @@
+# [1.4.0](https://github.com/re1sub/opencadre/compare/v1.3.1...v1.4.0) (2026-10-02)
+
+
+### Bug Fixes
+
+* **kanban:** make board height header-aware and restore stable column scrollbars ([c030ce2](https://github.com/re1sub/opencadre/commit/c030ce26ebef8867926ec6b76ce3712013fe0997))
+* **security:** unblock realtime and icons, harden CSP headers ([0a4d577](https://github.com/re1sub/opencadre/commit/0a4d577152e444b9588bd7e77a00d690abbeb407))
+
+
+### Features
+
+* **ui:** map vertical wheel to horizontal scroll on board, table and home grids ([003f5ab](https://github.com/re1sub/opencadre/commit/003f5abcab0bb64a2ab4c2b798d9c1b1c21950d7))
+* **utils:** add useHorizontalWheelScroll hook for wheel-driven horizontal scrolling ([1b9f0cd](https://github.com/re1sub/opencadre/commit/1b9f0cd0cac0adf82ae9da0ce68daed289e6b994))
+
 ## [1.3.1](https://github.com/re1sub/opencadre/compare/v1.3.0...v1.3.1) (2026-09-25)
 
 
