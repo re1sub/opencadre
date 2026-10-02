@@ -74,7 +74,12 @@ const WorkspaceHeader = (props: WorkspaceHeaderProps) => {
 							)}
 						</For>
 
-						<wa-dropdown-item value="__add__">
+						<wa-dropdown-item
+							value="__add__"
+							style={{
+								padding: "var(--wa-space-m)",
+							}}
+						>
 							<wa-icon slot="icon" name="plus"></wa-icon>
 							New workspace
 						</wa-dropdown-item>

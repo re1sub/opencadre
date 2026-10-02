@@ -67,7 +67,7 @@ const TagPicker = (props: TagPickerProps) => {
 				});
 
 				return (
-					<>
+					<div style={{ padding: "var(--wa-space-xs)" }}>
 						<div>
 							<Show
 								when={availableTags().length}
@@ -78,6 +78,7 @@ const TagPicker = (props: TagPickerProps) => {
 										display: "flex",
 										"flex-wrap": "wrap",
 										gap: "var(--wa-space-xs)",
+										padding: "var(--wa-space-xs)",
 									}}
 								>
 									<For each={availableTags()}>
@@ -116,6 +117,9 @@ const TagPicker = (props: TagPickerProps) => {
 										appearance="plain"
 										size="s"
 										onClick={() => setCreating(true)}
+										style={{
+											width: "100%",
+										}}
 									>
 										<wa-icon name="plus" label="New tag"></wa-icon>
 										<span>New tag</span>
@@ -172,7 +176,7 @@ const TagPicker = (props: TagPickerProps) => {
 								</div>
 							</Show>
 						</div>
-					</>
+					</div>
 				);
 			}}
 		/>

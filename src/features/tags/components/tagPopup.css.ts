@@ -3,8 +3,8 @@ import { style } from "@vanilla-extract/css";
 export const popupPanel = style({
 	display: "flex",
 	flexDirection: "column",
-	gap: "var(--wa-space-m)",
-	padding: "var(--wa-space-xs)",
+	gap: "0",
+	padding: "0",
 	border:
 		"var(--wa-border-style) var(--wa-border-width-s) var(--wa-color-surface-border)",
 	borderRadius: "var(--wa-border-radius-m)",
