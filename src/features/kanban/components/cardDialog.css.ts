@@ -29,8 +29,8 @@ export const dialogContainer = style({
 export const editCardDialog = style({
 	selectors: {
 		"&::part(dialog)": {
-			marginLeft: "15%",
-			marginRight: "15%",
+			marginLeft: "10%",
+			marginRight: "10%",
 		},
 	},
 });
