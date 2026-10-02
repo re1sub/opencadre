@@ -86,7 +86,7 @@ const MarkdownView = (props: MarkdownViewProps) => {
 								<wa-avatar
 									initials={initials}
 									label={`Avatar with initials: ${initials}`}
-									style={{ "--size": "24px" }}
+									style={{ "--size": "25px" }}
 								></wa-avatar>
 								<span>{name}</span>
 							</div>

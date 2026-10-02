@@ -31,7 +31,7 @@ const MemberChips = (props: MemberChipsProps) => {
 								initials={getInitials(member().name)}
 								label={`Avatar with initials: ${getInitials(member().name)}`}
 								style={{
-									"--size": "20px",
+									"--size": "25px",
 									"background-color":
 										member().color ?? "var(--wa-color-neutral-400)",
 									color: "var(--wa-color-text-normal)",

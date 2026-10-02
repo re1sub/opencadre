@@ -135,7 +135,7 @@ const SortableCard = (props: SortableCardProps) => {
 									label={member.name}
 									class={styles.cardAvatar}
 									style={{
-										"--size": "26px",
+										"--size": "25px",
 										color: "#fff",
 									}}
 								></wa-avatar>
