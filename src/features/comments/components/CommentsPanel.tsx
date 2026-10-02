@@ -171,16 +171,20 @@ const CommentsPanel = (props: CommentsPanelProps) => {
 										gap: "var(--wa-space-s)",
 									}}
 								>
-									<wa-avatar
-										initials={initials()}
-										label={`Avatar with initials: ${initials()}`}
-										style={{ "--size": "40px" }}
-									></wa-avatar>
 									<div class={styles.commentBubble}>
 										<div class={styles.commentMeta}>
 											<div
-												style={{ display: "flex", gap: "var(--wa-space-s)" }}
+												style={{
+													display: "flex",
+													gap: "var(--wa-space-s)",
+													"align-items": "center",
+												}}
 											>
+												<wa-avatar
+													initials={initials()}
+													label={`Avatar with initials: ${initials()}`}
+													style={{ "--size": "25px" }}
+												></wa-avatar>
 												<span
 													style={{
 														"font-weight": 600,
@@ -287,7 +291,7 @@ const CommentsPanel = (props: CommentsPanelProps) => {
 																					<wa-avatar
 																						initials={initials}
 																						label={`Avatar with initials: ${initials}`}
-																						style={{ "--size": "24px" }}
+																						style={{ "--size": "25px" }}
 																					></wa-avatar>
 																					<span>{name}</span>
 																				</div>

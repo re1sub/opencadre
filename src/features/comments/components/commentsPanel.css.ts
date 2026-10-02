@@ -37,13 +37,12 @@ export const commentsFeed = style({
 	gap: "var(--wa-space-s)",
 	overflowY: "auto",
 	flex: 1,
-	paddingTop: "var(--wa-space-xs)",
+	padding: "var(--wa-space-xs)",
 });
 
 export const commentBubble = style({
 	flex: 1,
 	backgroundColor: "var(--wa-color-surface-default)",
-	padding: "var(--wa-space-s)",
 	borderRadius: "var(--wa-border-radius-m)",
 	border: "1px solid var(--wa-color-surface-border)",
 	position: "relative",
@@ -53,12 +52,13 @@ export const commentMeta = style({
 	display: "flex",
 	justifyContent: "space-between",
 	fontSize: "0.75rem",
-	marginBottom: "0.25rem",
+	padding: "var(--wa-space-xs)",
+	backgroundColor: "var(--wa-color-fill-quiet)",
 });
 
 export const commentText = style({
 	fontSize: "0.85rem",
 	color: "var(--wa-color-text-normal)",
 	lineHeight: 1.4,
-	marginTop: "var(--wa-space-m)",
+	padding: "var(--wa-space-m)",
 });
