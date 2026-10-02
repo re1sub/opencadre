@@ -2,12 +2,7 @@ import { createEffect, For, Show } from "solid-js";
 import type { WorkspaceMember } from "#/features/workspace/types";
 import { getInitials } from "#/utils/misc";
 import { usePopup } from "#/utils/usePopup";
-import {
-	memberLabel,
-	memberRow,
-	memberRowSelected,
-	popupPanel,
-} from "./mentionPopup.css";
+import { memberLabel, popupPanel } from "./mentionPopup.css";
 
 interface MentionPopupProps {
 	open: () => boolean;
@@ -93,28 +88,26 @@ const MentionPopup = (props: MentionPopupProps) => {
 					}
 				>
 					<For each={props.members}>
-						{(member, index) => (
-							<button
+						{(member) => (
+							<wa-button
 								type="button"
-								classList={{
-									[memberRow]: true,
-									[memberRowSelected]: index() === props.selectedIndex(),
-								}}
 								onMouseDown={(e) => e.preventDefault()}
 								onClick={() => props.onSelect(member)}
+								variant="neutral"
+								appearance="plain"
 							>
 								<wa-avatar
 									initials={getInitials(member.name)}
 									label={member.name}
 									style={{
-										"--size": "24px",
+										"--size": "25px",
 										"background-color":
 											member.color ?? "var(--wa-color-neutral-400)",
 										color: "var(--wa-color-text-normal)",
 									}}
 								></wa-avatar>
 								<span class={memberLabel}>{member.name}</span>
-							</button>
+							</wa-button>
 						)}
 					</For>
 				</Show>

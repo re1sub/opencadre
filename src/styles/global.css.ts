@@ -134,3 +134,7 @@ globalStyle("wa-tooltip, wa-copy-button::part(feedback)", {
 			"color-mix(in srgb, var(--wa-color-text-quiet) 30%, transparent)",
 	},
 });
+
+globalStyle("wa-popup wa-button::part(button)", {
+	justifyContent: "flex-start",
+});

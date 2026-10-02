@@ -46,29 +46,17 @@ const AssigneePicker = (props: AssigneePickerProps) => {
 						{(member) => {
 							const assigned = () => props.assigneeIds.includes(member.id);
 							return (
-								<button
+								<wa-button
 									type="button"
 									onClick={() => props.onToggle(member.id)}
-									style={{
-										display: "flex",
-										"align-items": "center",
-										gap: "var(--wa-space-xs)",
-										width: "100%",
-										background: "transparent",
-										border: "none",
-										padding: "var(--wa-space-3xs) var(--wa-space-xs)",
-										"border-radius": "var(--wa-border-radius-s)",
-										cursor: "pointer",
-										color: "inherit",
-										font: "inherit",
-										"text-align": "left",
-									}}
+									variant="neutral"
+									appearance="plain"
 								>
 									<wa-avatar
 										initials={getInitials(member.name)}
 										label={member.name}
 										style={{
-											"--size": "24px",
+											"--size": "25px",
 											"background-color":
 												member.color ?? "var(--wa-color-neutral-400)",
 											color: "var(--wa-color-text-normal)",
@@ -91,7 +79,7 @@ const AssigneePicker = (props: AssigneePickerProps) => {
 											label={`${member.name} assigned`}
 										></wa-icon>
 									</Show>
-								</button>
+								</wa-button>
 							);
 						}}
 					</For>
