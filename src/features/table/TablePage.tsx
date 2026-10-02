@@ -32,6 +32,7 @@ import ConfirmDialog from "#/features/ui/ConfirmDialog";
 import { useTheme } from "#/theme/ThemeProvider";
 import { useDebouncedPush } from "#/utils/realtime/useDebouncedPush";
 import { toSlug } from "#/utils/string";
+import { useHorizontalWheelScroll } from "#/utils/useHorizontalWheelScroll";
 import type { YjsUpdateOrigin } from "#/utils/yjs/types";
 import { useYjsDoc } from "#/utils/yjs/useYjsDoc";
 import { initTableDoc, mutateTableDoc, parseTableDoc } from "./hooks/tableYjs";
@@ -84,6 +85,20 @@ const TablePage = (props: TablePageProps) => {
 	let fileInputRef!: HTMLInputElement;
 
 	let tableApi: TableAPI<GridRow> | undefined;
+
+	const resolveTableScroller = (host: HTMLElement) => {
+		const panes = host.querySelectorAll<HTMLElement>(
+			".st-body-main, .st-header-main, .st-horizontal-scrollbar-middle",
+		);
+
+		for (const pane of panes) {
+			if (pane.scrollWidth - pane.clientWidth > 1) return pane;
+		}
+
+		return null;
+	};
+
+	useHorizontalWheelScroll(() => containerRef, resolveTableScroller);
 
 	createEffect(() => {
 		setPush(() => {

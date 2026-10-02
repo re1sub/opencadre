@@ -27,6 +27,7 @@ export const actionGrid = style({
 	width: "min(100%, 600px)",
 	overflowX: "auto",
 	overflowY: "hidden",
+	overscrollBehaviorX: "contain",
 	paddingBottom: "var(--wa-space-s)",
 	scrollSnapType: "x mandatory",
 });

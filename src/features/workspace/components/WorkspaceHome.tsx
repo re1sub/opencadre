@@ -1,5 +1,6 @@
 import { For, Show } from "solid-js";
 import ActionCard from "#/features/ui/ActionCard";
+import { useHorizontalWheelScroll } from "#/utils/useHorizontalWheelScroll";
 import { PAGE_TEMPLATES } from "../constants/templates";
 import { PAGE_KIND_META, type Page, type PageKind } from "../types";
 import {
@@ -24,6 +25,14 @@ const WorkspaceHome = (props: WorkspaceHomeProps) => {
 	const showRecent = () => props.recentPages.length > 0;
 	const listToShow = () => (showRecent() ? props.recentPages : props.pages);
 
+	let recentGrid: HTMLDivElement | undefined;
+	let quickActionsGrid: HTMLDivElement | undefined;
+	let templatesGrid: HTMLDivElement | undefined;
+
+	useHorizontalWheelScroll(() => recentGrid);
+	useHorizontalWheelScroll(() => quickActionsGrid);
+	useHorizontalWheelScroll(() => templatesGrid);
+
 	return (
 		<div class={wrapper}>
 			<div>
@@ -38,7 +47,7 @@ const WorkspaceHome = (props: WorkspaceHomeProps) => {
 				<section>
 					<h4>{showRecent() ? "Recently visited" : "All pages"}</h4>
 
-					<div class={actionGrid}>
+					<div class={actionGrid} ref={recentGrid}>
 						<For each={listToShow()}>
 							{(page) => (
 								<ActionCard
@@ -57,7 +66,7 @@ const WorkspaceHome = (props: WorkspaceHomeProps) => {
 			<section>
 				<h4>Quick actions</h4>
 
-				<div class={actionGrid}>
+				<div class={actionGrid} ref={quickActionsGrid}>
 					<For each={Object.entries(PAGE_KIND_META)}>
 						{([kind, meta]) => (
 							<ActionCard
@@ -75,7 +84,7 @@ const WorkspaceHome = (props: WorkspaceHomeProps) => {
 			<section>
 				<h4>Templates</h4>
 
-				<div class={actionGrid}>
+				<div class={actionGrid} ref={templatesGrid}>
 					<For each={PAGE_TEMPLATES}>
 						{(template) => (
 							<ActionCard
