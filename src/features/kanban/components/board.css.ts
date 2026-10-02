@@ -4,8 +4,8 @@ export const board = style({
 	display: "flex",
 	flexDirection: "column",
 	gap: "var(--wa-space-m)",
-	height: "calc(100dvh - 170px)",
-	minHeight: 480,
+	height: "calc(100dvh - var(--main-header-height, 44px) - var(--wa-space-m))",
+	minHeight: "320px",
 });
 
 export const boardHeader = style({
@@ -32,7 +32,8 @@ export const columnsTrack = style({
 	alignItems: "flex-start",
 	gap: "var(--wa-space-xs)",
 	overflowX: "auto",
-	minHeight: "80dvh",
+	overscrollBehaviorX: "contain",
+	minHeight: 0,
 	paddingBottom: "var(--wa-space-m)",
 	"@media": {
 		"(max-width: 480px)": {
@@ -166,11 +167,18 @@ export const columnCards = style({
 	display: "flex",
 	flexDirection: "column",
 	gap: "var(--wa-space-xs)",
-	padding: "0 var(--wa-space-m)",
+	padding: "0",
 	overflowY: "auto",
 	overflowX: "hidden",
-	scrollbarWidth: "none",
+	scrollbarGutter: "stable both-edges",
+	scrollbarColor:
+		"color-mix(in srgb, var(--column-accent) 45%, transparent) transparent",
 	flexGrow: 1,
+	"@media": {
+		"(max-width: 767px)": {
+			padding: "0 var(--wa-space-m)",
+		},
+	},
 });
 
 export const card = style({
