@@ -183,7 +183,7 @@ const DownloadApp = () => {
 											>
 												{primary().icon}
 											</span>
-											{primary().label} {release()?.version ?? ""}
+											{primary().label}
 										</wa-button>
 
 										<wa-dropdown
@@ -218,7 +218,7 @@ const DownloadApp = () => {
 														>
 															{d.icon}
 														</span>
-														{d.label} {release()?.version ?? ""}
+														{d.label}
 													</wa-dropdown-item>
 												)}
 											</For>
@@ -228,7 +228,8 @@ const DownloadApp = () => {
 							</Show>
 						</Show>
 						<small style={{ "text-transform": "capitalize" }}>
-							<b>Detected OS:</b> {platform}
+							<b>Detected OS:</b> {platform} <br />
+							<b>Latest version:</b> {release()?.version ?? ""}
 						</small>
 						<Show when={platform === "mac"}>
 							<small style={{ "margin-top": "0.5rem", display: "block" }}>
