@@ -5,7 +5,6 @@ import {
 } from "@tanstack/ai-solid";
 import { createSignal } from "solid-js";
 import type { EntityContext } from "#/types/ai";
-import { uid } from "#/utils/misc";
 import { supabase } from "#/utils/supabase";
 
 const EDGE_FUNCTION_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-generate`;
@@ -20,14 +19,12 @@ export interface AiChatOptions {
 }
 
 export function useAiChat(options: AiChatOptions = {}) {
-	const runId = uid();
 	const [lastPrompt, setLastPrompt] = createSignal("");
 
 	const chat = useChat({
 		connection: fetchServerSentEvents(EDGE_FUNCTION_URL, async () => ({
 			headers: {
 				Authorization: `Bearer ${await getSessionToken()}`,
-				"x-run-id": runId,
 			},
 		})),
 		onFinish: async (message: UIMessage) => {

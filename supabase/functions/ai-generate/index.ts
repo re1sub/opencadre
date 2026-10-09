@@ -18,38 +18,48 @@ CRITICAL INSTRUCTIONS:
 
 const MODEL = "openai/gpt-4o-mini";
 
+const CORS_HEADERS = {
+	"Access-Control-Allow-Origin": "*",
+	"Access-Control-Allow-Headers":
+		"authorization, x-client-info, apikey, content-type, x-retry-count, traceparent, tracestate, baggage, x-run-id",
+	"Access-Control-Allow-Methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+};
+
 export default {
-	fetch: withSupabase({ auth: "user" }, async (req, _ctx) => {
-		const apiKey = Deno.env.get("OPENROUTER_API_KEY");
-		if (!apiKey) {
-			return Response.json(
-				{ error: "Missing OpenRouter API key" },
-				{ status: 500 },
-			);
-		}
+	fetch: withSupabase(
+		{ auth: "user", cors: { headers: CORS_HEADERS } },
+		async (req, _ctx) => {
+			const apiKey = Deno.env.get("OPENROUTER_API_KEY");
+			if (!apiKey) {
+				return Response.json(
+					{ error: "Missing OpenRouter API key" },
+					{ status: 500 },
+				);
+			}
 
-		const params = await chatParamsFromRequest(req);
+			const params = await chatParamsFromRequest(req);
 
-		const stream = chat({
-			adapter: createOpenRouterText(MODEL, apiKey, {
-				appTitle: "OpenCadre",
-			}),
-			messages: [
-				{
-					id: crypto.randomUUID(),
-					role: "system",
-					parts: [{ type: "text", content: SYSTEM_PROMPT }],
-				},
-				...params.messages,
-			],
-			modelOptions: { maxCompletionTokens: 2000 },
-		});
+			const stream = chat({
+				adapter: createOpenRouterText(MODEL, apiKey, {
+					appTitle: "OpenCadre",
+				}),
+				messages: [
+					{
+						id: crypto.randomUUID(),
+						role: "system",
+						parts: [{ type: "text", content: SYSTEM_PROMPT }],
+					},
+					...params.messages,
+				],
+				modelOptions: { maxCompletionTokens: 2000 },
+			});
 
-		const res = toServerSentEventsResponse(stream);
-		return new Response(res.body, {
-			status: res.status,
-			statusText: res.statusText,
-			headers: res.headers,
-		});
-	}),
+			const res = toServerSentEventsResponse(stream);
+			return new Response(res.body, {
+				status: res.status,
+				statusText: res.statusText,
+				headers: res.headers,
+			});
+		},
+	),
 };
