@@ -1,3 +1,13 @@
+## [1.4.1](https://github.com/re1sub/opencadre/compare/v1.4.0...v1.4.1) (2026-10-09)
+
+
+### Bug Fixes
+
+* **ai:** restore CORS headers for ai-generate edge function ([92491cd](https://github.com/re1sub/opencadre/commit/92491cd156cd95d7b6794736a8c432bd8bf30de0))
+* **csp:** disable Zod JIT to avoid runtime eval ([453ea75](https://github.com/re1sub/opencadre/commit/453ea7544f0d650c28369b3307f6487fb5316ee5))
+* **csp:** restrict font-src to 'self' ([229198d](https://github.com/re1sub/opencadre/commit/229198d9a088e2fb75fc013656a11c16b1d011c6))
+* **csp:** restrict font-src to 'self' ([eebf095](https://github.com/re1sub/opencadre/commit/eebf0957d07ac32aa9e7ee0691c6cc7dcc737944))
+
 # [1.4.0](https://github.com/re1sub/opencadre/compare/v1.3.1...v1.4.0) (2026-10-02)
 
 
