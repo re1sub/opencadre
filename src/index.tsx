@@ -1,6 +1,7 @@
 /* @refresh reload */
 
 import { render } from "solid-js/web";
+import { z } from "zod";
 import "solid-devtools";
 import "#/webawesome.imports";
 import "#styles/webawesome.css";
@@ -9,6 +10,8 @@ import "#styles/global.css";
 import { AuthProvider } from "#/features/auth/AuthContext";
 import ThemeProvider from "#/theme/ThemeProvider";
 import App from "./App";
+
+z.config({ jitless: true });
 
 const root = document.getElementById("root");
 
