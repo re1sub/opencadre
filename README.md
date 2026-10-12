@@ -1,8 +1,12 @@
-# OpenCadre
+<p align="center">
+  <img src="public/brand/favicon.svg" alt="Logo" width="128" height="128">
+</p>
 
-Boards, notes, and tasks. Organized.
+<h1 align="center">OpenCadre</h1>
 
-A flexible, real-time, collaborative, and AI-powered workspace built with SolidJS for organizing ideas, projects, and knowledge.
+<p align="center">
+  <strong>A flexible, real-time, collaborative, and AI-powered workspace built with SolidJS for organizing ideas, projects, and knowledge.</strong>
+</p>
 
 OpenCadre lets you create pages that adapt to the way you work. Write documents in Markdown, manage projects with Kanban boards, and build your own systems using simple, composable blocks.
 

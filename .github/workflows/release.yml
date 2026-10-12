@@ -214,3 +214,4 @@ jobs:
           releaseDraft: false
           prerelease: false
           mobile: android
+          args: '--apk'
