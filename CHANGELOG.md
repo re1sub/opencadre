@@ -1,3 +1,10 @@
+## [1.5.1](https://github.com/re1sub/opencadre/compare/v1.5.0...v1.5.1) (2026-10-12)
+
+
+### Bug Fixes
+
+* renegerate tauri icons correctly ([938c330](https://github.com/re1sub/opencadre/commit/938c330bccebba764678c9f3faf8d43af9f21a26))
+
 # [1.5.0](https://github.com/re1sub/opencadre/compare/v1.4.1...v1.5.0) (2026-10-12)
 
 
