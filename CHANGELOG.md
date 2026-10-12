@@ -1,3 +1,10 @@
+# [1.5.0](https://github.com/re1sub/opencadre/compare/v1.4.1...v1.5.0) (2026-10-12)
+
+
+### Features
+
+* replace app icon / logo ([f67b09c](https://github.com/re1sub/opencadre/commit/f67b09c19b6ddadaca5f83bd26a276c16a72bdcc))
+
 ## [1.4.1](https://github.com/re1sub/opencadre/compare/v1.4.0...v1.4.1) (2026-10-09)
 
 
