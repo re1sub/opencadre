@@ -1,3 +1,18 @@
+# [1.6.0](https://github.com/re1sub/opencadre/compare/v1.5.1...v1.6.0) (2026-10-16)
+
+
+### Bug Fixes
+
+* **icons:** regenerate app icons from manifest ([0b4830e](https://github.com/re1sub/opencadre/commit/0b4830e251b7e489232bc320fb6103ae50c8f969))
+* **workspace:** only snap home action grids on small screens ([69cfafe](https://github.com/re1sub/opencadre/commit/69cfafe15fa1bcdae468b2d52ae76f80714c44c9))
+* **workspace:** style add-page button and separate home button border ([69bd822](https://github.com/re1sub/opencadre/commit/69bd822694f922abcf2aa47d527616430803115c))
+
+
+### Features
+
+* **brand:** add 1024px logo and Android icon sources with icon manifest ([7ccdcf8](https://github.com/re1sub/opencadre/commit/7ccdcf883a4ad4699be77f4df6f38b111a4213f5))
+* **brand:** refresh web favicons and web app manifest ([adc10b2](https://github.com/re1sub/opencadre/commit/adc10b23b33c54d1fb163a4fb00f39e1dd99c87f))
+
 ## [1.5.1](https://github.com/re1sub/opencadre/compare/v1.5.0...v1.5.1) (2026-10-12)
 
 
