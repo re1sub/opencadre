@@ -1,7 +1,7 @@
 import { For } from "solid-js";
 import { dropdownItemValue } from "#/utils/misc";
 import { PAGE_KIND_META, type PageKind } from "../types";
-import { addPageGroup } from "./workspace.css";
+import { addPageGroup, pageButton } from "./workspace.css";
 
 interface AddPageButtonProps {
 	onAddPage: (kind: PageKind) => void;
@@ -27,7 +27,10 @@ const AddPageButton = (props: AddPageButtonProps) => {
 				appearance="plain"
 				onClick={() => props.onAddPage(defaultKind())}
 				title={`Add ${PAGE_KIND_META[defaultKind()].label}`}
-				style={{ width: "100%" }}
+				style={{
+					width: "100%",
+				}}
+				class={pageButton}
 			>
 				<wa-icon slot="start" name="plus" label="Add page"></wa-icon>
 				Add Page

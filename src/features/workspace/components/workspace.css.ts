@@ -30,6 +30,7 @@ export const sidebar = style({
 });
 
 export const homeButton = style({
+	borderBottom: "var(--wa-border-width-s) solid var(--wa-color-surface-border)",
 	selectors: {
 		"&::part(button)": {
 			justifyContent: "flex-start",
