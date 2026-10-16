@@ -1,0 +1,7 @@
+{
+	"default": "../src/assets/img/brand/logo.svg",
+	"bg_color": "#9097e2",
+	"android_bg": "../src/assets/img/brand/android-bg.svg",
+	"android_fg": "../src/assets/img/brand/android-fg.svg",
+	"android_monochrome": "../src/assets/img/brand/android-mono.svg"
+}
