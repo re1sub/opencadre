@@ -1,9 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
-  <path
-    d="M46 19H23a6 6 0 0 0-6 6v20h23a6 6 0 0 0 6-6v-8"
-    fill="none"
-    stroke="white"
-    stroke-width="6"
-    stroke-linecap="round"
-    stroke-linejoin="round"/>
-</svg>

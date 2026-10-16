@@ -1,10 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
-  <rect width="64" height="64" rx="12" fill="#9097e2"/>
-  <path
-    d="M46 19H23a6 6 0 0 0-6 6v20h23a6 6 0 0 0 6-6v-8"
-    fill="none"
-    stroke="white"
-    stroke-width="6"
-    stroke-linecap="round"
-    stroke-linejoin="round"/>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024"><title>OpenCadre</title><rect x="0" y="0" width="1024" height="1024" rx="192" fill="#9097e2"></rect><path d="M736 304H368a96 96 0 0 0-96 96v320h368a96 96 0 0 0 96-96v-128" fill="none" stroke="#ffffff" stroke-width="96" stroke-linecap="round" stroke-linejoin="round"></path></svg>
