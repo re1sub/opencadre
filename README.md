@@ -236,18 +236,28 @@ The Android build uses Gradle/AGP, which requires a compatible JDK. The bundled 
     pnpm tauri android dev
     ```
 
-### Linux AppImage Build
-
-AppImage bundling fails on modern Arch due to `linuxdeploy` incompatibilities with newer ELF formats. Bypass symbol stripping to resolve:
-
-```bash
-NO_STRIP=true pnpm tauri build
-```
-
 ### Icon Management
 
-Generate icons with `pnpm tauri icon <source-svg> --ios-color "#9097e2"`.
-The color is the brand color.
+Icons are generated from a single manifest at `src-tauri/icon-manifest.json`
+(kept out of `src-tauri/icons/`, which is the CLI's generated-output directory):
+
+```bash
+pnpm tauri icon src-tauri/icon-manifest.json
+```
+
+The manifest points at the brand sources in `src/assets/img/brand/`:
+
+| Source             | Purpose                                                        |
+| ------------------ | -------------------------------------------------------------- |
+| `logo.svg`         | Default icon (desktop + iOS); `bg_color` is the iOS background. |
+| `android-fg.svg`   | Android adaptive foreground (glyph only, padded for safe zone). |
+| `android-bg.svg`   | Android adaptive background (solid brand color `#9097e2`).      |
+| `android-mono.svg` | Android 13+ themed (monochrome) icon.                           |
+
+Android adaptive padding comes from the `scale(...)` in the group transform of
+`android-fg.svg` (currently `0.75`) and `android-mono.svg`; tune it and re-run.
+`android_fg_scale` is deliberately unset: it only affects the legacy raster
+`ic_launcher.png`, not the adaptive icon.
 
 ## Scripts
 
