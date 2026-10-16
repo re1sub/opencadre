@@ -29,7 +29,11 @@ export const actionGrid = style({
 	overflowY: "hidden",
 	overscrollBehaviorX: "contain",
 	paddingBottom: "var(--wa-space-s)",
-	scrollSnapType: "x mandatory",
+	"@media": {
+		"(max-width: 480px)": {
+			scrollSnapType: "x mandatory",
+		},
+	},
 });
 
 export const actionCard = style({
