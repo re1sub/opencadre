@@ -330,7 +330,7 @@ const TablePage = (props: TablePageProps) => {
 				}}
 				theme={theme()}
 				icons={TABLE_ICONS}
-				scrollParent={() => document.querySelector("wa-page")}
+				scrollParent="window"
 			/>
 
 			<wa-button
