@@ -32,7 +32,6 @@ import ConfirmDialog from "#/features/ui/ConfirmDialog";
 import { useTheme } from "#/theme/ThemeProvider";
 import { useDebouncedPush } from "#/utils/realtime/useDebouncedPush";
 import { toSlug } from "#/utils/string";
-import { useHorizontalWheelScroll } from "#/utils/useHorizontalWheelScroll";
 import type { YjsUpdateOrigin } from "#/utils/yjs/types";
 import { useYjsDoc } from "#/utils/yjs/useYjsDoc";
 import { initTableDoc, mutateTableDoc, parseTableDoc } from "./hooks/tableYjs";
@@ -65,6 +64,7 @@ const TablePage = (props: TablePageProps) => {
 	const [columns, setColumns] = createSignal<SolidColumnDef<GridRow>[]>([]);
 	const [rows, setRows] = createSignal<GridRow[]>([]);
 	const [selectedRows, setSelectedRows] = createSignal<Set<string>>(new Set());
+	const [isLoading, setIsLoading] = createSignal(true);
 
 	const yjs = useYjsDoc({
 		entityType: () => "table",
@@ -85,20 +85,6 @@ const TablePage = (props: TablePageProps) => {
 	let fileInputRef!: HTMLInputElement;
 
 	let tableApi: TableAPI<GridRow> | undefined;
-
-	const resolveTableScroller = (host: HTMLElement) => {
-		const panes = host.querySelectorAll<HTMLElement>(
-			".st-body-main, .st-header-main, .st-horizontal-scrollbar-middle",
-		);
-
-		for (const pane of panes) {
-			if (pane.scrollWidth - pane.clientWidth > 1) return pane;
-		}
-
-		return null;
-	};
-
-	useHorizontalWheelScroll(() => containerRef, resolveTableScroller);
 
 	createEffect(() => {
 		setPush(() => {
@@ -253,6 +239,7 @@ const TablePage = (props: TablePageProps) => {
 		}
 
 		syncLocal();
+		setIsLoading(false);
 
 		onCleanup(() => {
 			ydoc.off("update", updateHandler);
@@ -278,6 +265,7 @@ const TablePage = (props: TablePageProps) => {
 				ref={(api) => (tableApi = api)}
 				columns={finalColumns()}
 				rows={rows()}
+				isLoading={isLoading()}
 				rowsPerPage={8}
 				customTheme={{
 					rowHeight: 38,
@@ -342,7 +330,7 @@ const TablePage = (props: TablePageProps) => {
 				}}
 				theme={theme()}
 				icons={TABLE_ICONS}
-				scrollParent={() => document.querySelector("wa-page")}
+				scrollParent="window"
 			/>
 
 			<wa-button

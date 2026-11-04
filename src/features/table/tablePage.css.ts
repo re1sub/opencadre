@@ -169,3 +169,8 @@ globalStyle(
 		backgroundColor: "var(--st-hover-row-background-color)",
 	},
 );
+
+globalStyle(".st-checkbox-label", {
+	padding: "15px",
+	transform: "translateX(-10px)",
+});
