@@ -1,6 +1,5 @@
 import { For, Show } from "solid-js";
 import ActionCard from "#/features/ui/ActionCard";
-import { useHorizontalWheelScroll } from "#/utils/useHorizontalWheelScroll";
 import { PAGE_TEMPLATES } from "../constants/templates";
 import { PAGE_KIND_META, type Page, type PageKind } from "../types";
 import {
@@ -28,10 +27,6 @@ const WorkspaceHome = (props: WorkspaceHomeProps) => {
 	let recentGrid: HTMLDivElement | undefined;
 	let quickActionsGrid: HTMLDivElement | undefined;
 	let templatesGrid: HTMLDivElement | undefined;
-
-	useHorizontalWheelScroll(() => recentGrid);
-	useHorizontalWheelScroll(() => quickActionsGrid);
-	useHorizontalWheelScroll(() => templatesGrid);
 
 	return (
 		<div class={wrapper}>

@@ -4,7 +4,6 @@ import { createEffect, For, Show } from "solid-js";
 import { useWorkspaceTagsAdapter } from "#/features/tags/hooks/useWorkspaceTagsAdapter";
 import ConfirmDialog from "#/features/ui/ConfirmDialog";
 import { useWorkspaceMembersAdapter } from "#/features/workspace/hooks/useWorkspaceMembersAdapter";
-import { useHorizontalWheelScroll } from "#/utils/useHorizontalWheelScroll";
 import BoardColumn from "./components/BoardColumn";
 import * as styles from "./components/board.css";
 import CardDialog from "./components/CardDialog";
@@ -41,7 +40,6 @@ const KanbanBoard = (props: KanbanBoardProps) => {
 	let openedCardParam: string | undefined;
 
 	let columnsTrackEl: HTMLDivElement | undefined;
-	useHorizontalWheelScroll(() => columnsTrackEl);
 
 	createEffect(() => {
 		const cardId = searchParams.c;
