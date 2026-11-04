@@ -1,3 +1,16 @@
+# [1.7.0](https://github.com/re1sub/opencadre/compare/v1.6.0...v1.7.0) (2026-11-04)
+
+
+### Bug Fixes
+
+* **TablePage:** virtualisation not working, not loading more rows ([0beabbb](https://github.com/re1sub/opencadre/commit/0beabbb9fff67386913f6faa9a40f51cc0de1804))
+
+
+### Features
+
+* **TablePage:** add loading state and skeletons ([01e870d](https://github.com/re1sub/opencadre/commit/01e870dc0a3c95753a0ec37cffce3469acae473e))
+* **TablePage:** make checkbox cell easier to click ([a06c79f](https://github.com/re1sub/opencadre/commit/a06c79fe60a003e020f2fc301c637e1fa61a215a))
+
 # [1.6.0](https://github.com/re1sub/opencadre/compare/v1.5.1...v1.6.0) (2026-10-16)
 
 
