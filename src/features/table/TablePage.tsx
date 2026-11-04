@@ -64,6 +64,7 @@ const TablePage = (props: TablePageProps) => {
 	const [columns, setColumns] = createSignal<SolidColumnDef<GridRow>[]>([]);
 	const [rows, setRows] = createSignal<GridRow[]>([]);
 	const [selectedRows, setSelectedRows] = createSignal<Set<string>>(new Set());
+	const [isLoading, setIsLoading] = createSignal(true);
 
 	const yjs = useYjsDoc({
 		entityType: () => "table",
@@ -238,6 +239,7 @@ const TablePage = (props: TablePageProps) => {
 		}
 
 		syncLocal();
+		setIsLoading(false);
 
 		onCleanup(() => {
 			ydoc.off("update", updateHandler);
@@ -263,6 +265,7 @@ const TablePage = (props: TablePageProps) => {
 				ref={(api) => (tableApi = api)}
 				columns={finalColumns()}
 				rows={rows()}
+				isLoading={isLoading()}
 				rowsPerPage={8}
 				customTheme={{
 					rowHeight: 38,
