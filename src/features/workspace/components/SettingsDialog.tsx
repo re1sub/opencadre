@@ -8,6 +8,7 @@ import SettingsGeneralSection from "./SettingsGeneralSection";
 import SettingsKeyboardSection from "./SettingsKeyboardSection";
 import SettingsMembersSection from "./SettingsMembersSection";
 import SettingsNotificationsSection from "./SettingsNotificationsSection";
+import SettingsSecuritySection from "./SettingsSecuritySection";
 import SettingsWorkspaceSection from "./SettingsWorkspaceSection";
 import {
 	settingsBack,
@@ -27,6 +28,7 @@ export type SettingsSection =
 	| "members"
 	| "keyboard"
 	| "notifications"
+	| "security"
 	| "activity";
 
 interface SettingsDialogProps {
@@ -61,6 +63,7 @@ const SECTIONS: {
 	{ value: "members", label: "Members", icon: "users" },
 	{ value: "keyboard", label: "Keyboard", icon: "keyboard" },
 	{ value: "notifications", label: "Notifications", icon: "bell" },
+	{ value: "security", label: "Security", icon: "shield" },
 	{ value: "activity", label: "Activity", icon: "clock" },
 ];
 
@@ -144,7 +147,10 @@ const SettingsDialog = (props: SettingsDialogProps) => {
 					</Show>
 
 					<Show when={section() === "members"}>
-						<SettingsMembersSection workspaceId={props.workspaceId} />
+						<SettingsMembersSection
+							workspaceId={props.workspaceId}
+							workspaceName={props.workspace()?.name ?? ""}
+						/>
 					</Show>
 
 					<Show when={section() === "keyboard"}>
@@ -153,6 +159,10 @@ const SettingsDialog = (props: SettingsDialogProps) => {
 
 					<Show when={section() === "notifications"}>
 						<SettingsNotificationsSection />
+					</Show>
+
+					<Show when={section() === "security"}>
+						<SettingsSecuritySection workspaceId={props.workspaceId} />
 					</Show>
 
 					<Show when={section() === "activity"}>

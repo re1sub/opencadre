@@ -1,9 +1,12 @@
 import type { RealtimeChannel } from "@supabase/supabase-js";
 import { createEffect, createMemo, createSignal, onCleanup } from "solid-js";
 import * as Y from "yjs";
+import { reportDecryptionError } from "#/features/crypto/decryptionErrors";
+import { VaultDecryptionError } from "#/features/crypto/errors";
+import { useVault } from "#/features/crypto/VaultProvider";
+import { ydocAad } from "#/features/crypto/vault";
 import { supabase } from "#/utils/supabase";
 import { nowIso } from "../date";
-import { base64ToUint8Array, uint8ArrayToBase64 } from "./base64";
 import type { YjsUpdateOrigin } from "./types";
 
 interface UseYjsDocOptions {
@@ -14,13 +17,13 @@ interface UseYjsDocOptions {
 
 const pendingPersists = new Map<string, Promise<void>>();
 
-/**
- * Provides a synchronized Yjs document for a given entity.
- */
 export function useYjsDoc(options: UseYjsDocOptions) {
+	const vault = useVault();
+
 	const [doc, setDoc] = createSignal<Y.Doc | null>(null);
 	const [loaded, setLoaded] = createSignal(false);
 	const [isNew, setIsNew] = createSignal(false);
+	const [locked, setLocked] = createSignal(false);
 
 	const entityId = createMemo(options.entityId);
 	const entityType = createMemo(options.entityType);
@@ -30,9 +33,19 @@ export function useYjsDoc(options: UseYjsDocOptions) {
 		const type = entityType();
 		const id = entityId();
 		const wsId = workspaceId();
+		const vaultStatus = vault.status();
+		vault.epoch();
+
+		if (vaultStatus !== "unlocked") {
+			setDoc(null);
+			setLoaded(false);
+			setLocked(vaultStatus === "locked");
+		}
 
 		if (!type || !id || !wsId) return;
+		if (vaultStatus !== "unlocked") return;
 
+		const aad = ydocAad(type, id);
 		const ydoc = new Y.Doc();
 		let isDestroyed = false;
 		let timeoutId: number | undefined;
@@ -44,33 +57,47 @@ export function useYjsDoc(options: UseYjsDocOptions) {
 		});
 
 		channel.on("broadcast", { event: "update" }, (payload) => {
-			if (isDestroyed) return;
-			if (typeof payload.payload?.update === "string") {
+			const raw = payload.payload?.update;
+			if (typeof raw !== "string") return;
+
+			void (async () => {
 				try {
-					const update = base64ToUint8Array(payload.payload.update);
+					const update = await vault.openBinary(wsId, raw, aad);
+					if (!update || isDestroyed) return;
 					Y.applyUpdate(ydoc, update, "supabase-broadcast");
 				} catch (err) {
+					if (err instanceof VaultDecryptionError) {
+						reportDecryptionError(`${wsId}:ydoc:${type}:${id}`, err);
+					}
 					console.error("Failed to apply remote Yjs update", err);
 				}
-			}
+			})();
 		});
 
 		channel.subscribe();
 
 		const persistState = async () => {
 			const fullState = Y.encodeStateAsUpdate(ydoc);
-			const stateBase64 = uint8ArrayToBase64(fullState);
 
-			await supabase.from("ydocs").upsert(
+			let state: string;
+			try {
+				state = await vault.sealBinary(wsId, fullState, aad);
+			} catch (err) {
+				console.error("Skipping document persist", err);
+				return;
+			}
+
+			const { error } = await supabase.from("ydocs").upsert(
 				{
 					workspace_id: wsId,
 					entity_type: type,
 					entity_id: id,
-					state: stateBase64,
+					state,
 					updated_at: nowIso(),
 				},
 				{ onConflict: "entity_type,entity_id" },
 			);
+			if (error) throw error;
 		};
 
 		const loadInitialState = async () => {
@@ -87,41 +114,64 @@ export function useYjsDoc(options: UseYjsDocOptions) {
 			let isNewDoc = true;
 			if (data?.state) {
 				try {
-					const uint8 = base64ToUint8Array(data.state);
-					Y.applyUpdate(ydoc, uint8, "supabase-load");
+					const opened = await vault.openBinary(wsId, data.state, aad);
+					if (isDestroyed) return;
+					Y.applyUpdate(ydoc, opened, "supabase-load");
 					isNewDoc = false;
 				} catch (err) {
-					console.error(err);
-					isNewDoc = true;
+					if (err instanceof VaultDecryptionError) {
+						reportDecryptionError(`${wsId}:ydoc:${type}:${id}`, err);
+					}
+					setLocked(true);
+					setLoaded(false);
+					setDoc(null);
+					return;
 				}
 			}
 
 			if (!isDestroyed) {
+				setLocked(false);
 				setIsNew(isNewDoc);
 				setDoc(ydoc);
 				setLoaded(true);
 			}
 		};
 
-		loadInitialState();
+		void loadInitialState().catch(() => {});
+
+		const broadcast = async (update: Uint8Array) => {
+			let payload: string;
+			try {
+				payload = await vault.sealBinary(wsId, update, aad);
+			} catch (err) {
+				console.error("Skipping Yjs broadcast", err);
+				return;
+			}
+			if (isDestroyed) return;
+			channel.send({
+				type: "broadcast",
+				event: "update",
+				payload: { update: payload },
+			});
+		};
 
 		const onUpdate = (update: Uint8Array, origin: YjsUpdateOrigin) => {
 			if (isDestroyed) return;
 			if (origin === "supabase-load" || origin === "supabase-broadcast") return;
 
-			const updateBase64 = uint8ArrayToBase64(update);
-			channel.send({
-				type: "broadcast",
-				event: "update",
-				payload: { update: updateBase64 },
-			});
+			void broadcast(update);
 
 			if (timeoutId) window.clearTimeout(timeoutId);
-			timeoutId = window.setTimeout(async () => {
-				const persistPromise = persistState();
+			timeoutId = window.setTimeout(() => {
+				const persistPromise = persistState()
+					.catch((err) => {
+						console.error("Failed to persist Yjs state", err);
+					})
+					.finally(() => {
+						if (pendingPersists.get(persistKey) === persistPromise)
+							pendingPersists.delete(persistKey);
+					});
 				pendingPersists.set(persistKey, persistPromise);
-				await persistPromise;
-				pendingPersists.delete(persistKey);
 			}, 500);
 		};
 
@@ -148,5 +198,5 @@ export function useYjsDoc(options: UseYjsDocOptions) {
 		});
 	});
 
-	return { doc, loaded, isNew };
+	return { doc, loaded, isNew, locked };
 }

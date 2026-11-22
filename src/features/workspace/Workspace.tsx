@@ -2,6 +2,13 @@ import type WaPage from "@awesome.me/webawesome/dist/components/page/page.js";
 import { useNavigate } from "@solidjs/router";
 import { createEffect, createSignal, onCleanup, onMount, Show } from "solid-js";
 import { useAuth } from "#/features/auth/AuthContext";
+import DeviceLinkApproval from "#/features/crypto/DeviceLinkApproval";
+import {
+	clearDecryptionErrorsFor,
+	decryptionErrors,
+} from "#/features/crypto/decryptionErrors";
+import VaultGate from "#/features/crypto/VaultGate";
+import { useVault } from "#/features/crypto/VaultProvider";
 import ConfirmDialog from "#/features/ui/ConfirmDialog";
 import EditableText from "#/features/ui/EditableText";
 import { useDebouncedPush } from "#/utils/realtime/useDebouncedPush";
@@ -20,10 +27,18 @@ import WorkspaceHome from "./components/WorkspaceHome";
 import WorkspaceMainHeader from "./components/WorkspaceMainHeader";
 import WorkspaceSidebar from "./components/WorkspaceSidebar";
 import {
+	decryptionErrorBanner,
+	emptyWorkspacePage,
+	emptyWorkspaceText,
+	keyMissingBanner,
+	keyMissingToast,
 	mainContent,
 	page,
+	pageTitleHeader,
 	pageTitlePlaceholder,
 	pageTitleStyle,
+	pageTitleText,
+	securityBanner,
 	sidebarResizer,
 } from "./components/workspace.css";
 
@@ -42,6 +57,7 @@ import type { PageKind } from "./types";
 
 const Workspace = () => {
 	const { user, logout } = useAuth();
+	const vault = useVault();
 	const navigate = useNavigate();
 	const [error, setError] = createSignal<string | null>(null);
 
@@ -53,7 +69,6 @@ const Workspace = () => {
 		onCleanup(() => window.removeEventListener("resize", handleResize));
 	});
 
-	// Ref to wa-page element to pierce Shadow DOM for internal drawer
 	let pageRef!: WaPage;
 
 	const wsHook = useWorkspaceAdapter();
@@ -69,7 +84,6 @@ const Workspace = () => {
 		document.title = `${page?.title ? `${page.title} · ` : ""}OpenCadre`;
 	});
 
-	// Realtime: one channel per active workspace; pages scoped by membership.
 	useWorkspaceRealtime({
 		workspaceId: wsHook.activeWorkspaceId,
 		getPageIds: () =>
@@ -77,6 +91,24 @@ const Workspace = () => {
 				.allPages()
 				.filter((p) => p.workspaceId === wsHook.activeWorkspaceId())
 				.map((p) => p.id),
+	});
+
+	createEffect(() => {
+		const workspaceId = wsHook.activeWorkspaceId();
+		membersHook.members();
+		if (!workspaceId || vault.status() !== "unlocked") return;
+		void vault.ensureWorkspaceKey(workspaceId).then((available) => {
+			if (available) void vault.shareWorkspaceKey(workspaceId);
+		});
+	});
+
+	createEffect(() => {
+		const workspaceId = wsHook.activeWorkspaceId();
+		if (!workspaceId || vault.status() !== "unlocked") return;
+		const interval = window.setInterval(() => {
+			void vault.shareWorkspaceKey(workspaceId);
+		}, 30_000);
+		onCleanup(() => window.clearInterval(interval));
 	});
 
 	const [deleteTarget, setDeleteTarget] = createSignal<
@@ -97,6 +129,8 @@ const Workspace = () => {
 	const handleAddWorkspace = async (name?: string) => {
 		const ws = await wsHook.addWorkspace(name);
 		if (!ws) return;
+		await vault.ensureWorkspaceKey(ws.id);
+		void vault.shareWorkspaceKey(ws.id);
 		navigate("/workspace");
 		wsHook.setActiveWorkspaceId(ws.id);
 	};
@@ -186,6 +220,40 @@ const Workspace = () => {
 		}
 	};
 
+	const keyMissing = () =>
+		vault.missingKeys().includes(wsHook.activeWorkspaceId());
+
+	const activeRotation = () => {
+		const workspaceId = wsHook.activeWorkspaceId();
+		return (
+			vault
+				.pendingRotations()
+				.find((rotation) => rotation.workspace_id === workspaceId) ?? null
+		);
+	};
+
+	const activeRotationFailure = () => {
+		const workspaceId = wsHook.activeWorkspaceId();
+		const failed = vault.failedRotation();
+		return failed?.workspace_id === workspaceId ? failed : null;
+	};
+
+	const activeDecryptionError = () => {
+		const workspaceId = wsHook.activeWorkspaceId();
+		if (!workspaceId) return null;
+		for (const [key, message] of decryptionErrors()) {
+			if (key.startsWith(`${workspaceId}:`)) return message;
+		}
+		return null;
+	};
+
+	const retryActiveDecryption = () => {
+		const workspaceId = wsHook.activeWorkspaceId();
+		if (!workspaceId) return;
+		clearDecryptionErrorsFor(workspaceId);
+		vault.retryDecryption(workspaceId);
+	};
+
 	const {
 		sidebarWidth,
 		sidebarCollapsed,
@@ -257,277 +325,349 @@ const Workspace = () => {
 	});
 
 	return (
-		<Show when={wsHook.loaded()} fallback={<LoadingSpinner fullscreen />}>
-			<Show
-				when={wsHook.workspaces().length > 0}
-				fallback={
-					<main
-						class={page}
+		<Show
+			when={vault.status() === "unlocked" && !vault.pendingRecoveryCode()}
+			fallback={
+				<Show
+					when={vault.status() === "loading"}
+					fallback={<VaultGate onSignOut={handleSignOut} />}
+				>
+					<LoadingSpinner fullscreen />
+				</Show>
+			}
+		>
+			<DeviceLinkApproval />
+			<Show when={wsHook.loaded()} fallback={<LoadingSpinner fullscreen />}>
+				<Show
+					when={wsHook.workspaces().length > 0}
+					fallback={
+						<main class={`${page} ${emptyWorkspacePage}`}>
+							<div class={card}>
+								<h2 style={{ "font-size": "1.5rem" }}>
+									Create your first workspace
+								</h2>
+								<p class={emptyWorkspaceText}>
+									Get started by creating a workspace for your team or project.
+								</p>
+								<CreateWorkspace
+									onCreate={handleAddWorkspace}
+									onSignOut={handleSignOut}
+								/>
+							</div>
+						</main>
+					}
+				>
+					<wa-page
+						ref={(el) => (pageRef = el)}
+						navigation-placement="start"
+						class={`${page} ${sidebarCollapsed() ? "sidebar-collapsed" : ""}`}
 						style={{
-							display: "flex",
-							"align-items": "center",
-							"justify-content": "center",
-							height: "100vh",
+							"--menu-width":
+								sidebarCollapsed() && !sidebarHovered()
+									? "0px"
+									: `${sidebarWidth()}px`,
+						}}
+						// @ts-expect-error: WA doesn't include onPointerOver/Out types
+						onPointerOver={(e: PointerEvent) => {
+							if (sidebarCollapsed() && inNav(e.target))
+								setSidebarHovered(true);
+						}}
+						onPointerOut={(e: PointerEvent) => {
+							if (inNav(e.target) && !inNav(e.relatedTarget))
+								setSidebarHovered(false);
 						}}
 					>
-						<div class={card}>
-							<h2 style={{ "font-size": "1.5rem" }}>
-								Create your first workspace
-							</h2>
-							<p
-								style={{
-									"font-size": "0.875rem",
-									color: "var(--wa-color-text-quiet)",
-									margin: 0,
-								}}
-							>
-								Get started by creating a workspace for your team or project.
-							</p>
-							<CreateWorkspace
-								onCreate={handleAddWorkspace}
-								onSignOut={handleSignOut}
-							/>
-						</div>
-					</main>
-				}
-			>
-				<wa-page
-					ref={(el) => (pageRef = el)}
-					navigation-placement="start"
-					class={`${page} ${sidebarCollapsed() ? "sidebar-collapsed" : ""}`}
-					style={{
-						"--menu-width":
-							sidebarCollapsed() && !sidebarHovered()
-								? "0px"
-								: `${sidebarWidth()}px`,
-					}}
-					// @ts-expect-error: WA doesn't include onPointerOver/Out types
-					onPointerOver={(e: PointerEvent) => {
-						if (sidebarCollapsed() && inNav(e.target)) setSidebarHovered(true);
-					}}
-					onPointerOut={(e: PointerEvent) => {
-						if (inNav(e.target) && !inNav(e.relatedTarget))
-							setSidebarHovered(false);
-					}}
-				>
-					<WorkspaceMainHeader
-						activePage={pagesHook.activePage}
-						members={membersHook.members}
-						sidebarCollapsed={sidebarCollapsed}
-						setSidebarCollapsed={setSidebarCollapsed}
-						isMobile={isMobile}
-						pageRef={pageRef}
-					/>
-
-					<WorkspaceHeader
-						collapsed={sidebarCollapsed}
-						activeWorkspace={wsHook.activeWorkspace}
-						onToggleCollapsed={() => {
-							if (sidebarCollapsed()) {
-								setSidebarCollapsed(false);
-							} else {
-								setSidebarCollapsed(true);
-							}
-						}}
-						onRename={(name) => {
-							const active = wsHook.activeWorkspace();
-							if (active) wsHook.renameWorkspace(active.id, name);
-						}}
-						onSelectWorkspace={selectWorkspace}
-						workspaces={wsHook.workspaces()}
-						onAddWorkspace={() => setIsNewWorkspaceOpen(true)}
-					/>
-
-					<WorkspaceSidebar
-						pages={pagesHook.activePages()}
-						activePageId={pagesHook.activePageId}
-						defaultKind={wsHook.activeWorkspace()?.defaultPageKind}
-						onAddPage={handleAddPage}
-						onRequestDeletePage={(id) => {
-							const found = pagesHook
-								.activePages()
-								.find((entry) => entry.id === id);
-							if (found)
-								setDeleteTarget({
-									kind: "page",
-									id: found.id,
-									title: found.title,
-								});
-						}}
-						onDuplicatePage={pagesHook.duplicatePage}
-						onReorder={pagesHook.reorderPages}
-					/>
-
-					<WorkspaceFooter
-						user={user}
-						error={error}
-						workspace={wsHook.activeWorkspace}
-						onSignOut={handleSignOut}
-						onOpenTrash={() => setIsTrashOpen(true)}
-						onUpdateWorkspace={handleEditWorkspace}
-						onAddPage={pagesHook.addPage}
-						onDeleteWorkspace={handlePermanentDeleteWorkspace}
-						onLeaveWorkspace={handleLeaveWorkspace}
-						pages={pagesHook.activePages}
-					/>
-
-					<main class={mainContent}>
-						<div
-							class={sidebarResizer}
-							style={{
-								"background-color":
-									sidebarCollapsed() && !sidebarHovered()
-										? "var(--wa-color-surface-border)"
-										: "",
-								height: sidebarCollapsed() ? "50vh" : "100vh",
-								top: sidebarCollapsed()
-									? "50%"
-									: pagesHook.activePage()
-										? "calc(var(--main-header-height) * -1)"
-										: 0,
-								width: sidebarCollapsed() ? "6px" : "3px",
-								"border-radius": sidebarCollapsed() ? "0 5px 5px 0" : "",
-								transform: sidebarCollapsed() ? "translateY(-50%)" : "",
-								position: sidebarCollapsed() ? "fixed" : "absolute",
-								cursor: sidebarCollapsed() ? "auto" : "col-resize",
-								"z-index": sidebarCollapsed() ? 1 : 100,
-							}}
-							onPointerEnter={() => {
-								if (sidebarCollapsed()) setSidebarHovered(true);
-							}}
-							onPointerDown={onResizePointerDown}
+						<WorkspaceMainHeader
+							activePage={pagesHook.activePage}
+							members={membersHook.members}
+							sidebarCollapsed={sidebarCollapsed}
+							setSidebarCollapsed={setSidebarCollapsed}
+							isMobile={isMobile}
+							pageRef={pageRef}
 						/>
 
-						<Show
-							when={pagesHook.activePage()}
-							fallback={
-								<WorkspaceHome
-									workspaceName={wsHook.activeWorkspace()?.name}
-									pages={pagesHook.activePages()}
-									recentPages={pagesHook.recentPages()}
-									memberCount={membersHook.members().length}
-									onAddPage={handleAddPage}
-									onCreateFromTemplate={handleCreateFromTemplate}
-									onOpenPage={(pageId) => navigate(`/workspace/p/${pageId}`)}
-								/>
-							}
-						>
-							{(active) => {
-								const {
-									setPush,
-									push,
-									pushNow: persistTitleNow,
-								} = useDebouncedPush(400);
+						<WorkspaceHeader
+							collapsed={sidebarCollapsed}
+							activeWorkspace={wsHook.activeWorkspace}
+							onToggleCollapsed={() => {
+								if (sidebarCollapsed()) {
+									setSidebarCollapsed(false);
+								} else {
+									setSidebarCollapsed(true);
+								}
+							}}
+							onRename={(name) => {
+								const active = wsHook.activeWorkspace();
+								if (active) wsHook.renameWorkspace(active.id, name);
+							}}
+							onSelectWorkspace={selectWorkspace}
+							workspaces={wsHook.workspaces()}
+							onAddWorkspace={() => setIsNewWorkspaceOpen(true)}
+						/>
 
-								return (
-									<>
-										<div
-											style={{
-												"padding-bottom": "var(--wa-space-3xs)",
-												"margin-bottom": "var(--wa-space-s)",
-												"border-bottom":
-													"var(--wa-border-width-s) var(--wa-border-style) var(--wa-color-surface-border)",
-												cursor: "text",
-											}}
+						<WorkspaceSidebar
+							pages={pagesHook.activePages()}
+							activePageId={pagesHook.activePageId}
+							defaultKind={wsHook.activeWorkspace()?.defaultPageKind}
+							onAddPage={handleAddPage}
+							onRequestDeletePage={(id) => {
+								const found = pagesHook
+									.activePages()
+									.find((entry) => entry.id === id);
+								if (found)
+									setDeleteTarget({
+										kind: "page",
+										id: found.id,
+										title: found.title,
+									});
+							}}
+							onDuplicatePage={pagesHook.duplicatePage}
+							onReorder={pagesHook.reorderPages}
+						/>
+
+						<WorkspaceFooter
+							user={user}
+							error={error}
+							workspace={wsHook.activeWorkspace}
+							onSignOut={handleSignOut}
+							onOpenTrash={() => setIsTrashOpen(true)}
+							onUpdateWorkspace={handleEditWorkspace}
+							onAddPage={pagesHook.addPage}
+							onDeleteWorkspace={handlePermanentDeleteWorkspace}
+							onLeaveWorkspace={handleLeaveWorkspace}
+							pages={pagesHook.activePages}
+						/>
+
+						<main class={mainContent}>
+							<Show when={keyMissing()}>
+								<div class={keyMissingBanner}>
+									This content is encrypted with a key you don't have yet. Ask a
+									workspace owner to open this workspace while you are online.
+									Access appears here automatically once they do.
+								</div>
+							</Show>
+							<Show when={activeRotation()}>
+								{(rotation) => (
+									<div class={securityBanner}>
+										<span>
+											Securing workspace. Content stays readable with the new
+											key while old records are re-encrypted
+											{rotation().total_count > 0
+												? ` (${rotation().processed_count}/${rotation().total_count})`
+												: ""}
+											.
+										</span>
+									</div>
+								)}
+							</Show>
+							<Show when={activeRotationFailure()}>
+								{(failure) => (
+									<div class={decryptionErrorBanner}>
+										<span>
+											Securing this workspace failed. Reads and new writes still
+											use the new key. Error:{" "}
+											{failure().error_code ?? "unknown"}.
+										</span>
+										<wa-button
+											variant="neutral"
+											appearance="outlined"
+											onClick={() =>
+												void vault.retryRotation(failure().workspace_id)
+											}
 										>
-											<Show
-												when={!isEditingTitle()}
-												fallback={
-													<EditableText
-														value={active().title}
-														onChange={(title) => {
-															const pageId = active().id;
-															pagesHook.renamePage(pageId, title);
-															setPush(() => {
-																void pagesHook.persistPageTitle(pageId, title);
-															});
-															push();
-														}}
-														onConfirm={() => {
-															persistTitleNow();
-															setIsEditingTitle(false);
-														}}
-														onCancel={() => setIsEditingTitle(false)}
-														class={pageTitleStyle}
-														ariaLabel="Page title"
-														autoFocus
-													/>
-												}
-											>
-												<h1
-													class={pageTitleStyle}
-													onClick={() => setIsEditingTitle(true)}
-													style={{
-														"padding-top": "2px",
-														"padding-bottom": "4px",
-														"white-space": "pre-wrap",
-													}}
-												>
-													{active().title || (
-														<span class={pageTitlePlaceholder}>Untitled</span>
-													)}
-												</h1>
-											</Show>
-										</div>
-
-										<PageView
-											page={active()}
-											onChangeContent={pagesHook.updatePageContent}
-										/>
-									</>
-								);
-							}}
-						</Show>
-					</main>
-
-					<Show when={deleteTarget()} keyed>
-						{(target) => (
-							<ConfirmDialog
-								label={
-									target.kind === "workspace"
-										? "Delete workspace"
-										: "Delete page"
-								}
-								message={
-									target.kind === "workspace"
-										? `Are you sure you want to delete "${target.title}" and all its pages? They will be moved to Trash and can be restored.`
-										: `Are you sure you want to delete "${target.title}"? It will be moved to Trash and can be restored.`
-								}
-								onConfirm={() => {
-									if (target.kind === "workspace") {
-										handleDeleteWorkspace(target.id);
-									} else {
-										handleDeletePage(target.id);
-									}
+											Retry
+										</wa-button>
+									</div>
+								)}
+							</Show>
+							<Show when={activeDecryptionError()}>
+								{(message) => (
+									<div class={decryptionErrorBanner}>
+										<span>
+											Some content could not be decrypted. No placeholder
+											content was shown. {message()}
+										</span>
+										<wa-button
+											variant="neutral"
+											appearance="outlined"
+											onClick={retryActiveDecryption}
+										>
+											Retry
+										</wa-button>
+									</div>
+								)}
+							</Show>
+							<div
+								class={sidebarResizer}
+								style={{
+									"background-color":
+										sidebarCollapsed() && !sidebarHovered()
+											? "var(--wa-color-surface-border)"
+											: "",
+									height: sidebarCollapsed() ? "50vh" : "100vh",
+									top: sidebarCollapsed()
+										? "50%"
+										: pagesHook.activePage()
+											? "calc(var(--main-header-height) * -1)"
+											: 0,
+									width: sidebarCollapsed() ? "6px" : "3px",
+									"border-radius": sidebarCollapsed() ? "0 5px 5px 0" : "",
+									transform: sidebarCollapsed() ? "translateY(-50%)" : "",
+									position: sidebarCollapsed() ? "fixed" : "absolute",
+									cursor: sidebarCollapsed() ? "auto" : "col-resize",
+									"z-index": sidebarCollapsed() ? 1 : 100,
 								}}
-								onClose={() => setDeleteTarget(null)}
+								onPointerEnter={() => {
+									if (sidebarCollapsed()) setSidebarHovered(true);
+								}}
+								onPointerDown={onResizePointerDown}
 							/>
-						)}
-					</Show>
 
-					<Show when={isTrashOpen()}>
-						<TrashDialog
-							entries={trashHook.trash()}
-							onRestore={trashHook.restoreEntry}
-							onPurge={trashHook.purgeEntry}
-							onEmptyTrash={trashHook.emptyTrash}
-							onClose={() => setIsTrashOpen(false)}
-						/>
-					</Show>
+							<Show
+								when={pagesHook.activePage()}
+								fallback={
+									<WorkspaceHome
+										workspaceName={wsHook.activeWorkspace()?.name}
+										pages={pagesHook.activePages()}
+										recentPages={pagesHook.recentPages()}
+										memberCount={membersHook.members().length}
+										onAddPage={handleAddPage}
+										onCreateFromTemplate={handleCreateFromTemplate}
+										onOpenPage={(pageId) => navigate(`/workspace/p/${pageId}`)}
+									/>
+								}
+							>
+								{(active) => {
+									const {
+										setPush,
+										push,
+										pushNow: persistTitleNow,
+									} = useDebouncedPush(400);
 
-					<Show when={isNewWorkspaceOpen()}>
-						<NewWorkspaceDialog
-							onCreate={handleCreateNewWorkspace}
-							onClose={() => setIsNewWorkspaceOpen(false)}
-						/>
-					</Show>
-					<Show when={pagesHook.activePage()}>
-						<PageDetailsDrawer
-							page={pagesHook.activePage()!}
-							members={membersHook.members()}
-						/>
-					</Show>
-				</wa-page>
+									return (
+										<>
+											<div class={pageTitleHeader}>
+												<Show
+													when={!isEditingTitle()}
+													fallback={
+														<EditableText
+															value={active().title}
+															onChange={(title) => {
+																const pageId = active().id;
+																pagesHook.renamePage(pageId, title);
+																setPush(() => {
+																	void pagesHook.persistPageTitle(
+																		pageId,
+																		title,
+																	);
+																});
+																push();
+															}}
+															onConfirm={() => {
+																persistTitleNow();
+																setIsEditingTitle(false);
+															}}
+															onCancel={() => setIsEditingTitle(false)}
+															class={pageTitleStyle}
+															ariaLabel="Page title"
+															autoFocus
+														/>
+													}
+												>
+													<h1
+														class={`${pageTitleStyle} ${pageTitleText}`}
+														onClick={() => setIsEditingTitle(true)}
+													>
+														{active().title || (
+															<span class={pageTitlePlaceholder}>Untitled</span>
+														)}
+													</h1>
+												</Show>
+											</div>
+
+											<PageView
+												page={active()}
+												onChangeContent={pagesHook.updatePageContent}
+											/>
+										</>
+									);
+								}}
+							</Show>
+						</main>
+
+						<Show when={keyMissing()}>
+							<div class={keyMissingToast}>
+								<wa-icon name="lock" label="Locked"></wa-icon>
+								<span>
+									Waiting for a teammate who has access to share this
+									workspace's key.
+								</span>
+								<wa-button
+									size="s"
+									variant="neutral"
+									appearance="outlined"
+									onClick={() => {
+										const id = wsHook.activeWorkspaceId();
+										if (!id) return;
+										void vault.ensureWorkspaceKey(id).then((ok) => {
+											if (ok) void vault.shareWorkspaceKey(id);
+										});
+									}}
+								>
+									Retry
+								</wa-button>
+							</div>
+						</Show>
+
+						<Show when={deleteTarget()} keyed>
+							{(target) => (
+								<ConfirmDialog
+									label={
+										target.kind === "workspace"
+											? "Delete workspace"
+											: "Delete page"
+									}
+									message={
+										target.kind === "workspace"
+											? `Are you sure you want to delete "${target.title}" and all its pages? They will be moved to Trash and can be restored.`
+											: `Are you sure you want to delete "${target.title}"? It will be moved to Trash and can be restored.`
+									}
+									onConfirm={() => {
+										if (target.kind === "workspace") {
+											handleDeleteWorkspace(target.id);
+										} else {
+											handleDeletePage(target.id);
+										}
+									}}
+									onClose={() => setDeleteTarget(null)}
+								/>
+							)}
+						</Show>
+
+						<Show when={isTrashOpen()}>
+							<TrashDialog
+								entries={trashHook.trash()}
+								onRestore={trashHook.restoreEntry}
+								onPurge={trashHook.purgeEntry}
+								onEmptyTrash={trashHook.emptyTrash}
+								onClose={() => setIsTrashOpen(false)}
+							/>
+						</Show>
+
+						<Show when={isNewWorkspaceOpen()}>
+							<NewWorkspaceDialog
+								onCreate={handleCreateNewWorkspace}
+								onClose={() => setIsNewWorkspaceOpen(false)}
+							/>
+						</Show>
+						<Show when={pagesHook.activePage()}>
+							<PageDetailsDrawer
+								page={pagesHook.activePage()!}
+								members={membersHook.members()}
+							/>
+						</Show>
+					</wa-page>
+				</Show>
 			</Show>
 		</Show>
 	);

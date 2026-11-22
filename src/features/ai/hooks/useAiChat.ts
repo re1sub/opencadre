@@ -3,7 +3,6 @@ import {
 	type UIMessage,
 	useChat,
 } from "@tanstack/ai-solid";
-import { createSignal } from "solid-js";
 import type { EntityContext } from "#/types/ai";
 import { supabase } from "#/utils/supabase";
 
@@ -19,8 +18,6 @@ export interface AiChatOptions {
 }
 
 export function useAiChat(options: AiChatOptions = {}) {
-	const [lastPrompt, setLastPrompt] = createSignal("");
-
 	const chat = useChat({
 		connection: fetchServerSentEvents(EDGE_FUNCTION_URL, async () => ({
 			headers: {
@@ -32,15 +29,9 @@ export function useAiChat(options: AiChatOptions = {}) {
 				data: { user },
 			} = await supabase.auth.getUser();
 			if (!user) return;
+			void message;
 
-			const prompt = lastPrompt();
-			const textPart = message.parts.find(
-				(p): p is { type: "text"; content: string } =>
-					p.type === "text" && typeof p.content === "string",
-			);
-			const response = textPart?.content ?? "";
-
-			await supabase.from("ai_requests").insert({
+			const { error } = await supabase.from("ai_requests").insert({
 				user_id: user.id,
 				page_id:
 					options.entity?.type === "page"
@@ -48,18 +39,11 @@ export function useAiChat(options: AiChatOptions = {}) {
 						: (options.entity?.pageId ?? null),
 				card_id: options.entity?.type === "card" ? options.entity.id : null,
 				model: "openai/gpt-4o-mini",
-				prompt,
-				response,
 				tokens_used: null,
 			});
+			if (error) console.error("Failed to record the AI request", error);
 		},
 	});
-
-	const originalSendMessage = chat.sendMessage;
-	chat.sendMessage = async (content, sendMessageOptions) => {
-		setLastPrompt(typeof content === "string" ? content : "");
-		await originalSendMessage(content, sendMessageOptions);
-	};
 
 	return chat;
 }

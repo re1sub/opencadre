@@ -1,5 +1,14 @@
 import { useNavigate, useParams } from "@solidjs/router";
 import { createEffect, createSignal, onCleanup } from "solid-js";
+import { reportDecryptionError } from "#/features/crypto/decryptionErrors";
+import { VaultDecryptionError } from "#/features/crypto/errors";
+import { useVault } from "#/features/crypto/VaultProvider";
+import {
+	cardAad,
+	columnAad,
+	pageAad,
+	pageTitleAad,
+} from "#/features/crypto/vault";
 import { DEFAULT_MARKDOWN_CONTENT } from "#/features/markdown/constants";
 import type { Json, Tables } from "#/types/database";
 import { nowIso } from "#/utils/date";
@@ -53,16 +62,36 @@ const contentToString = (kind: PageKind, raw: Json | undefined): string => {
 	return JSON.stringify(raw);
 };
 
-const toPage = (row: PageRow, content?: PageContentRow): Page => ({
+const toPageBase = (row: PageRow, title = ""): Page => ({
 	id: row.id,
 	workspaceId: row.workspace_id,
-	title: row.title,
+	title,
 	kind: row.kind as PageKind,
-	content: contentToString(row.kind as PageKind, content?.content),
+	content: "",
 	createdAt: row.created_at,
 	updatedAt: row.updated_at,
 	ownerId: row.owner_id,
 });
+
+const recentsKey = (workspaceId: string) => `opencadre:recents:${workspaceId}`;
+
+const readRecents = (workspaceId: string): string[] => {
+	try {
+		const raw = window.localStorage.getItem(recentsKey(workspaceId));
+		const parsed: unknown = raw ? JSON.parse(raw) : [];
+		return Array.isArray(parsed)
+			? parsed.filter((id): id is string => typeof id === "string")
+			: [];
+	} catch {
+		return [];
+	}
+};
+
+const writeRecents = (workspaceId: string, ids: string[]): void => {
+	try {
+		window.localStorage.setItem(recentsKey(workspaceId), JSON.stringify(ids));
+	} catch {}
+};
 
 export function usePagesAdapter(
 	activeWorkspaceId: () => string,
@@ -82,17 +111,31 @@ export function usePagesAdapter(
 	const [recentIds, setRecentIds] = createSignal<string[]>([]);
 	const [loaded, setLoaded] = createSignal(false);
 
+	const vault = useVault();
 	const reconcile = createReconcileGuard();
 
-	// Apply remote page changes (titles, delete/restore) and page_content
-	// updates to the local signal, with author-echo suppression.
+	const openTitle = async (row: PageRow): Promise<string> =>
+		vault.openTextSafe(
+			row.workspace_id,
+			row.title_ciphertext,
+			pageTitleAad(row.id),
+			`page:${row.id}:title`,
+		);
+
 	const unregister = registerRealtimeHandlers("pages", {
 		applyInsert: (row) => {
 			const r = row as unknown as PageRow;
-			if (r.workspace_id === activeWorkspaceId() && !r.is_deleted) {
-				if (allPages().some((p) => p.id === r.id)) return;
-				setAllPages((prev) => [...prev, toPage(r)]);
-			}
+			if (r.workspace_id !== activeWorkspaceId() || r.is_deleted) return;
+			if (allPages().some((p) => p.id === r.id)) return;
+			void openTitle(r)
+				.then((title) => {
+					setAllPages((prev) =>
+						prev.some((p) => p.id === r.id)
+							? prev
+							: [...prev, toPageBase(r, title)],
+					);
+				})
+				.catch(() => {});
 		},
 		applyUpdate: (row) => {
 			const r = row as unknown as PageRow;
@@ -100,18 +143,15 @@ export function usePagesAdapter(
 				setAllPages((prev) => prev.filter((p) => p.id !== r.id));
 				return;
 			}
-			setAllPages((prev) =>
-				prev.map((p) =>
-					p.id === r.id
-						? {
-								...p,
-								title: r.title,
-								updatedAt: r.updated_at,
-								content: p.content,
-							}
-						: p,
-				),
-			);
+			void openTitle(r)
+				.then((title) => {
+					setAllPages((prev) =>
+						prev.map((p) =>
+							p.id === r.id ? { ...p, title, updatedAt: r.updated_at } : p,
+						),
+					);
+				})
+				.catch(() => {});
 		},
 		applyDelete: (row) => {
 			const r = row as unknown as PageRow;
@@ -121,26 +161,26 @@ export function usePagesAdapter(
 	});
 
 	const unregisterContent = registerRealtimeHandlers("page_content", {
-		applyInsert: (row) => applyRemoteContent(row),
-		applyUpdate: (row) => applyRemoteContent(row),
+		applyInsert: (row) => {
+			void applyRemoteContent(row).catch(() => {});
+		},
+		applyUpdate: (row) => {
+			void applyRemoteContent(row).catch(() => {});
+		},
 		applyDelete: () => {},
 	});
 
-	const applyRemoteContent = (row: Record<string, unknown>) => {
+	const applyRemoteContent = async (row: Record<string, unknown>) => {
 		const r = row as unknown as PageContentRow;
 		const page = allPages().find((p) => p.id === r.page_id);
 		if (!page) return;
 
-		const blob =
-			typeof r.content === "string"
-				? r.content
-				: page.kind === "markdown" &&
-						r.content &&
-						typeof r.content === "object" &&
-						!Array.isArray(r.content) &&
-						Object.keys(r.content).length === 0
-					? ""
-					: JSON.stringify(r.content);
+		const blob = await vault.openTextSafe(
+			page.workspaceId,
+			r.ciphertext,
+			pageAad(r.page_id),
+			`page:${r.page_id}:content`,
+		);
 
 		if (
 			!reconcile.shouldApply("page_content", r.id, {
@@ -171,45 +211,15 @@ export function usePagesAdapter(
 		unregisterContent();
 	});
 
-	const fetchRecents = async (workspaceId: string) => {
-		const {
-			data: { user },
-		} = await supabase.auth.getUser();
-		if (!user) return;
-		const { data, error } = await supabase
-			.from("page_visits")
-			.select("page_id")
-			.eq("user_id", user.id)
-			.eq("workspace_id", workspaceId)
-			.order("viewed_at", { ascending: false })
-			.limit(RECENT_MAX);
-		if (error) return;
-		setRecentIds(data?.map((visit) => visit.page_id) ?? []);
-	};
-
-	const recordVisit = async (workspaceId: string, pageId: string) => {
-		const {
-			data: { user },
-		} = await supabase.auth.getUser();
-		if (!user) return;
-
-		try {
-			await supabase.from("page_visits").upsert(
-				{
-					user_id: user.id,
-					page_id: pageId,
-					workspace_id: workspaceId,
-					viewed_at: nowIso(),
-				},
-				{ onConflict: "user_id,page_id" },
+	const recordVisit = (workspaceId: string, pageId: string) => {
+		setRecentIds((prev) => {
+			const next = [pageId, ...prev.filter((id) => id !== pageId)].slice(
+				0,
+				RECENT_MAX,
 			);
-		} catch {
-			// recents are best-effort
-		}
-
-		setRecentIds((prev) =>
-			[pageId, ...prev.filter((id) => id !== pageId)].slice(0, RECENT_MAX),
-		);
+			writeRecents(workspaceId, next);
+			return next;
+		});
 	};
 
 	const fetchPages = async (workspaceId: string) => {
@@ -235,7 +245,26 @@ export function usePagesAdapter(
 		if (contentsError) throw contentsError;
 
 		const contentMap = new Map(contents?.map((c) => [c.page_id, c]) ?? []);
-		const mapped = pages.map((p) => toPage(p, contentMap.get(p.id)));
+		const mapped: Page[] = [];
+		for (const row of pages) {
+			const content = contentMap.get(row.id);
+			try {
+				const [opened, title] = await Promise.all([
+					content
+						? vault.openTextSafe(
+								row.workspace_id,
+								content.ciphertext,
+								pageAad(row.id),
+								`page:${row.id}:content`,
+							)
+						: Promise.resolve(""),
+					openTitle(row),
+				]);
+				mapped.push({ ...toPageBase(row, title), content: opened });
+			} catch {
+				// Field errors are reported by openTextSafe; skip this page.
+			}
+		}
 
 		setAllPages((prev) => {
 			const other = prev.filter((p) => p.workspaceId !== workspaceId);
@@ -244,13 +273,20 @@ export function usePagesAdapter(
 		setLoaded(true);
 	};
 
-	// Fetch pages and recent visits when workspace changes
 	createEffect(() => {
 		const wsId = activeWorkspaceId();
-		if (wsId) {
-			fetchPages(wsId);
-			void fetchRecents(wsId);
+		const vaultStatus = vault.status();
+		vault.epoch();
+		if (!wsId) return;
+
+		if (vaultStatus !== "unlocked") {
+			setAllPages((prev) => prev.map((p) => ({ ...p, content: "" })));
+			setLoaded(false);
+			return;
 		}
+
+		setRecentIds(readRecents(wsId));
+		void fetchPages(wsId).catch(() => {});
 	});
 
 	const activePages = () =>
@@ -259,7 +295,6 @@ export function usePagesAdapter(
 	const activePage = () =>
 		activePages().find((entry) => entry.id === activePageId()) ?? null;
 
-	// URL-to-state sync
 	let lastUrlSegment = "";
 	createEffect(() => {
 		const rest = params.rest ?? "";
@@ -289,7 +324,6 @@ export function usePagesAdapter(
 		}
 	});
 
-	// Record recently visited pages
 	let lastRecordedKey = "";
 	createEffect(() => {
 		const wsId = activeWorkspaceId();
@@ -302,7 +336,7 @@ export function usePagesAdapter(
 		const key = `${wsId}:${pageId}`;
 		if (key === lastRecordedKey) return;
 		lastRecordedKey = key;
-		void recordVisit(wsId, pageId);
+		recordVisit(wsId, pageId);
 	});
 
 	const recentPages = () => {
@@ -326,11 +360,20 @@ export function usePagesAdapter(
 		const currentPages = activePages();
 		const nextPosition = currentPages.length;
 
+		const pageId = crypto.randomUUID();
+		const title = options?.title ?? defaultTitle;
+		const sealedTitle = await vault.sealText(
+			targetWorkspaceId,
+			title,
+			pageTitleAad(pageId),
+		);
+
 		const { data: page, error: pageError } = await supabase
 			.from("pages")
 			.insert({
+				id: pageId,
 				workspace_id: targetWorkspaceId,
-				title: options?.title ?? defaultTitle,
+				title_ciphertext: sealedTitle,
 				kind,
 				position: nextPosition,
 				owner_id: user.id,
@@ -339,26 +382,25 @@ export function usePagesAdapter(
 			.single();
 		if (pageError) throw pageError;
 
-		await logActivity(targetWorkspaceId, "page", page.id, "page_create", {
-			title: page.title,
-		});
+		await logActivity(targetWorkspaceId, "page", page.id, "page_create");
 
 		const content = options?.content ?? DEFAULT_CONTENT[kind];
+		const serialized = contentToString(kind, content);
+		const sealed = await vault.sealText(
+			targetWorkspaceId,
+			serialized,
+			pageAad(page.id),
+		);
 
 		const { error: contentError } = await supabase
 			.from("page_content")
-			.insert({ page_id: page.id, content });
+			.insert({ page_id: page.id, ciphertext: sealed });
 		if (contentError) throw contentError;
 
 		const mapped: Page = {
-			id: page.id,
-			workspaceId: targetWorkspaceId,
-			title: page.title,
+			...toPageBase(page, title),
 			kind,
-			content: contentToString(kind, content),
-			createdAt: page.created_at,
-			updatedAt: page.updated_at,
-			ownerId: user.id,
+			content: serialized,
 		};
 		setAllPages((prev) =>
 			prev.some((p) => p.id === page.id) ? prev : [...prev, mapped],
@@ -379,8 +421,11 @@ export function usePagesAdapter(
 		await logActivity(page!.workspaceId, "page", id, "page_delete");
 
 		setAllPages((prev) => prev.filter((p) => p.id !== id));
-		await supabase.from("page_visits").delete().eq("page_id", id);
-		setRecentIds((prev) => prev.filter((pageId) => pageId !== id));
+		setRecentIds((prev) => {
+			const next = prev.filter((pageId) => pageId !== id);
+			if (page) writeRecents(page.workspaceId, next);
+			return next;
+		});
 
 		if (activePageId() === id) {
 			const remaining = activePages().filter((p) => p.id !== id);
@@ -392,8 +437,6 @@ export function usePagesAdapter(
 		return page;
 	};
 
-	// Optimistic local rename; persistence is debounced by the caller
-	// (see Workspace page-title editing) to avoid one DB round-trip per keystroke.
 	const renamePage = (id: string, title: string) => {
 		setAllPages((prev) =>
 			prev.map((entry) =>
@@ -403,27 +446,34 @@ export function usePagesAdapter(
 	};
 
 	const persistPageTitle = async (id: string, title: string) => {
+		const page = allPages().find((p) => p.id === id);
+		if (!page) return;
+
+		const sealed = await vault.sealText(
+			page.workspaceId,
+			title,
+			pageTitleAad(id),
+		);
 		const { error } = await supabase
 			.from("pages")
-			.update({ title, updated_at: nowIso() })
+			.update({ title_ciphertext: sealed, updated_at: nowIso() })
 			.eq("id", id);
 		if (error) throw error;
 
-		const page = allPages().find((p) => p.id === id);
-		if (page) {
-			await logActivity(page.workspaceId, "page", id, "page_edit", { title });
-		}
+		await logActivity(page.workspaceId, "page", id, "page_edit");
 	};
 
 	const persistPagePositions = async (workspaceId: string, pages: Page[]) => {
 		const workspacePages = pages.filter((p) => p.workspaceId === workspaceId);
 		if (workspacePages.length === 0) return;
 
-		await Promise.all(
+		const results = await Promise.all(
 			workspacePages.map((p, index) =>
 				supabase.from("pages").update({ position: index }).eq("id", p.id),
 			),
 		);
+		const failed = results.find((result) => result.error);
+		if (failed?.error) throw failed.error;
 	};
 
 	const reorderPages = async (pageId: string, newIndex: number) => {
@@ -449,36 +499,20 @@ export function usePagesAdapter(
 		}
 	};
 
-	const excerptFromDiff = (prev: string, next: string): string | null => {
-		if (!next || prev === next) return null;
-		if (!prev) return next.slice(0, 120).trim().slice(0, 80);
-		// Find first differing index
-		const minLen = Math.min(prev.length, next.length);
-		let start = 0;
-		while (start < minLen && prev[start] === next[start]) start++;
-		// If next is shorter, it's a deletion – show removed snippet from prev
-		if (next.length < prev.length && start === next.length) return null;
-		const snippet = next.slice(start, start + 80).trim();
-		if (!snippet) return null;
-		// Prefer whole words, break at newline
-		const firstLine = snippet.split("\n")[0];
-		return firstLine.slice(0, 80);
-	};
-
 	const updatePageContent = async (id: string, content: string) => {
 		const existing = allPages().find((p) => p.id === id);
-		if (existing && existing.content === content) return;
+		if (!existing) throw new Error("Page not found");
+		if (existing.content === content) return;
 
-		let parsed: Json;
-		try {
-			parsed = JSON.parse(content);
-		} catch {
-			parsed = content;
-		}
+		const sealed = await vault.sealText(
+			existing.workspaceId,
+			content,
+			pageAad(id),
+		);
 
 		const { data: saved, error } = await supabase
 			.from("page_content")
-			.upsert({ page_id: id, content: parsed }, { onConflict: "page_id" })
+			.upsert({ page_id: id, ciphertext: sealed }, { onConflict: "page_id" })
 			.select("id, version")
 			.single();
 		if (error) throw error;
@@ -503,20 +537,7 @@ export function usePagesAdapter(
 			),
 		);
 
-		const page = allPages().find((p) => p.id === id);
-		if (page) {
-			const excerpt = existing
-				? excerptFromDiff(existing.content, content)
-				: null;
-			const metadata = excerpt ? { excerpt } : undefined;
-			await logActivity(
-				page.workspaceId,
-				"page",
-				id,
-				"page_edit",
-				metadata as Json,
-			);
-		}
+		await logActivity(existing.workspaceId, "page", id, "page_edit");
 	};
 
 	const duplicatePage = async (id: string) => {
@@ -533,11 +554,19 @@ export function usePagesAdapter(
 		const targetWorkspaceId = activeWorkspaceId();
 
 		if (source.kind === "kanban") {
+			const pageId = crypto.randomUUID();
+			const copiedTitle = `${source.title} (Copy)`;
+			const sealedTitle = await vault.sealText(
+				targetWorkspaceId,
+				copiedTitle,
+				pageTitleAad(pageId),
+			);
 			const { data: page, error: pageError } = await supabase
 				.from("pages")
 				.insert({
+					id: pageId,
 					workspace_id: targetWorkspaceId,
-					title: `${source.title} (Copy)`,
+					title_ciphertext: sealedTitle,
 					kind: source.kind,
 				})
 				.select()
@@ -545,9 +574,14 @@ export function usePagesAdapter(
 			if (pageError) throw pageError;
 
 			const content = clonedContent ?? DEFAULT_CONTENT[source.kind];
+			const sealed = await vault.sealText(
+				targetWorkspaceId,
+				contentToString(source.kind, content),
+				pageAad(page.id),
+			);
 			const { error: contentError } = await supabase
 				.from("page_content")
-				.insert({ page_id: page.id, content });
+				.insert({ page_id: page.id, ciphertext: sealed });
 			if (contentError) throw contentError;
 
 			const { data: sourceColumns } = await supabase
@@ -560,17 +594,40 @@ export function usePagesAdapter(
 
 			if (sourceColumns) {
 				for (const col of sourceColumns) {
-					const { data: newCol } = await supabase
-						.from("columns")
-						.insert({
-							page_id: page.id,
-							title: col.title,
-							color: col.color,
-							position: col.position,
-						})
-						.select()
-						.single();
-					if (newCol) columnIdMap.set(col.id, newCol.id);
+					const errorKey = `column:${col.id}`;
+					const openedColumn = await vault.openTextSafe(
+						source.workspaceId,
+						col.ciphertext,
+						columnAad(col.id),
+						errorKey,
+					);
+					let columnTitle: string;
+					try {
+						const meta = JSON.parse(openedColumn) as { title?: unknown };
+						if (typeof meta.title !== "string") throw new Error("invalid");
+						columnTitle = meta.title;
+					} catch {
+						const err = new VaultDecryptionError(
+							"Decrypted column metadata was malformed.",
+						);
+						reportDecryptionError(`${source.workspaceId}:${errorKey}`, err);
+						throw err;
+					}
+					const newColumnId = crypto.randomUUID();
+					const sealedColumn = await vault.sealText(
+						targetWorkspaceId,
+						JSON.stringify({ title: columnTitle }),
+						columnAad(newColumnId),
+					);
+					const { error: insertError } = await supabase.from("columns").insert({
+						id: newColumnId,
+						page_id: page.id,
+						ciphertext: sealedColumn,
+						color: col.color,
+						position: col.position,
+					});
+					if (insertError) throw insertError;
+					columnIdMap.set(col.id, newColumnId);
 				}
 
 				const { data: sourceCards } = await supabase
@@ -599,41 +656,68 @@ export function usePagesAdapter(
 						const newColumnId = columnIdMap.get(card.column_id);
 						if (!newColumnId) continue;
 
-						const { data: newCard } = await supabase
-							.from("cards")
-							.insert({
-								column_id: newColumnId,
-								page_id: page.id,
-								title: card.title,
-								description: card.description,
-								due_date: card.due_date,
-								assignee_ids: card.assignee_ids,
-								position: card.position,
-							})
-							.select()
-							.single();
+						const errorKey = `card:${card.id}`;
+						const openedCard = await vault.openTextSafe(
+							source.workspaceId,
+							card.ciphertext,
+							cardAad(card.id),
+							errorKey,
+						);
+						let meta: { title: string; description: string };
+						try {
+							const parsed = JSON.parse(openedCard) as {
+								title?: unknown;
+								description?: unknown;
+							};
+							if (
+								typeof parsed.title !== "string" ||
+								typeof parsed.description !== "string"
+							) {
+								throw new Error("invalid");
+							}
+							meta = { title: parsed.title, description: parsed.description };
+						} catch {
+							const err = new VaultDecryptionError(
+								"Decrypted card metadata was malformed.",
+							);
+							reportDecryptionError(`${source.workspaceId}:${errorKey}`, err);
+							throw err;
+						}
+
+						const newCardId = crypto.randomUUID();
+						const sealedCard = await vault.sealText(
+							targetWorkspaceId,
+							JSON.stringify(meta),
+							cardAad(newCardId),
+						);
+						const { error: insertError } = await supabase.from("cards").insert({
+							id: newCardId,
+							column_id: newColumnId,
+							page_id: page.id,
+							ciphertext: sealedCard,
+							due_date: card.due_date,
+							assignee_ids: card.assignee_ids,
+							position: card.position,
+						});
+						if (insertError) throw insertError;
 
 						const tagIds = cardTagMap.get(card.id);
-						if (newCard && tagIds?.length) {
-							await supabase
+						if (tagIds?.length) {
+							const { error: tagsError } = await supabase
 								.from("card_tags")
 								.insert(
-									tagIds.map((tid) => ({ card_id: newCard.id, tag_id: tid })),
+									tagIds.map((tid) => ({ card_id: newCardId, tag_id: tid })),
 								);
+							if (tagsError) throw tagsError;
 						}
 					}
 				}
 			}
 
 			const mapped: Page = {
-				id: page.id,
-				workspaceId: targetWorkspaceId,
-				title: page.title,
+				...toPageBase(page, copiedTitle),
 				kind: source.kind,
 				content: contentToString(source.kind, content),
-				createdAt: page.created_at,
-				updatedAt: page.updated_at,
-				ownerId: source.ownerId,
 			};
 			setAllPages((prev) =>
 				prev.some((p) => p.id === page.id) ? prev : [...prev, mapped],

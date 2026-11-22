@@ -13,28 +13,68 @@ type AuthContextType = {
 	loading: () => boolean;
 	error: () => AuthError | null;
 	login: (email: string, password: string) => Promise<User>;
-	signUp: (
-		email: string,
-		password: string,
-		displayName?: string,
-	) => Promise<User | null>;
+	signUp: (email: string, password: string) => Promise<User | null>;
 	sendPasswordReset: (email: string) => Promise<void>;
 	updatePassword: (password: string) => Promise<void>;
 	deleteAccount: () => Promise<void>;
 	logout: () => Promise<void>;
+	signOutOthers: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextType>();
+
+const isRetryableAuthError = (error: AuthError | null): boolean =>
+	Boolean(
+		error &&
+			(error.name === "AuthRetryableFetchError" ||
+				/fetch|network|timeout/i.test(error.message)),
+	);
 
 export function AuthProvider(props: { children: JSXElement }) {
 	const [user, setUser] = createSignal<User | null>(null);
 	const [loading, setLoading] = createSignal(true);
 	const [error, setError] = createSignal<AuthError | null>(null);
 
-	void supabase.auth.getSession().then(({ data }) => {
-		setUser(data.session?.user ?? null);
-		setLoading(false);
-	});
+	let validation: Promise<void> | null = null;
+	let revalidateTimer: ReturnType<typeof setTimeout> | undefined;
+
+	const validateSession = (): Promise<void> => {
+		if (validation) return validation;
+		validation = (async () => {
+			const { data, error: authError } = await supabase.auth.getUser();
+			if (!authError && data.user) {
+				setUser(data.user);
+				setLoading(false);
+				return;
+			}
+			if (authError && isRetryableAuthError(authError)) {
+				const { data: cached } = await supabase.auth.getSession();
+				setUser(cached.session?.user ?? null);
+				setLoading(false);
+				return;
+			}
+			await supabase.auth.signOut({ scope: "local" }).catch(() => {});
+			setUser(null);
+			setLoading(false);
+		})().finally(() => {
+			validation = null;
+		});
+		return validation;
+	};
+
+	void validateSession();
+
+	const handleVisibility = () => {
+		if (document.visibilityState !== "visible") return;
+		if (revalidateTimer) clearTimeout(revalidateTimer);
+		revalidateTimer = setTimeout(() => {
+			revalidateTimer = undefined;
+			void validateSession();
+		}, 400);
+	};
+
+	document.addEventListener("visibilitychange", handleVisibility);
+	window.addEventListener("focus", handleVisibility);
 
 	const {
 		data: { subscription },
@@ -43,7 +83,12 @@ export function AuthProvider(props: { children: JSXElement }) {
 		setLoading(false);
 	});
 
-	onCleanup(() => subscription.unsubscribe());
+	onCleanup(() => {
+		subscription.unsubscribe();
+		document.removeEventListener("visibilitychange", handleVisibility);
+		window.removeEventListener("focus", handleVisibility);
+		if (revalidateTimer) clearTimeout(revalidateTimer);
+	});
 
 	const login = async (email: string, password: string): Promise<User> => {
 		setError(null);
@@ -67,7 +112,6 @@ export function AuthProvider(props: { children: JSXElement }) {
 	const signUp = async (
 		email: string,
 		password: string,
-		displayName?: string,
 	): Promise<User | null> => {
 		setError(null);
 
@@ -76,7 +120,6 @@ export function AuthProvider(props: { children: JSXElement }) {
 			password,
 			options: {
 				emailRedirectTo: `${window.location.origin}/workspace`,
-				...(displayName ? { data: { display_name: displayName } } : {}),
 			},
 		});
 
@@ -172,6 +215,19 @@ export function AuthProvider(props: { children: JSXElement }) {
 		setUser(null);
 	};
 
+	const signOutOthers = async (): Promise<void> => {
+		setError(null);
+
+		const { error: authError } = await supabase.auth.signOut({
+			scope: "others",
+		});
+
+		if (authError) {
+			setError(authError);
+			throw authError;
+		}
+	};
+
 	return (
 		<AuthContext.Provider
 			value={{
@@ -184,6 +240,7 @@ export function AuthProvider(props: { children: JSXElement }) {
 				updatePassword,
 				deleteAccount,
 				logout,
+				signOutOthers,
 			}}
 		>
 			{props.children}

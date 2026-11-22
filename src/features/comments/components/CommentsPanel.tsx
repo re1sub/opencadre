@@ -9,7 +9,6 @@ import type {
 import type { EntityContext } from "#/types/ai";
 import { formatTimestamp } from "#/utils/date";
 import { dropdownItemValue, getInitials } from "#/utils/misc";
-import { supabase } from "#/utils/supabase";
 import { REACTIONS_LIST } from "../constants/reactions";
 import type { Comment, CommentReaction } from "../types";
 import * as styles from "./commentsPanel.css";
@@ -28,21 +27,6 @@ interface CommentsPanelProps {
 	members?: WorkspaceMember[];
 }
 
-const MENTION_HREF = /mention:([0-9a-fA-F-]{36})/g;
-
-function resolveEntityPageId(entity?: EntityContext): string | null {
-	if (!entity) return null;
-	return entity.type === "page" ? entity.id : (entity.pageId ?? null);
-}
-
-function extractMentionIds(markdown: string): string[] {
-	const ids: string[] = [];
-	for (const match of markdown.matchAll(MENTION_HREF)) {
-		ids.push(match[1]);
-	}
-	return ids;
-}
-
 const CommentsPanel = (props: CommentsPanelProps) => {
 	const [commentDraft, setCommentDraft] = createSignal("");
 
@@ -55,18 +39,6 @@ const CommentsPanel = (props: CommentsPanelProps) => {
 		} catch {
 			return;
 		}
-		const pageId = resolveEntityPageId(props.entity);
-		if (!pageId) return;
-		for (const recipientId of new Set(extractMentionIds(text))) {
-			const { error } = await supabase.rpc("create_mention_notification", {
-				p_page_id: pageId,
-				p_recipient_id: recipientId,
-				p_excerpt: text,
-			});
-			if (error) {
-				console.error("create_mention_notification failed", error);
-			}
-		}
 	};
 
 	return (
@@ -77,12 +49,7 @@ const CommentsPanel = (props: CommentsPanelProps) => {
 					Comments
 				</div>
 
-				<div
-					style={{
-						display: "flex",
-						gap: "var(--wa-space-s)",
-					}}
-				>
+				<div class={styles.flexGapS}>
 					<div class={styles.commentForm}>
 						<MarkdownField
 							value={commentDraft()}
@@ -100,17 +67,13 @@ const CommentsPanel = (props: CommentsPanelProps) => {
 							size="s"
 							disabled={commentDraft().trim() === ""}
 							onClick={submitComment}
-							style={{
-								position: "absolute",
-								bottom: "0.2rem",
-								right: "0.5rem",
-							}}
+							class={styles.saveButton}
 							tabIndex={0}
 						>
 							<wa-icon
 								name="send-horizontal"
 								label="Save comment"
-								style={{ "font-size": "1.2rem" }}
+								class={styles.sendIcon}
 							></wa-icon>
 						</wa-button>
 					</div>
@@ -118,10 +81,10 @@ const CommentsPanel = (props: CommentsPanelProps) => {
 			</div>
 
 			<Show when={props.comments.length > 0}>
-				<wa-divider style={{ "--spacing": "var(--wa-space-s)" }}></wa-divider>
+				<wa-divider class={styles.dividerSpacingS}></wa-divider>
 				<div
 					class={styles.commentsFeed}
-					style={{ "max-height": props.maxHeight ?? "200px" }}
+					style={{ "--comments-max-height": props.maxHeight ?? "200px" }}
 				>
 					<For each={props.comments}>
 						{(comment) => {
@@ -131,7 +94,6 @@ const CommentsPanel = (props: CommentsPanelProps) => {
 							const name = () => getDisplayName(comment.authorId);
 							const initials = () => getInitials(name());
 
-							// reactions grouped by icon, with the users who reacted
 							const reactionGroups = () => {
 								const map = new Map<string, string[]>();
 								for (const r of props.reactions) {
@@ -165,35 +127,17 @@ const CommentsPanel = (props: CommentsPanelProps) => {
 								);
 
 							return (
-								<div
-									style={{
-										display: "flex",
-										gap: "var(--wa-space-s)",
-									}}
-								>
+								<div class={styles.flexGapS}>
 									<div class={styles.commentBubble}>
 										<div class={styles.commentMeta}>
-											<div
-												style={{
-													display: "flex",
-													gap: "var(--wa-space-s)",
-													"align-items": "center",
-												}}
-											>
+											<div class={styles.metaAuthorGroup}>
 												<wa-avatar
 													initials={initials()}
 													label={`Avatar with initials: ${initials()}`}
-													style={{ "--size": "25px" }}
+													class={styles.smallAvatar}
 												></wa-avatar>
-												<span
-													style={{
-														"font-weight": 600,
-														color: "var(--wa-color-text-normal)",
-													}}
-												>
-													{name()}
-												</span>
-												<span style={{ color: "var(--wa-color-text-quiet)" }}>
+												<span class={styles.authorName}>{name()}</span>
+												<span class={styles.quietText}>
 													{formatTimestamp(comment.createdAt)}
 												</span>
 											</div>
@@ -216,17 +160,7 @@ const CommentsPanel = (props: CommentsPanelProps) => {
 											/>
 										</div>
 
-										<div
-											style={{
-												display: "flex",
-												"align-items": "center",
-												gap: "var(--wa-space-3xs)",
-												position: "absolute",
-												bottom: "0",
-												right: "0",
-											}}
-										>
-											{/* Active reaction badges */}
+										<div class={styles.reactionBar}>
 											<For each={reactionGroups()}>
 												{(group) => {
 													const matched = REACTIONS_LIST.find(
@@ -255,9 +189,10 @@ const CommentsPanel = (props: CommentsPanelProps) => {
 																<wa-icon
 																	name={group.reaction}
 																	label={matched?.name ?? group.reaction}
+																	class={styles.reactionIcon}
 																	style={{
-																		color: matched?.color || "",
-																		"margin-right": "var(--wa-space-3xs)",
+																		"--comments-reaction-color":
+																			matched?.color || "",
 																	}}
 																	slot="start"
 																></wa-icon>
@@ -269,29 +204,17 @@ const CommentsPanel = (props: CommentsPanelProps) => {
 																	e.stopPropagation()
 																}
 															>
-																<div
-																	style={{
-																		display: "flex",
-																		"flex-direction": "column",
-																		gap: "var(--wa-space-3xs)",
-																	}}
-																>
+																<div class={styles.tooltipUsers}>
 																	<For each={group.users.slice(0, 5)}>
 																		{(userId) => {
 																			const name = getDisplayName(userId);
 																			const initials = getInitials(name);
 																			return (
-																				<div
-																					style={{
-																						display: "flex",
-																						gap: "var(--wa-space-xs)",
-																						"align-items": "center",
-																					}}
-																				>
+																				<div class={styles.tooltipUserRow}>
 																					<wa-avatar
 																						initials={initials}
 																						label={`Avatar with initials: ${initials}`}
-																						style={{ "--size": "25px" }}
+																						class={styles.smallAvatar}
 																					></wa-avatar>
 																					<span>{name}</span>
 																				</div>
@@ -300,15 +223,10 @@ const CommentsPanel = (props: CommentsPanelProps) => {
 																	</For>
 																	<Show when={group.users.length > 5}>
 																		<wa-divider
-																			style={{
-																				"--spacing": "var(--wa-space-3xs)",
-																			}}
+																			class={styles.dividerSpacing3xs}
 																		></wa-divider>
 																		<span
-																			style={{
-																				color: "var(--wa-color-text-quiet)",
-																				"font-size": "var(--wa-font-size-xs)",
-																			}}
+																			class={`${styles.quietText} ${styles.extraUsersFontSize}`}
 																		>
 																			+{group.users.length - 5} users
 																		</span>
@@ -339,23 +257,22 @@ const CommentsPanel = (props: CommentsPanelProps) => {
 												>
 													<wa-icon name="face-slightly-smiling-plus"></wa-icon>
 												</wa-button>
-												<div
-													style={{
-														display: "flex",
-														"flex-wrap": "wrap",
-													}}
-												>
+												<div class={styles.reactionPicker}>
 													<For each={REACTIONS_LIST}>
 														{(reaction) => (
 															<wa-dropdown-item
 																checked={reactedByMe(reaction.icon)}
 																value={reaction.icon}
-																style={{ padding: "var(--wa-space-xs)" }}
+																class={styles.dropdownItemPadding}
 															>
 																<wa-icon
 																	name={reaction.icon}
 																	label={reaction.name}
-																	style={{ color: reaction.color }}
+																	class={styles.dropdownReactionIcon}
+																	style={{
+																		"--comments-dropdown-reaction-color":
+																			reaction.color,
+																	}}
 																></wa-icon>
 															</wa-dropdown-item>
 														)}

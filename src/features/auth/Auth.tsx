@@ -5,6 +5,7 @@ import { createEffect, createSignal, Show } from "solid-js";
 import { useAuth } from "#/features/auth/AuthContext";
 import { logo } from "#/features/home/components/navbar.css";
 import { consentCheckboxRow } from "#/features/legal/legal.css";
+import { setPendingDisplayName } from "#/features/workspace/hooks/useProfile";
 import { useTheme } from "#/theme/ThemeProvider";
 import { toStringOrNull } from "#/utils/misc";
 import {
@@ -88,11 +89,12 @@ const Auth = (props: { view?: "signin" | "signup" | "forgot" | "reset" }) => {
 
 		try {
 			if (action === "signup") {
-				const created = await signUp(email, password, displayName);
+				const created = await signUp(email, password);
 				if (!created) {
 					setView("confirm");
 					return;
 				}
+				if (displayName?.trim()) setPendingDisplayName(displayName.trim());
 			} else {
 				await login(email, password);
 			}
@@ -198,7 +200,8 @@ const Auth = (props: { view?: "signin" | "signup" | "forgot" | "reset" }) => {
 		setError(null);
 		setPending(true);
 
-		signUp(email(), password(), displayName())
+		setPendingDisplayName(displayName().trim() || null);
+		signUp(email(), password())
 			.catch((signUpError: unknown) => {
 				setError(
 					signUpError instanceof Error

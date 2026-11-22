@@ -1,6 +1,7 @@
 import { Navigate, type RouteDefinition } from "@solidjs/router";
 import { lazy } from "solid-js";
 import RequireAuth from "#/features/auth/RequireAuth";
+import VaultProvider from "#/features/crypto/VaultProvider";
 
 const Auth = lazy(() => import("#/features/auth/Auth"));
 const Home = lazy(() => import("#/features/home/Home"));
@@ -14,7 +15,6 @@ export const routes: RouteDefinition[] = [
 		path: "/",
 		component: () => {
 			// @ts-expect-error: window.__TAURI__ is only available in Tauri context
-			// Hide homepage for native Tauri builds
 			if (typeof window !== "undefined" && window.__TAURI__) {
 				return <Navigate href="/workspace" />;
 			}
@@ -34,7 +34,9 @@ export const routes: RouteDefinition[] = [
 		path: "/workspace/*rest",
 		component: () => (
 			<RequireAuth>
-				<Workspace />
+				<VaultProvider>
+					<Workspace />
+				</VaultProvider>
 			</RequireAuth>
 		),
 	},

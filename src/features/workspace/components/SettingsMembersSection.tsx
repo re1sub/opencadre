@@ -15,7 +15,6 @@ import {
 	dialogBody,
 	dialogLabel,
 	memberAddRow,
-	memberAvatar,
 	memberEmail,
 	memberMeta,
 	memberName,
@@ -26,6 +25,7 @@ import {
 
 interface SettingsMembersSectionProps {
 	workspaceId: string;
+	workspaceName?: string;
 }
 
 const SettingsMembersSection = (props: SettingsMembersSectionProps) => {
@@ -63,7 +63,11 @@ const SettingsMembersSection = (props: SettingsMembersSectionProps) => {
 
 		setInviting(true);
 		try {
-			const status = await inviteMember(email, result.data.role);
+			const status = await inviteMember(
+				email,
+				result.data.role,
+				props.workspaceName ?? "",
+			);
 			if (status === "already-member") {
 				setMemberError("That person is already a member.");
 				return;
@@ -154,12 +158,16 @@ const SettingsMembersSection = (props: SettingsMembersSectionProps) => {
 				<For each={members()}>
 					{(member) => (
 						<div class={memberRow}>
-							<span
-								class={memberAvatar}
-								style={{ "background-color": member.color }}
-							>
-								{getInitials(member.name)}
-							</span>
+							<wa-avatar
+								initials={getInitials(member.name)}
+								label={`Avatar with initials: ${getInitials(member.name)}`}
+								style={{
+									"--size": "2rem",
+									"background-color":
+										member.color ?? "var(--wa-color-neutral-fill-normal)",
+									color: "#fff",
+								}}
+							></wa-avatar>
 							<div class={memberMeta}>
 								<span class={memberName}>
 									{member.name}

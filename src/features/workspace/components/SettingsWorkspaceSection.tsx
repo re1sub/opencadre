@@ -1,5 +1,7 @@
 import { createSignal, For, Show } from "solid-js";
+import { useVault } from "#/features/crypto/VaultProvider";
 import ConfirmDialog from "#/features/ui/ConfirmDialog";
+import ReauthDialog from "#/features/ui/ReauthDialog";
 import { dropdownItemValue, getErrorMessage } from "#/utils/misc";
 import { canDeleteWorkspace, canRenameWorkspace } from "../constants/roles";
 import { useWorkspaceMembersAdapter } from "../hooks/useWorkspaceMembersAdapter";
@@ -17,6 +19,7 @@ import {
 	memberEmail,
 	memberMeta,
 	memberName,
+	settingsActions,
 	settingsSection,
 	settingsSectionTitle,
 	workspaceDangerRow,
@@ -44,6 +47,7 @@ interface SettingsWorkspaceSectionProps {
 
 const SettingsWorkspaceSection = (props: SettingsWorkspaceSectionProps) => {
 	const { myRole } = useWorkspaceMembersAdapter(() => props.workspaceId);
+	const vault = useVault();
 
 	const [wsNameDraft, setWsNameDraft] = createSignal<string | null>(null);
 	const [wsDescriptionDraft, setWsDescriptionDraft] = createSignal<
@@ -53,13 +57,22 @@ const SettingsWorkspaceSection = (props: SettingsWorkspaceSectionProps) => {
 		"delete" | "leave" | null
 	>(null);
 	const [importError, setImportError] = createSignal<string | null>(null);
+	const [exportError, setExportError] = createSignal<string | null>(null);
 	const [importedCount, setImportedCount] = createSignal<number | null>(null);
+	const [reauthForExport, setReauthForExport] = createSignal(false);
 	let importInput!: HTMLInputElement;
 
-	const handleExport = async () => {
+	const runExport = async () => {
 		const ws = props.workspace();
 		if (!ws) return;
-		await exportAllPages(ws, props.pages());
+		setExportError(null);
+		try {
+			await exportAllPages(ws, props.pages(), (sealed, aad) =>
+				vault.openTextSafe(ws.id, sealed, aad, "export"),
+			);
+		} catch (err) {
+			setExportError(getErrorMessage(err, "Export failed unexpectedly."));
+		}
 	};
 
 	const handleImportFile = async (e: Event) => {
@@ -77,6 +90,9 @@ const SettingsWorkspaceSection = (props: SettingsWorkspaceSectionProps) => {
 			const count = await importAllPages(file, {
 				workspaceId: ws.id,
 				addPage: props.onAddPage,
+				sealText: (text, aad) => vault.sealText(ws.id, text, aad),
+				openSealed: (sealed, aad) =>
+					vault.openTextSafe(ws.id, sealed, aad, "import"),
 			});
 			setImportedCount(count);
 		} catch (err) {
@@ -202,19 +218,12 @@ const SettingsWorkspaceSection = (props: SettingsWorkspaceSectionProps) => {
 						Download all pages in this workspace as a .zip file, or restore
 						pages from a previously exported archive into this workspace.
 					</p>
-					<div
-						style={{
-							display: "flex",
-							"flex-wrap": "wrap",
-							gap: "var(--wa-space-s)",
-							"align-items": "center",
-						}}
-					>
+					<div class={settingsActions}>
 						<wa-button
 							type="button"
 							variant="neutral"
 							appearance="outlined"
-							onClick={handleExport}
+							onClick={() => setReauthForExport(true)}
 						>
 							<wa-icon slot="start" name="download" label="Export"></wa-icon>
 							Export all pages
@@ -236,6 +245,9 @@ const SettingsWorkspaceSection = (props: SettingsWorkspaceSectionProps) => {
 							onChange={handleImportFile}
 						/>
 					</div>
+					<Show when={exportError()}>
+						<p style={{ color: "var(--wa-color-danger)" }}>{exportError()}</p>
+					</Show>
 					<Show when={importError()}>
 						<p style={{ color: "var(--wa-color-danger)" }}>{importError()}</p>
 					</Show>
@@ -301,6 +313,15 @@ const SettingsWorkspaceSection = (props: SettingsWorkspaceSectionProps) => {
 				</div>
 
 				<wa-divider style={{ "--color": "transparent" }}></wa-divider>
+
+				<Show when={reauthForExport()}>
+					<ReauthDialog
+						label="Confirm export"
+						message="Re-enter your password to download plaintext page content."
+						onAuthenticated={runExport}
+						onClose={() => setReauthForExport(false)}
+					></ReauthDialog>
+				</Show>
 
 				<Show when={confirmAction() === "delete"}>
 					<ConfirmDialog

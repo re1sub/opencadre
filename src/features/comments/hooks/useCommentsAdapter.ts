@@ -1,4 +1,9 @@
 import { createEffect, createSignal, onCleanup } from "solid-js";
+import { reportDecryptionError } from "#/features/crypto/decryptionErrors";
+import { VaultDecryptionError } from "#/features/crypto/errors";
+import { useVault } from "#/features/crypto/VaultProvider";
+import { commentAad, notificationAad } from "#/features/crypto/vault";
+import { useProfile } from "#/features/workspace/hooks/useProfile";
 import type { Tables } from "#/types/database";
 import { nowIso } from "#/utils/date";
 import { logActivity } from "#/utils/log";
@@ -16,16 +21,19 @@ type CommentThreadRow = Tables<"comment_threads">;
 type CommentRow = Tables<"comments">;
 type CommentReactionRow = Tables<"comment_reactions">;
 
-/**
- * Reactive comments store for a single entity (a page or a card). Owns thread,
- * comment and reaction state, persists writes through Supabase and syncs
- * inserts/updates/deletes via the realtime registrar.
- *
- * Thread ids are generated client-side and persisted explicitly, so a thread's
- * id is stable from creation and comments can safely reference it once the
- * thread row exists (FK ordering is handled via `threadInserts`).
- */
+const MENTION_PATTERN = /mention:([0-9a-fA-F-]{36})/g;
+const EXCERPT_LENGTH = 300;
+
+const extractMentionIds = (markdown: string): string[] => {
+	const ids: string[] = [];
+	for (const match of markdown.matchAll(MENTION_PATTERN)) ids.push(match[1]);
+	return ids;
+};
+
 export function useCommentsAdapter(entity: () => CommentEntity | null) {
+	const vault = useVault();
+	const { name: ownName } = useProfile();
+
 	const [threads, setThreads] = createSignal<CommentThread[]>([]);
 	const [reactions, setReactions] = createSignal<CommentReaction[]>([]);
 	const [authorNames, setAuthorNames] = createSignal<Record<string, string>>(
@@ -33,7 +41,8 @@ export function useCommentsAdapter(entity: () => CommentEntity | null) {
 	);
 	const [currentUserId, setCurrentUserId] = createSignal<string | null>(null);
 
-	// threadId -> promise that resolves once the thread row has been inserted.
+	let currentWorkspaceId = "";
+
 	const threadInserts = new Map<string, Promise<void>>();
 
 	const knownCommentIds = () => {
@@ -47,12 +56,12 @@ export function useCommentsAdapter(entity: () => CommentEntity | null) {
 		return map[userId] ?? userId.slice(0, 8);
 	};
 
-	const toComment = (row: CommentRow): Comment => ({
+	const toComment = (row: CommentRow, text: string): Comment => ({
 		id: row.id,
 		parentId: row.thread_id,
 		author: displayName(row.author_id),
 		authorId: row.author_id,
-		text: row.content,
+		text,
 		createdAt: row.created_at,
 	});
 
@@ -73,7 +82,25 @@ export function useCommentsAdapter(entity: () => CommentEntity | null) {
 		comments: [],
 	});
 
-	const resolveWorkspace = async (e: CommentEntity) => {
+	const openComment = async (row: CommentRow): Promise<string> => {
+		if (!currentWorkspaceId) {
+			const err = new VaultDecryptionError(
+				"Missing workspace for this comment.",
+			);
+			reportDecryptionError(`unknown:comment:${row.id}`, err);
+			throw err;
+		}
+		return vault.openTextSafe(
+			currentWorkspaceId,
+			row.ciphertext,
+			commentAad(row.id),
+			`comment:${row.id}`,
+		);
+	};
+
+	const resolveContext = async (
+		e: CommentEntity,
+	): Promise<{ workspaceId: string; pageId: string } | null> => {
 		if (e.type === "page") {
 			const { data, error } = await supabase
 				.from("pages")
@@ -81,7 +108,7 @@ export function useCommentsAdapter(entity: () => CommentEntity | null) {
 				.eq("id", e.id)
 				.single();
 			if (error || !data) return null;
-			return data.workspace_id;
+			return { workspaceId: data.workspace_id, pageId: e.id };
 		}
 		const { data: cardData, error: cardError } = await supabase
 			.from("cards")
@@ -95,30 +122,26 @@ export function useCommentsAdapter(entity: () => CommentEntity | null) {
 			.eq("id", cardData.page_id)
 			.single();
 		if (pageError || !pageData) return null;
-		return pageData.workspace_id;
+		return { workspaceId: pageData.workspace_id, pageId: cardData.page_id };
 	};
 
 	const loadAuthors = async (workspaceId: string) => {
 		const { data, error } = await supabase
 			.from("workspace_members")
-			.select("user_id, profiles(display_name)")
+			.select("user_id")
 			.eq("workspace_id", workspaceId);
 		if (error) return;
 
 		const map: Record<string, string> = {};
 		for (const m of data ?? []) {
 			if (!m.user_id) continue;
-			const name = m.profiles?.display_name?.trim();
-			map[m.user_id] = name || m.user_id.slice(0, 8);
+			map[m.user_id] = m.user_id.slice(0, 8);
 		}
 
 		const {
 			data: { user },
 		} = await supabase.auth.getUser();
-		const displayNameFlag = user?.user_metadata?.display_name;
-		if (user && typeof displayNameFlag === "string" && displayNameFlag.trim()) {
-			map[user.id] = displayNameFlag.trim();
-		}
+		if (user) map[user.id] = ownName() || user.id.slice(0, 8);
 
 		setAuthorNames(map);
 	};
@@ -145,12 +168,16 @@ export function useCommentsAdapter(entity: () => CommentEntity | null) {
 			.order("created_at", { ascending: true });
 		if (commentError) throw commentError;
 
+		const withText = await Promise.all(
+			(commentData ?? []).map(async (row) =>
+				toComment(row, await openComment(row)),
+			),
+		);
+
 		setThreads(
 			threadData.map((t) => ({
 				...emptyThread(t),
-				comments: (commentData ?? [])
-					.filter((c) => c.thread_id === t.id)
-					.map(toComment),
+				comments: withText.filter((c) => c.parentId === t.id),
 			})),
 		);
 	};
@@ -169,12 +196,14 @@ export function useCommentsAdapter(entity: () => CommentEntity | null) {
 		setReactions((data ?? []).map(toReaction));
 	};
 
-	const applyRemoteComment = (row: CommentRow) => {
+	const applyRemoteComment = async (row: CommentRow) => {
+		if (knownCommentIds().has(row.id)) return;
+		const comment = toComment(row, await openComment(row));
 		setThreads((current) =>
 			current.map((t) => {
 				if (t.id !== row.thread_id) return t;
 				if (t.comments.some((c) => c.id === row.id)) return t;
-				return { ...t, comments: [...t.comments, toComment(row)] };
+				return { ...t, comments: [...t.comments, comment] };
 			}),
 		);
 	};
@@ -197,23 +226,26 @@ export function useCommentsAdapter(entity: () => CommentEntity | null) {
 	});
 
 	const unregisterComments = registerRealtimeHandlers("comments", {
-		applyInsert: (row) => applyRemoteComment(row as unknown as CommentRow),
+		applyInsert: (row) => {
+			void applyRemoteComment(row as unknown as CommentRow).catch(() => {});
+		},
 		applyUpdate: (row) => {
 			const r = row as unknown as CommentRow;
-			setThreads((current) =>
-				current.map((t) =>
-					t.id === r.thread_id
-						? {
-								...t,
-								comments: t.comments.map((c) =>
-									c.id === r.id
-										? { ...c, text: r.content, createdAt: r.created_at }
-										: c,
-								),
-							}
-						: t,
-				),
-			);
+			void (async () => {
+				const text = await openComment(r);
+				setThreads((current) =>
+					current.map((t) =>
+						t.id === r.thread_id
+							? {
+									...t,
+									comments: t.comments.map((c) =>
+										c.id === r.id ? { ...c, text, createdAt: r.created_at } : c,
+									),
+								}
+							: t,
+					),
+				);
+			})().catch(() => {});
 		},
 		applyDelete: (row) => {
 			const r = row as unknown as CommentRow;
@@ -253,11 +285,21 @@ export function useCommentsAdapter(entity: () => CommentEntity | null) {
 
 	createEffect(() => {
 		const e = entity();
+		const status = vault.status();
+		vault.epoch();
 		if (!e?.id) return;
-		(async () => {
+
+		if (status !== "unlocked") {
+			setThreads([]);
+			return;
+		}
+
+		void (async () => {
 			try {
-				const workspaceId = await resolveWorkspace(e);
-				if (workspaceId) await loadAuthors(workspaceId);
+				const context = await resolveContext(e);
+				if (!context) return;
+				currentWorkspaceId = context.workspaceId;
+				await loadAuthors(context.workspaceId);
 				await fetchThreads(e);
 				await fetchReactions();
 			} catch (err) {
@@ -342,27 +384,85 @@ export function useCommentsAdapter(entity: () => CommentEntity | null) {
 		return thread;
 	};
 
+	const notifyComment = async (
+		commentId: string,
+		text: string,
+		workspaceId: string,
+	) => {
+		const {
+			data: { user },
+		} = await supabase.auth.getUser();
+		if (!user) return;
+
+		try {
+			const title = `${displayName(user.id)} mentioned you`;
+			const body = text.trim().slice(0, EXCERPT_LENGTH);
+			const [mentionTitle, commentTitle, sealedBody] = await Promise.all([
+				vault.sealText(
+					workspaceId,
+					title,
+					notificationAad(workspaceId, commentId, "title"),
+				),
+				vault.sealText(
+					workspaceId,
+					`${displayName(user.id)} commented`,
+					notificationAad(workspaceId, commentId, "title"),
+				),
+				vault.sealText(
+					workspaceId,
+					body,
+					notificationAad(workspaceId, commentId, "body"),
+				),
+			]);
+
+			const { error } = await supabase.rpc("create_comment_notifications", {
+				p_comment_id: commentId,
+				p_mention_title: mentionTitle,
+				p_comment_title: commentTitle,
+				p_body: sealedBody,
+				p_recipient_ids: [...new Set(extractMentionIds(text))],
+			});
+			if (error) console.error("create_comment_notifications failed", error);
+		} catch (err) {
+			console.error("Failed to create comment notifications", err);
+		}
+	};
+
 	const addComment = async (
 		threadId: string,
 		text: string,
 	): Promise<Comment> => {
+		const e = entity();
+		if (!e) throw new Error("Cannot comment without an entity");
+
 		const {
 			data: { user },
 		} = await supabase.auth.getUser();
 		if (!user) throw new Error("Not authenticated");
 
-		// The thread row must exist before the comment can reference it.
+		const context = await resolveContext(e);
+		if (!context) throw new Error("Could not resolve the workspace");
+
 		const pending = threadInserts.get(threadId);
 		if (pending) await pending;
+
+		const body = text.trim();
+		const id = crypto.randomUUID();
+		const sealed = await vault.sealText(
+			context.workspaceId,
+			body,
+			commentAad(id),
+		);
 
 		const { data, error } = await supabase
 			.from("comments")
 			.insert({
+				id,
 				thread_id: threadId,
 				author_id: user.id,
-				content: text.trim(),
+				ciphertext: sealed,
 			})
-			.select()
+			.select("id, thread_id, author_id, created_at")
 			.single();
 		if (error) throw error;
 
@@ -371,7 +471,7 @@ export function useCommentsAdapter(entity: () => CommentEntity | null) {
 			parentId: data.thread_id,
 			author: displayName(user.id),
 			authorId: user.id,
-			text: data.content,
+			text: body,
 			createdAt: data.created_at,
 		};
 
@@ -383,15 +483,10 @@ export function useCommentsAdapter(entity: () => CommentEntity | null) {
 			),
 		);
 
-		const e = entity();
-		if (e) {
-			const workspaceId = await resolveWorkspace(e);
-			if (workspaceId) {
-				await logActivity(workspaceId, e.type, e.id, "comment_add", {
-					thread_id: threadId,
-				});
-			}
-		}
+		await logActivity(context.workspaceId, e.type, e.id, "comment_add", {
+			thread_id: threadId,
+		});
+		await notifyComment(id, body, context.workspaceId);
 
 		return created;
 	};
@@ -412,9 +507,16 @@ export function useCommentsAdapter(entity: () => CommentEntity | null) {
 		);
 	};
 
-	const deleteThread = (threadId: string) => {
+	const deleteThread = async (threadId: string) => {
+		const { error } = await supabase
+			.from("comment_threads")
+			.delete()
+			.eq("id", threadId);
+		if (error) {
+			console.error("Failed to delete the comment thread", error);
+			return;
+		}
 		setThreads((current) => current.filter((t) => t.id !== threadId));
-		supabase.from("comment_threads").delete().eq("id", threadId);
 	};
 
 	const toggleReaction = async (commentId: string, reaction: string) => {
@@ -429,8 +531,15 @@ export function useCommentsAdapter(entity: () => CommentEntity | null) {
 		);
 
 		if (existing) {
+			const { error } = await supabase
+				.from("comment_reactions")
+				.delete()
+				.eq("id", existing.id);
+			if (error) {
+				console.error("Failed to remove the reaction", error);
+				return;
+			}
 			setReactions((prev) => prev.filter((r) => r.id !== existing.id));
-			await supabase.from("comment_reactions").delete().eq("id", existing.id);
 			return;
 		}
 
@@ -439,7 +548,11 @@ export function useCommentsAdapter(entity: () => CommentEntity | null) {
 			.insert({ comment_id: commentId, user_id: user, reaction })
 			.select()
 			.single();
-		if (error || !data) return;
+		if (error) {
+			console.error("Failed to add the reaction", error);
+			return;
+		}
+		if (!data) return;
 		setReactions((prev) => {
 			if (prev.some((r) => r.id === data.id)) return prev;
 			return [...prev, toReaction(data)];

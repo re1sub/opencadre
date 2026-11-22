@@ -1,4 +1,6 @@
 import { createEffect, createSignal, onCleanup } from "solid-js";
+import { sealInviteLabel } from "#/features/crypto/inviteLabel";
+import { logSecurityEvent } from "#/features/crypto/securityEvents";
 import { logActivity } from "#/utils/log";
 import { registerRealtimeHandlers } from "#/utils/realtime/registrar";
 import { isEmail } from "#/utils/string";
@@ -13,14 +15,13 @@ interface WorkspaceMemberRow {
 	user_id?: string | null;
 	role: string;
 	email?: string | null;
-	profiles?: { display_name: string | null } | null;
 }
 
 export type InviteStatus = "invited" | "added" | "already-member";
 
 const toMember = (m: WorkspaceMemberRow): WorkspaceMember => ({
 	id: m.user_id ?? m.email ?? "",
-	name: m.profiles?.display_name?.trim() || m.email || "Unknown",
+	name: m.email?.trim() || (m.user_id ? m.user_id.slice(0, 8) : "Unknown"),
 	email: m.email ?? "",
 	role: m.role as WorkspaceRole,
 });
@@ -29,24 +30,6 @@ export function useWorkspaceMembersAdapter(workspaceId: () => string) {
 	const [members, setMembers] = createSignal<WorkspaceMember[]>([]);
 	const [myRole, setMyRole] = createSignal<WorkspaceRole>("member");
 	const [meUserId, setMeUserId] = createSignal<string | null>(null);
-
-	// Realtime rows don't embed the profiles join, so resolve pending display
-	// names via a scoped profiles lookup keyed by user_id.
-	const patchMemberNameFromProfile = async (
-		memberId: string,
-		userId: string,
-	) => {
-		const { data } = await supabase
-			.from("profiles")
-			.select("display_name")
-			.eq("id", userId)
-			.maybeSingle();
-		const displayName = data?.display_name?.trim();
-		if (!displayName) return;
-		setMembers((prev) =>
-			prev.map((m) => (m.id === memberId ? { ...m, name: displayName } : m)),
-		);
-	};
 
 	const unregister = registerRealtimeHandlers("workspace_members", {
 		applyInsert: (row) => {
@@ -57,7 +40,6 @@ export function useWorkspaceMembersAdapter(workspaceId: () => string) {
 				...prev.filter((m) => m.id !== mapped.id && m.email !== mapped.email),
 				mapped,
 			]);
-			if (r.user_id) patchMemberNameFromProfile(mapped.id, r.user_id);
 		},
 		applyUpdate: (row) => {
 			const r = row as unknown as WorkspaceMemberRow;
@@ -70,7 +52,7 @@ export function useWorkspaceMembersAdapter(workspaceId: () => string) {
 						: m,
 				),
 			);
-			if (r.user_id) patchMemberNameFromProfile(mapped.id, r.user_id);
+
 			if (r.user_id && r.user_id === meUserId()) {
 				setMyRole(r.role as WorkspaceRole);
 			}
@@ -96,7 +78,7 @@ export function useWorkspaceMembersAdapter(workspaceId: () => string) {
 
 		const { data, error } = await supabase
 			.from("workspace_members")
-			.select("workspace_id, user_id, role, email, profiles(display_name)")
+			.select("workspace_id, user_id, role, email")
 			.eq("workspace_id", wsId);
 		if (error) throw error;
 
@@ -118,11 +100,16 @@ export function useWorkspaceMembersAdapter(workspaceId: () => string) {
 	const inviteMember = async (
 		email: string,
 		role: "admin" | "member" | "guest",
+		workspaceName: string,
 	): Promise<InviteStatus> => {
 		const {
 			data: { session },
 		} = await supabase.auth.getSession();
 		const token = session?.access_token ?? "";
+
+		const inviteLabel = workspaceName
+			? await sealInviteLabel(workspaceName)
+			: null;
 
 		const response = await fetch(EDGE_FUNCTION_URL, {
 			method: "POST",
@@ -134,6 +121,7 @@ export function useWorkspaceMembersAdapter(workspaceId: () => string) {
 				workspace_id: workspaceId(),
 				email,
 				role,
+				invite_label: inviteLabel,
 			}),
 		});
 
@@ -153,7 +141,6 @@ export function useWorkspaceMembersAdapter(workspaceId: () => string) {
 
 		await fetchMembers(workspaceId());
 		await logActivity(workspaceId(), "member", null, "member_invite", {
-			email,
 			role,
 		});
 		return payload.status;
@@ -194,15 +181,23 @@ export function useWorkspaceMembersAdapter(workspaceId: () => string) {
 			throw new Error("You can't remove yourself from the workspace.");
 		}
 		const isEmailAddress = isEmail(memberId);
-		let query = supabase
-			.from("workspace_members")
-			.delete()
-			.eq("workspace_id", workspaceId());
-		query = isEmailAddress
-			? query.eq("email", memberId)
-			: query.eq("user_id", memberId);
-		const { error } = await query;
-		if (error) throw error;
+		if (isEmailAddress) {
+			const { error } = await supabase
+				.from("workspace_members")
+				.delete()
+				.eq("workspace_id", workspaceId())
+				.eq("email", memberId);
+			if (error) throw error;
+		} else {
+			const { error } = await supabase.rpc("remove_workspace_member", {
+				p_workspace_id: workspaceId(),
+				p_user_id: memberId,
+			});
+			if (error) throw error;
+			await logSecurityEvent("member.removed", {
+				workspace_id: workspaceId(),
+			});
+		}
 
 		await logActivity(workspaceId(), "member", memberId, "member_remove");
 

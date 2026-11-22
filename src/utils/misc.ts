@@ -25,7 +25,16 @@ export function dropdownItemValue(e: Event) {
 }
 
 export function getErrorMessage(err: unknown, fallback: string): string {
-	return err instanceof Error ? err.message : fallback;
+	if (err instanceof Error && err.message) return err.message;
+	if (
+		typeof err === "object" &&
+		err !== null &&
+		"message" in err &&
+		typeof err.message === "string" &&
+		err.message
+	)
+		return err.message;
+	return fallback;
 }
 
 export function isPlainObject(

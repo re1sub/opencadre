@@ -1,6 +1,5 @@
 import { createSignal, For, onMount, Show } from "solid-js";
 import type { Tables } from "#/types/database";
-import { uniqueValues } from "#/utils/array";
 import { formatDateTime } from "#/utils/date";
 import { supabase } from "#/utils/supabase";
 import {
@@ -32,18 +31,10 @@ const SettingsActivitySection = (props: SettingsActivitySectionProps) => {
 			return;
 		}
 
-		const userIds = uniqueValues(data, (l) => l.user_id);
-		const { data: profiles } = await supabase
-			.from("profiles")
-			.select("id, display_name")
-			.in("id", userIds as string[]);
-
-		const profileMap = new Map(profiles?.map((p) => [p.id, p.display_name]));
-
 		setLogs(
 			data.map((l) => ({
 				...l,
-				display_name: l.user_id ? profileMap.get(l.user_id) : null,
+				display_name: null,
 			})),
 		);
 	};

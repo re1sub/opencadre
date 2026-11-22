@@ -52,7 +52,7 @@ async function persist(next: Shortcuts) {
 	await supabase.from("user_settings").upsert(
 		{
 			user_id: user.id,
-			shortcuts: next as unknown as Json,
+			shortcuts: next as unknown as NonNullable<Json>,
 			updated_at: nowIso(),
 		},
 		{ onConflict: "user_id" },
