@@ -609,8 +609,10 @@ export const settingsFooter = style({
 	width: "100%",
 });
 
-export const settingsFooterSpacer = style({
+export const settingsFooterVersion = style({
 	flex: 1,
+	color: "var(--wa-color-text-quiet)",
+	fontSize: "0.75rem",
 });
 
 export const dangerZone = style({

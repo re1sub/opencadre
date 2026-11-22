@@ -1,4 +1,5 @@
 import { createSignal, For, Show } from "solid-js";
+import { APP_VERSION } from "#/utils/appVersion";
 import { useDialog } from "#/utils/useDialog";
 import { canManageMembers } from "../constants/roles";
 import { useWorkspaceMembersAdapter } from "../hooks/useWorkspaceMembersAdapter";
@@ -14,7 +15,7 @@ import {
 	settingsBack,
 	settingsDialogContainer,
 	settingsFooter,
-	settingsFooterSpacer,
+	settingsFooterVersion,
 	settingsLayout,
 	settingsNav,
 	settingsNavButton,
@@ -171,9 +172,9 @@ const SettingsDialog = (props: SettingsDialogProps) => {
 				</div>
 			</div>
 
-			<div slot="footer">
+			<div slot="footer" style={{ width: "100%" }}>
 				<div class={settingsFooter}>
-					<span class={settingsFooterSpacer}></span>
+					<small class={settingsFooterVersion}>v{APP_VERSION}</small>
 					<wa-button variant="brand" onClick={dialog.close}>
 						Done
 					</wa-button>

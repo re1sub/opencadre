@@ -7,6 +7,7 @@ import { logo } from "#/features/home/components/navbar.css";
 import { consentCheckboxRow } from "#/features/legal/legal.css";
 import { setPendingDisplayName } from "#/features/workspace/hooks/useProfile";
 import { useTheme } from "#/theme/ThemeProvider";
+import { APP_VERSION } from "#/utils/appVersion";
 import { toStringOrNull } from "#/utils/misc";
 import {
 	card,
@@ -15,6 +16,7 @@ import {
 	linkEnd,
 	orRow,
 	page,
+	versionBadge,
 } from "./auth.css";
 import {
 	forgotPasswordSchema,
@@ -520,6 +522,7 @@ const Auth = (props: { view?: "signin" | "signup" | "forgot" | "reset" }) => {
 					label="Toggle theme"
 				></wa-icon>
 			</wa-button>
+			<small class={versionBadge}>v{APP_VERSION}</small>
 		</main>
 	);
 };

@@ -55,3 +55,12 @@ export const orRow = style({
 	gap: "1rem",
 	width: "100%",
 });
+
+export const versionBadge = style({
+	position: "fixed",
+	bottom: "var(--wa-space-s)",
+	left: "50%",
+	transform: "translateX(-50%)",
+	color: "var(--wa-color-text-quiet)",
+	fontSize: "0.75rem",
+});
