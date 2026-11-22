@@ -33,13 +33,13 @@ production.
 
 ### Hooks and gates
 
-- **pre-commit:** `pnpm run pre-commit` runs Biome lint + format on staged
-  files.
-- **commit-msg:** `pnpm run commitlint --edit $1` validates the commit message
-  against the Conventional Commits specification. Non-conforming messages
-  are rejected.
-- **pre-push:** the Makefile target runs a full `pnpm build` to ensure every
-  push to the remote is buildable.
+- **pre-commit:** `.husky/pre-commit` runs `pnpm exec lint-staged`, which checks
+  staged files with Biome.
+- **commit-msg:** `.husky/commit-msg` runs `pnpm exec commitlint --edit "$1"` to
+  validate the message against Conventional Commits.
+- **pre-push:** `.husky/pre-push` runs
+  `pnpm lint:full && pnpm test:run && pnpm typecheck && pnpm build` to ensure
+  every push is lint-clean, tested, typed, and buildable.
 
 ---
 
@@ -89,8 +89,11 @@ docs: add architecture and database documentation
 | --- | --- |
 | `pnpm install` | Install dependencies |
 | `pnpm dev` | Start local Vite dev server |
-| `pnpm build` | Production build (lint + typecheck + Vite bundle) |
+| `pnpm build` | Vite production build only |
 | `pnpm typecheck` | TypeScript type checking only |
+| `pnpm lint` | Biome lint |
+| `pnpm lint:full` | Biome check (lint + format) |
+| `pnpm format` | Biome format |
 | `pnpm test:run` | Run Vitest unit tests (single run) |
 | `pnpm test` | Start Vitest in watch mode |
 | `pnpm deploy` | Build + deploy to Cloudflare Pages production |
@@ -103,14 +106,13 @@ docs: add architecture and database documentation
 The project includes a local Supabase stack for offline development:
 
 ```bash
-make supabase-start     # Start Docker-based local stack
-make supabase-stop      # Stop local stack
-make supabase-restart   # Reset and restart
-make supabase-db-reset  # Reset to a clean state
-make supabase-rebuild   # Rebuild local containers
+pnpm supabase:start     # Start Docker-based local stack
+pnpm supabase:stop      # Stop local stack
+pnpm supabase:status    # Show local URLs and keys
 ```
 
-The local stack mirrors the remote schema, seed data, and RLS policies.
+The local stack mirrors the remote schema, seed data, and RLS policies. The
+Makefile only contains `deploy-dev`; there are no `make supabase-*` targets.
 
 ---
 
@@ -138,9 +140,9 @@ flowchart LR
 | Push to `main` | Cloudflare Pages builds and publishes a production deployment |
 | PR merged to `dev` or `main` | Automatic rebuild |
 
-The build runs `pnpm build`, which includes Biome lint + format, TypeScript
-type checking, and the Vite production bundle. The `dist/` output is served
-directly by Cloudflare Pages.
+Cloudflare Pages runs `pnpm build`, which is `vite build` only, and serves the
+`dist/` output. Biome checks, unit tests, and TypeScript checking are enforced
+locally by the Husky pre-push hook. There is no separate CI workflow.
 
 ---
 
@@ -160,11 +162,12 @@ several focused development sessions.
 | 2026-09-10 | Edge functions migrated to `withSupabase` pattern |
 | 2026-09-11 | Demo links added; responsiveness improvements |
 | 2026-09-11 | Deploy script added (`pnpm deploy`) |
+| 2026-11-04 | Release 1.7.0 |
 
 ### Commit statistics
 
-- **Total commits (as of 2026-09-11):** 213
-- **Commit range:** 2026-07-24 to 2026-09-11
+- **Total commits (at `a9c5bef`, 2026-11-04):** 312
+- **Commit range:** 2026-07-24 to 2026-11-04
 - **Primary language:** TypeScript
 - **Repository:** https://github.com/re1sub/opencadre
 
@@ -180,7 +183,7 @@ several focused development sessions.
 | Security | Output sanitization in Markdown editor, Content-Security-Policy headers, `.env.example` completeness |
 | Error handling | Global `ErrorBoundary` for uncaught runtime errors |
 | Component tests | SolidJS component unit tests (auth form, editable text, confirm dialog) |
-| CI/CD | GitHub Actions pipeline for lint, typecheck, test, build, and Cloudflare Pages deploy |
+| CI/CD | GitHub Actions pipeline for lint, typecheck, test, build, and Cloudflare Pages deploy (not yet present; checks currently run in Husky hooks) |
 
 ### Medium-term
 
@@ -189,7 +192,7 @@ several focused development sessions.
 | Markdown table editing | Native table block inside the TipTap editor |
 | Search | Full-text search across workspace pages |
 | Profile avatars | User-uploaded avatars in `profiles.avatar_url` |
-| `profiles` table triggers | `sync_profile_display_name` to stay in sync with auth metadata |
+| Shared display names | Make display names decryptable by teammates under the workspace key |
 | Owner transfer | Transfer workspace ownership to another member |
 | Export workspace | Full JSON/CSV export of workspace content |
 

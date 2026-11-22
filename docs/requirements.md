@@ -40,6 +40,7 @@ experience is consistent no matter what kind of page a user is working in.
 | Individual users | Personal knowledge management, note taking, and task tracking in one tool |
 | Small teams | Shared workspaces, role-based access, invitations, collaboration |
 | Workspace owners | Administer members, roles, permissions, and the workspace itself |
+| Privacy-conscious users | Content that the service provider cannot read, with a recoverable key |
 | Evaluators | Need a demonstrable, secure, documented application |
 
 ## 3. Personas
@@ -152,6 +153,22 @@ each story maps to real behavior in the application.
 | AI-01 | member | generate content with an AI assistant | I can draft faster. |
 | AI-02 | member | have AI output inserted directly as markdown | I can use it immediately. |
 
+### 4.9 Security and end-to-end encryption
+
+| ID | As a... | I want to... | So that... |
+| --- | --- | --- | --- |
+| E-01 | user | have encryption set up automatically on my first workspace visit | I do not have to configure a passphrase. |
+| E-02 | user | save a recovery code once and acknowledge it | I can regain access if I lose my devices. |
+| E-03 | user | unlock automatically on a browser I already trust | I do not type the recovery code every day. |
+| E-04 | user on a new browser | unlock with my recovery code or a link approved by a trusted device | I can access my content without sharing my recovery code. |
+| E-05 | user with several trusted devices | choose which device approves a new link request | I can pick a device I currently have access to. |
+| E-06 | user | revoke other trusted devices from Settings | a lost or shared device can no longer unlock my vault. |
+| E-07 | user | be unable to revoke the device I am currently using | I never lock myself and all other devices out by mistake. |
+| E-08 | user | sign out of other app sessions | I end their sessions without revoking vault trust. |
+| E-09 | user | regenerate my recovery code after re-authentication | I can replace a code I may have exposed. |
+| E-10 | workspace owner/admin | have workspace keys rotated when a member is removed | the removed member cannot read newly written content. |
+| E-11 | member | see an email or short id instead of another user's display name | private names stay unreadable to teammates. |
+
 ## 5. User journeys
 
 ### 5.1 Onboarding: from signup to first page
@@ -160,6 +177,8 @@ each story maps to real behavior in the application.
 Sign up (email, display name, consent)
   -> Email confirmation
   -> Redirect to /workspace
+  -> Vault gate creates the identity and device record automatically
+  -> Recovery code is shown once, copied or downloaded, then acknowledged
   -> Create a workspace
   -> Create first page (markdown by default)
   -> Result: first empty page ready to edit
@@ -193,7 +212,7 @@ Open a kanban page
 ```
 Open a markdown page
   -> Write content; @-mention a teammate
-  -> Mention creates a notification (create_mention_notification RPC)
+  -> Mention creates a sealed notification (create_comment_notifications RPC)
   -> Teammate reads the notification and opens the page
   -> Teammate leaves a comment -> comment notification fans out to the workspace
 ```
@@ -206,6 +225,28 @@ User settings -> Delete account
   -> delete_user_account() RPC erases personal rows and the auth user in one
      transaction
   -> Client signs out and returns to the landing page
+```
+
+### 5.6 Vault unlock on a new browser
+
+```
+Open the app on a new browser -> non-dismissable VaultGate
+  -> Recovery code, or create a device-link request
+  -> With 2+ trusted devices, choose the approving device; with 1, send to it
+  -> Trusted device approves in its pending-request dialog
+  -> New device consumes the approved request and registers automatically
+  -> Result: vault unlocked on the new browser
+```
+
+### 5.7 Forget another trusted device
+
+```
+Settings -> Security -> Trusted devices
+  -> List shows other devices with labels and last-used times
+  -> Choose "Forget" on one device and confirm
+  -> Only that user_devices row is deleted
+  -> Current device stays trusted and is not shown as a target
+  -> Result: the forgotten device needs the recovery code or a new approval
 ```
 
 ## 6. Functional requirements (summary)
@@ -224,6 +265,7 @@ Derived from the user stories above. Coded by area.
 | Comments | Threaded comments on pages and cards, reactions, notifications |
 | Notifications | Mention + comment notifications, preferences, read/unread |
 | AI | Streaming content generation, editor integration |
+| Security / E2EE | Automatic browser-side key setup, recovery code, trusted-device unlock, targeted device links, revoke other devices only, sign out other sessions, recovery-code re-authentication, workspace key rotation on member removal |
 | Realtime | Live updates across pages, boards, comments, notifications |
 | RGPD | Consent, privacy/terms pages, retention cleanup, account erasure |
 
@@ -231,7 +273,7 @@ Derived from the user stories above. Coded by area.
 
 | Category | Requirements |
 | --- | --- |
-| Security | Secure auth (JWT, refresh rotation, rate limits), RLS on every table, parameterized queries, markdown output sanitization against XSS, JWT-verified edge functions, secrets stored server-side, minimal `.env` surface |
+| Security | Secure auth (JWT, refresh rotation, rate limits), RLS on every table, browser-side E2EE with sealed fields and no plaintext in Supabase, non-extractable device keys, recovery-code rate limiting, strict decryption failures with no empty fallbacks, markdown output sanitization against XSS, JWT-verified edge functions, secrets stored server-side, minimal `.env` surface |
 | Performance | Lean bundle via code splitting per editor vendor, lazy route components, realtime dedup to avoid write echo, indexed hot query paths |
 | Accessibility | Keyboard-friendly Web Awesome components, semantic focus states, tooltips with accessible labels; progress on accessible UI |
 | Responsiveness | Responsive layout targeting desktop and mobile; the layout adapts to viewport width |
@@ -247,7 +289,11 @@ Derived from the user stories above. Coded by area.
 - **Deployment:** Cloudflare Pages hosts the built SPA (production on `main`,
   preview on `dev`).
 - **Modern browser only:** the application targets evergreen browsers
-  (Chrome, Firefox, Safari, Edge). No legacy browser support.
+  (Chrome, Firefox, Safari, Edge). No legacy browser support. E2EE requires the
+  Web Crypto API and IndexedDB for the non-extractable device key.
+- **Recovery code custody:** the user is responsible for saving the recovery
+  code. If all trusted devices are revoked and the code is lost, encrypted
+  content cannot be recovered.
 - **Single region/tenant model:** workspaces are multi-user *within* the
   application; there is currently no cross-tenant (multi-organization)
   hierarchy.

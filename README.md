@@ -24,7 +24,7 @@ OpenCadre lets you create pages that adapt to the way you work. Write documents 
 | [Requirements](docs/requirements.md)         | Personas, user stories, user journeys, functional and non-functional requirements |
 | [Architecture](docs/architecture.md)         | Layered architecture, repository pattern, realtime, deployment topology, ADRs     |
 | [API](docs/api.md)                           | Edge functions, RPC functions, realtime channels, env secrets                     |
-| [Database](docs/database.md)                 | ER diagram, 18 tables, RLS matrix, triggers, retention                            |
+| [Database](docs/database.md)                 | ER diagram, 29 tables, RLS matrix, triggers, retention                           |
 | [Project tracking](docs/project-tracking.md) | Git workflow, commit conventions, changelog, roadmap                              |
 
 ## Tech Stack
@@ -42,6 +42,26 @@ OpenCadre lets you create pages that adapt to the way you work. Write documents 
 - solid-motionone (animations)
 - Biome (lint + format), pnpm
 
+## Security and encryption
+
+Workspace content is encrypted in the browser before it is sent to Supabase. On
+the first workspace visit, OpenCadre creates an ECDH identity key pair, registers
+the current device automatically, and shows a recovery code that you should save
+and acknowledge. Later visits on that browser unlock automatically; a new browser
+uses the recovery code or an approved device link. There is no enable setting and
+no passphrase prompt, and the recovery code is the only manual secret. Settings >
+Security lists other trusted devices so you can revoke them; the current device
+is never offered for revocation. On mobile, for example, you can forget a laptop
+but not the phone you are using. Sign out of other devices ends their app
+sessions without changing vault trust.
+
+Supabase cannot decrypt your content. It still sees metadata such as ids,
+timestamps, membership, roles, positions, and due dates. Other members' display
+names are not decryptable, so the UI shows their email or a short user id.
+Removing a member starts a full workspace key rotation and re-encryption. See
+[docs/api.md](docs/api.md#11-end-to-end-encryption) for the full key hierarchy
+and migration notes.
+
 ## Features
 
 - **Markdown pages** with collaborative editing (TipTap + Yjs), markdown preview, and inline AI assistance.
@@ -51,6 +71,7 @@ OpenCadre lets you create pages that adapt to the way you work. Write documents 
 - **Comments** on any page, with real-time updates via Supabase Realtime.
 - **Tags** with colors, reusable across cards and pages.
 - **Workspaces** to organize pages, with member invites and role-based access.
+- **End-to-end encryption** of page content, titles, comments, tags, workspace names and descriptions, card titles and descriptions, notifications, collaborative documents, and display names. Keys are created in the browser; Supabase stores only ciphertext.
 - **RGPD compliance** with privacy/terms pages, account deletion (atomic edge function), and data retention cleanup.
 
 ## Prerequisites
@@ -75,20 +96,30 @@ Go to [supabase.com](https://supabase.com) and create a new project. Note the **
 
 ### 3. Set up the database
 
-Run the migration to create all tables, functions, RLS policies, and triggers:
+Run the migrations to create all tables, functions, RLS policies, and triggers:
 
 ```bash
 npx supabase db push
 ```
 
-This applies `supabase/migrations/20260910132550_remote_schema.sql` which creates:
+This applies the base schema plus the nine E2EE v3 migrations:
 
-- 18 tables (workspaces, pages, cards, columns, comments, notifications, etc.)
-- 13 database functions (RPCs for invites, account deletion, role checks, etc.)
-- 50+ RLS policies for row-level security
-- 9 triggers (updated_at, comment notifications, page version bumping)
-- 1 event trigger (auto-enable RLS on new tables)
-- Realtime publication for live updates
+- `20260910132550_remote_schema.sql`: base app tables, functions, RLS, triggers
+- `20261122000000_e2ee_core.sql`: encrypted columns, key and nonce tables, scope checks
+- `20261122010000_e2ee_device_links.sql`: device linking, recovery rate limiting, nonce reservation
+- `20261122020000_e2ee_rotation.sql`: workspace key rotation and member removal
+- `20261122030000_e2ee_security_events.sql`: security event log and session revocation
+- `20261122040000_e2ee_bootstrap_nullable.sql`: nullable workspace name during key bootstrap
+- `20261122050000_workspace_owner_insert_policy.sql`: owner-scoped workspace insert policy
+- `20261122060000_device_link_last_used.sql`: `last_used_at` backfill and 30-minute approval window
+- `20261122070000_device_link_target.sql`: targeted link requests and matching approval
+- `20261122080000_delete_account_device_links.sql`: device-link deletion order for account erasure
+
+The result is 29 tables, including key material tables (`content_keys`,
+`workspace_keys`, `user_keys`, `user_devices`, `crypto_nonces`, `key_rotations`,
+`device_link_requests`, `security_events`), plus RLS policies, encryption scope
+triggers, and the realtime publication. The E2EE migrations assume an empty
+database and do not copy legacy plaintext into the new schema.
 
 ### 4. Configure environment variables
 
@@ -130,7 +161,7 @@ npx supabase functions deploy
 # Required for AI generation
 npx supabase secrets set OPENROUTER_API_KEY=<your-openrouter-key>
 
-# Required for account deletion, invite emails, and retention cleanup
+# Platform-provided by Supabase; set only if you use a custom service role key
 npx supabase secrets set SUPABASE_SERVICE_ROLE_KEY=<your-service-role-key>
 
 # Optional: for sending invite emails (skip if not needed)
@@ -145,10 +176,10 @@ npx supabase secrets set \
 
 #### Edge function secrets reference
 
-| Secret                      | Function                                         | Required | Notes                                                       |
-| --------------------------- | ------------------------------------------------ | -------- | ----------------------------------------------------------- |
-| `OPENROUTER_API_KEY`        | ai-generate                                      | Yes      | Get from [openrouter.ai](https://openrouter.ai)             |
-| `SUPABASE_SERVICE_ROLE_KEY` | invite-member, delete-account, cleanup-retention | Yes      | From Supabase project settings                              |
+| Secret                      | Function                                                        | Required | Notes                                                       |
+| --------------------------- | --------------------------------------------------------------- | -------- | ----------------------------------------------------------- |
+| `OPENROUTER_API_KEY`        | ai-generate                                                     | Yes      | Get from [openrouter.ai](https://openrouter.ai)             |
+| `SUPABASE_SERVICE_ROLE_KEY` | invite-member, delete-account, cleanup-retention, revoke-user-sessions | Yes | Platform-provided; from Supabase project settings     |
 | `SMTP_HOST`                 | invite-member                                    | No       | If missing, invite emails are skipped (token still created) |
 | `SMTP_PORT`                 | invite-member                                    | No       |                                                             |
 | `SMTP_USER`                 | invite-member                                    | No       |                                                             |
@@ -219,9 +250,10 @@ pnpm deploy        # build + deploy dist/ to production (branch=main)
 make deploy-dev    # build + deploy dist/ to preview (branch=dev)
 ```
 
-Every deploy runs `pnpm build`, which enforces Biome lint + format, TypeScript
-type checking, and the Vitest test suite before the `dist/` bundle is
-published.
+`pnpm build` runs `vite build` only. Biome lint, TypeScript checking, and Vitest
+are enforced by the Husky `pre-push` hook (`.husky/pre-push`), which runs
+`pnpm lint:full && pnpm test:run && pnpm typecheck && pnpm build`. Cloudflare
+Pages builds the static bundle on each push; there is no separate CI workflow.
 
 ## Desktop App Build (Tauri)
 
@@ -268,48 +300,59 @@ Android adaptive padding comes from the `scale(...)` in the group transform of
 | `pnpm serve`           | Preview the production build          |
 | `pnpm typecheck`       | TypeScript check (`tsc --noEmit`)     |
 | `pnpm lint`            | Biome lint                            |
+| `pnpm lint:full`       | Biome check (lint + format)           |
 | `pnpm lint:fix`        | Biome check + autofix                 |
 | `pnpm format`          | Biome format                          |
 | `pnpm test`            | Run tests (watch mode)                |
 | `pnpm test:run`        | Run tests (single run)                |
 | `pnpm check:staged`    | Lint staged files (via lint-staged)   |
+| `pnpm deploy`          | Build + deploy to Cloudflare Pages    |
+| `pnpm dev:supabase`    | Start local Supabase and the dev server |
 | `pnpm supabase:start`  | Start the local Supabase stack        |
 | `pnpm supabase:stop`   | Stop the local Supabase stack         |
 | `pnpm supabase:status` | Show local Supabase status/keys       |
 
 ## Edge Functions
 
-| Function            | Auth      | Description                                           |
-| ------------------- | --------- | ----------------------------------------------------- |
-| `ai-generate`       | Yes (JWT) | AI content generation via TanStack AI / OpenRouter    |
-| `invite-member`     | Yes (JWT) | Send workspace invite emails                          |
-| `delete-account`    | Yes (JWT) | Atomic account deletion (auth.users + all data)       |
-| `cleanup-retention` | No (cron) | Purge old page visits, activity logs, and AI requests |
+| Function                | Auth      | Description                                              |
+| ----------------------- | --------- | -------------------------------------------------------- |
+| `ai-generate`           | Yes (JWT) | AI content generation via TanStack AI / OpenRouter       |
+| `invite-member`         | Yes (JWT) | Send workspace invite emails                             |
+| `delete-account`        | Yes (JWT) | Atomic account deletion (auth.users + all data)          |
+| `revoke-user-sessions`  | Yes (JWT) | Revoke refresh sessions for account security responses   |
+| `cleanup-retention`     | No (cron) | Purge expired activity, security, AI, and notification rows |
 
 ## Database
 
-The full schema lives in `supabase/migrations/20260910132550_remote_schema.sql`. Key tables:
+The schema is defined across the base migration and the nine E2EE v3 migrations
+listed in step 3 above. Protected fields are stored only as `v3` ciphertext
+envelopes. Key tables:
 
-| Table               | Purpose                                                       |
-| ------------------- | ------------------------------------------------------------- |
-| `workspaces`        | Top-level containers for pages and members                    |
-| `workspace_members` | Member roles (owner, admin, member, guest) with invite tokens |
-| `pages`             | Workspace pages (markdown, kanban, or table kind)             |
-| `page_content`      | Versioned page body (Yjs state + markdown)                    |
-| `cards`             | Kanban card items                                             |
-| `columns`           | Kanban board columns                                          |
-| `card_tags`         | Many-to-many: cards <-> tags                                  |
-| `tags`              | Reusable colored tags per workspace                           |
-| `comments`          | Page/card comments with threading                             |
-| `comment_threads`   | Thread groupings for comments                                 |
-| `comment_reactions` | Emoji reactions on comments                                   |
-| `notifications`     | In-app notifications (mention, comment, invite)               |
-| `profiles`          | User profiles (display name, avatar)                          |
-| `user_settings`     | Per-user shortcuts and notification prefs                     |
-| `activity_logs`     | Workspace audit trail                                         |
-| `ai_requests`       | AI generation request log                                     |
-| `page_visits`       | Page view tracking                                            |
-| `ydocs`             | Yjs document state for collaborative editing                  |
+| Table                       | Purpose                                                       |
+| --------------------------- | ------------------------------------------------------------- |
+| `workspaces`                | Top-level containers with an encrypted name and description   |
+| `workspace_members`         | Member roles (owner, admin, member, guest) with invite tokens |
+| `pages`                     | Workspace pages with an encrypted title                       |
+| `page_content`              | Versioned encrypted page body                                 |
+| `cards`, `columns`          | Kanban items with encrypted titles and card descriptions      |
+| `card_tags`, `tags`         | Workspaces tags with encrypted names                          |
+| `comments`, `comment_threads` | Encrypted comments grouped by thread                        |
+| `comment_reactions`         | Emoji reactions on comments                                   |
+| `notifications`             | Encrypted notification title and body                         |
+| `profiles`                  | User profiles with an encrypted display name                  |
+| `user_settings`             | Per-user shortcuts and notification prefs                     |
+| `ydocs`                     | Encrypted Yjs document state for collaborative editing        |
+| `activity_logs`             | Workspace audit trail                                         |
+| `ai_requests`               | AI generation request log                                     |
+| `page_visits`               | Page view tracking                                            |
+| `content_keys`, `workspace_keys` | Workspace content keys and per-member wraps              |
+| `user_content_keys`, `user_content_key_wraps` | Per-user keys for private fields           |
+| `user_keys`, `user_devices` | Identity public key, recovery and device private-key wraps   |
+| `crypto_nonces`             | Reserved nonce registry for per-key uniqueness                |
+| `device_link_requests`      | Pending device-link approvals                                 |
+| `recovery_attempts`         | Recovery unlock failure counter and lockout                   |
+| `key_rotations`             | Workspace key rotation progress                               |
+| `security_events`           | Security audit log for recovery, devices, rotation, members   |
 
 To regenerate TypeScript types after schema changes:
 
@@ -325,6 +368,7 @@ src/
 │   ├── ai/            # AI assistant popup + generation
 │   ├── auth/          # Login, signup, RGPD consent
 │   ├── comments/      # Page-level comments panel
+│   ├── crypto/        # Vault, E2EE keys, device links, recovery, rotation
 │   ├── home/          # Landing page (Hero, Features, Footer)
 │   ├── kanban/        # Board columns, cards, drag-and-drop
 │   ├── legal/         # Terms & conditions, privacy policy
@@ -346,11 +390,15 @@ supabase/
 
 ## Verification
 
-After making changes, run:
+After making changes, run the full suite:
 
 ```bash
+pnpm format           # Biome format
+pnpm lint             # Biome lint
+pnpm lint:full        # Biome check
 pnpm typecheck        # TypeScript check
+pnpm test:run         # Vitest single run
 pnpm build            # Production build
 ```
 
-Both should pass with no errors.
+All commands should pass with no errors.
