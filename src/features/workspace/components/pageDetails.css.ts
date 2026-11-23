@@ -162,3 +162,9 @@ export const kindBadge = style({
 	alignItems: "center",
 	gap: "var(--wa-space-3xs)",
 });
+
+export const emptyActivity = style({
+	color: "var(--wa-color-text-quiet)",
+	fontSize: "var(--wa-font-size-xs)",
+	margin: 0,
+});

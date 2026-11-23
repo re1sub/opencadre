@@ -1,4 +1,5 @@
 import { createSignal, For, Show } from "solid-js";
+import { APP_VERSION } from "#/utils/appVersion";
 import { useDialog } from "#/utils/useDialog";
 import { canManageMembers } from "../constants/roles";
 import { useWorkspaceMembersAdapter } from "../hooks/useWorkspaceMembersAdapter";
@@ -8,12 +9,13 @@ import SettingsGeneralSection from "./SettingsGeneralSection";
 import SettingsKeyboardSection from "./SettingsKeyboardSection";
 import SettingsMembersSection from "./SettingsMembersSection";
 import SettingsNotificationsSection from "./SettingsNotificationsSection";
+import SettingsSecuritySection from "./SettingsSecuritySection";
 import SettingsWorkspaceSection from "./SettingsWorkspaceSection";
 import {
 	settingsBack,
 	settingsDialogContainer,
 	settingsFooter,
-	settingsFooterSpacer,
+	settingsFooterVersion,
 	settingsLayout,
 	settingsNav,
 	settingsNavButton,
@@ -27,6 +29,7 @@ export type SettingsSection =
 	| "members"
 	| "keyboard"
 	| "notifications"
+	| "security"
 	| "activity";
 
 interface SettingsDialogProps {
@@ -61,6 +64,7 @@ const SECTIONS: {
 	{ value: "members", label: "Members", icon: "users" },
 	{ value: "keyboard", label: "Keyboard", icon: "keyboard" },
 	{ value: "notifications", label: "Notifications", icon: "bell" },
+	{ value: "security", label: "Security", icon: "shield" },
 	{ value: "activity", label: "Activity", icon: "clock" },
 ];
 
@@ -144,7 +148,10 @@ const SettingsDialog = (props: SettingsDialogProps) => {
 					</Show>
 
 					<Show when={section() === "members"}>
-						<SettingsMembersSection workspaceId={props.workspaceId} />
+						<SettingsMembersSection
+							workspaceId={props.workspaceId}
+							workspaceName={props.workspace()?.name ?? ""}
+						/>
 					</Show>
 
 					<Show when={section() === "keyboard"}>
@@ -155,15 +162,19 @@ const SettingsDialog = (props: SettingsDialogProps) => {
 						<SettingsNotificationsSection />
 					</Show>
 
+					<Show when={section() === "security"}>
+						<SettingsSecuritySection workspaceId={props.workspaceId} />
+					</Show>
+
 					<Show when={section() === "activity"}>
 						<SettingsActivitySection workspaceId={props.workspaceId} />
 					</Show>
 				</div>
 			</div>
 
-			<div slot="footer">
+			<div slot="footer" style={{ width: "100%" }}>
 				<div class={settingsFooter}>
-					<span class={settingsFooterSpacer}></span>
+					<small class={settingsFooterVersion}>v{APP_VERSION}</small>
 					<wa-button variant="brand" onClick={dialog.close}>
 						Done
 					</wa-button>

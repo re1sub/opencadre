@@ -1,10 +1,7 @@
--- Migration unit 1: schema_changes
--- Transaction mode: transactional
--- Boundary reason: default
 
 SET check_function_bodies = false;
 
-DROP EXTENSION pg_net;
+DROP EXTENSION IF EXISTS pg_net;
 
 ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public REVOKE UPDATE ON SEQUENCES FROM anon;
 
@@ -78,19 +75,16 @@ begin
     raise exception 'not authenticated';
   end if;
 
-  -- No self-notifications.
   if p_recipient_id = v_actor_id then
     return;
   end if;
 
-  -- Resolve workspace from the page the mention appears in.
   select p.workspace_id into v_workspace_id
     from public.pages p where p.id = p_page_id;
   if v_workspace_id is null then
     return;
   end if;
 
-  -- Caller must be a member of the workspace.
   select exists(
     select 1 from public.workspace_members wm
     where wm.workspace_id = v_workspace_id and wm.user_id = v_actor_id
@@ -99,7 +93,6 @@ begin
     raise exception 'caller is not a workspace member';
   end if;
 
-  -- Recipient must be a confirmed member of the workspace.
   select exists(
     select 1 from public.workspace_members wm
     where wm.workspace_id = v_workspace_id and wm.user_id = p_recipient_id
@@ -108,7 +101,6 @@ begin
     return;
   end if;
 
-  -- Recipient must not have disabled mentions.
   if exists(
     select 1 from public.user_settings us
     where us.user_id = p_recipient_id
@@ -156,15 +148,10 @@ CREATE FUNCTION public.delete_user_account (
   SET search_path TO 'public', 'auth'
   AS $function$
 begin
-  -- Release page ownership. pages.owner_id -> auth.users is NO ACTION and
-  -- blocks user deletion, so drop the link for pages in workspaces owned by
-  -- other users. Pages in workspaces owned by this user are removed by the
-  -- cascades triggered below.
   update public.pages
      set owner_id = null
    where owner_id = p_user_id;
 
-  -- Personal data belonging to the user.
   delete from public.comment_reactions where user_id = p_user_id;
   delete from public.comments where author_id = p_user_id;
   delete from public.page_visits where user_id = p_user_id;
@@ -175,9 +162,6 @@ begin
   delete from public.workspace_members where user_id = p_user_id;
   delete from public.profiles where id = p_user_id;
 
-  -- Delete the auth user. Cascades remove owned workspaces (and their pages,
-  -- tags, members, ydocs, visits, activity logs), sessions, identities, etc.
-  -- Runs inside this same transaction, so any failure rolls everything back.
   delete from auth.users where id = p_user_id;
 
   if not found then
@@ -257,7 +241,6 @@ declare
   v_prefs jsonb;
   v_mentioned_ids uuid[];
 begin
-  -- Resolve workspace + entity from the comment's thread.
   select ct.entity_type, ct.entity_id
     into v_entity_type, v_entity_id
     from public.comment_threads ct
@@ -283,20 +266,16 @@ begin
     return new;
   end if;
 
-  -- Collect users mentioned in the comment; they receive a dedicated mention
-  -- notification via create_mention_notification, so skip them here.
   select coalesce(array_agg((t.match_arr)[1]::uuid), '{}'::uuid[])
     into v_mentioned_ids
     from regexp_matches(new.content, 'mention:([0-9a-fA-F-]{36})', 'g') as t(match_arr);
 
-  -- Actor display name.
   select coalesce(pr.display_name, pr.id::text) into v_actor_name
     from public.profiles pr where pr.id = new.author_id;
   if v_actor_name is null then
     v_actor_name := new.author_id::text;
   end if;
 
-  -- Fan out to every confirmed member except the author and mentioned users.
   for v_member in
     select wm.user_id
       from public.workspace_members wm
@@ -312,7 +291,6 @@ begin
         from public.user_settings us
        where us.user_id = v_member.user_id;
 
-      -- null prefs = default on; only explicit 'false' suppresses.
       if v_prefs is null or coalesce(v_prefs ->> 'comments', 'true') <> 'false' then
         insert into public.notifications (
           user_id, type, actor_id, workspace_id,

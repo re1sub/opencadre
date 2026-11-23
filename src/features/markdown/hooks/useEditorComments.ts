@@ -29,7 +29,7 @@ export function useEditorComments(pageComments: CommentsReturn) {
 			.threads()
 			.find((t) => t.id === pending.threadId);
 		if (thread && thread.comments.length === 0) {
-			pageComments.deleteThread(pending.threadId);
+			void pageComments.deleteThread(pending.threadId);
 		}
 		setPendingComment(null);
 	};
@@ -61,7 +61,7 @@ export function useEditorComments(pageComments: CommentsReturn) {
 			);
 
 		orphans.forEach((t) => {
-			pageComments.deleteThread(t.id);
+			void pageComments.deleteThread(t.id);
 		});
 	};
 

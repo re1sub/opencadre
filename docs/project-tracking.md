@@ -33,13 +33,13 @@ production.
 
 ### Hooks and gates
 
-- **pre-commit:** `pnpm run pre-commit` runs Biome lint + format on staged
-  files.
-- **commit-msg:** `pnpm run commitlint --edit $1` validates the commit message
-  against the Conventional Commits specification. Non-conforming messages
-  are rejected.
-- **pre-push:** the Makefile target runs a full `pnpm build` to ensure every
-  push to the remote is buildable.
+- **pre-commit:** `.husky/pre-commit` runs `pnpm exec lint-staged`, which checks
+  staged files with Biome.
+- **commit-msg:** `.husky/commit-msg` runs `pnpm exec commitlint --edit "$1"` to
+  validate the message against Conventional Commits.
+- **pre-push:** `.husky/pre-push` runs
+  `pnpm lint:full && pnpm test:run && pnpm typecheck && pnpm build` to ensure
+  every push is lint-clean, tested, typed, and buildable.
 
 ---
 
@@ -89,10 +89,15 @@ docs: add architecture and database documentation
 | --- | --- |
 | `pnpm install` | Install dependencies |
 | `pnpm dev` | Start local Vite dev server |
-| `pnpm build` | Production build (lint + typecheck + Vite bundle) |
+| `pnpm build` | Vite production build only |
 | `pnpm typecheck` | TypeScript type checking only |
+| `pnpm lint` | Biome lint |
+| `pnpm lint:full` | Biome check (lint + format) |
+| `pnpm format` | Biome format |
 | `pnpm test:run` | Run Vitest unit tests (single run) |
 | `pnpm test` | Start Vitest in watch mode |
+| `pnpm test:e2e` | Run Playwright E2E tests (Chromium, Firefox, WebKit) |
+| `pnpm test:e2e:ui` | Open Playwright UI mode for debugging |
 | `pnpm deploy` | Build + deploy to Cloudflare Pages production |
 | `make deploy-dev` | Build + deploy to Cloudflare Pages preview |
 
@@ -103,14 +108,70 @@ docs: add architecture and database documentation
 The project includes a local Supabase stack for offline development:
 
 ```bash
-make supabase-start     # Start Docker-based local stack
-make supabase-stop      # Stop local stack
-make supabase-restart   # Reset and restart
-make supabase-db-reset  # Reset to a clean state
-make supabase-rebuild   # Rebuild local containers
+pnpm supabase:start     # Start Docker-based local stack
+pnpm supabase:stop      # Stop local stack
+pnpm supabase:status    # Show local URLs and keys
 ```
 
-The local stack mirrors the remote schema, seed data, and RLS policies.
+The local stack mirrors the remote schema, seed data, and RLS policies. The
+Makefile only contains `deploy-dev`; there are no `make supabase-*` targets.
+
+### Playwright end-to-end tests
+
+E2E specs live in `e2e/` and run with `pnpm test:e2e`. Playwright starts the Vite
+dev server through `webServer` in `playwright.config.ts`, and `webServer.env`
+points the app at local Supabase (`http://127.0.0.1:54321`) by default,
+overriding the remote URL in `.env`. Tests run in Chromium, Firefox, and WebKit.
+Use `pnpm test:e2e:ui` for time-travel debugging.
+
+The authenticated journey test uses one seeded dev user per browser project
+(`dev@opencadre.local`, `dev-firefox@opencadre.local`,
+`dev-webkit@opencadre.local`, all with password `dev-password-123`). Separate
+users keep first-time vault setup isolated across browsers. The device-link test
+uses its own `dev-link@opencadre.local` user and runs only in the Chromium
+project. Chromium onboards and creates a workspace, Firefox asks Chromium for a
+link and unlocks after approval, then WebKit picks Firefox from the trusted
+device list and unlocks after Firefox approves. Firefox and WebKit contexts set
+explicit user agents because Playwright Test otherwise applies the Chromium
+project's `Desktop Chrome` options to contexts created from manually launched
+browsers, which gives every device the same label. The approval notifications in
+this test travel over Supabase Realtime, so the local stack must run the image
+versions pinned by the installed CLI. Containers created by an older CLI can keep
+Realtime v2.120.3, which cannot register filtered `postgres_changes`
+subscriptions against the newer `realtime.subscription` hash index and fails
+with SQLSTATE `42P10`. Recreate them with `pnpm supabase stop` followed by
+`pnpm supabase start` if approval dialogs never appear.
+
+The stateful tests use a pool of 196 seeded accounts,
+`e2e-005@opencadre.local` through `e2e-200@opencadre.local`, all with password
+`dev-password-123`. `testAccount(testInfo, slot)` in `e2e/helpers.ts` assigns a
+unique account to each test execution by combining its slot with a per-project
+offset and a retry offset, so Chromium, Firefox, WebKit, and every retry attempt
+never share a vault, device list, or workspace. Secondary users such as invitees
+and removable members come from a separate band of the same pool through
+`secondaryAccount`. With the six original tests plus fourteen new journeys, the
+suite is 20 tests across three projects. The new
+journeys cover sign-out, vault recovery and rejection, page management,
+markdown editing, AI insertion, kanban fields and drag and drop, table editing
+and CSV/bulk actions, shared tags and comments, invites, roles and removal,
+settings, and concurrent editing. Only the AI edge function is mocked; all other
+state goes through local Supabase. `e2e/global-setup.ts` runs
+`pnpm exec supabase db reset` at the start of every `pnpm test:e2e` run, so a
+previous run's registered devices cannot switch the gate to the device-link
+panel. It skips the reset only when `VITE_SUPABASE_URL` points away from local
+Supabase. Start the stack once, then run the suite:
+
+```bash
+pnpm supabase:start
+pnpm test:e2e
+```
+
+CI runs the same flow in the `e2e` job of `.github/workflows/ci.yml`: it starts
+local Supabase, seeds it with `supabase db reset`, installs the three browsers,
+exports the local Supabase URL and publishable key into `GITHUB_ENV`, then runs
+`pnpm test:e2e`. To exercise the job locally with `act`, run
+`act -j e2e --pull=false`. The medium `act` runner image is configured in
+`~/.config/act/actrc`.
 
 ---
 
@@ -138,9 +199,11 @@ flowchart LR
 | Push to `main` | Cloudflare Pages builds and publishes a production deployment |
 | PR merged to `dev` or `main` | Automatic rebuild |
 
-The build runs `pnpm build`, which includes Biome lint + format, TypeScript
-type checking, and the Vite production bundle. The `dist/` output is served
-directly by Cloudflare Pages.
+Cloudflare Pages runs `pnpm build`, which is `vite build` only, and serves the
+`dist/` output. Biome checks, unit tests, TypeScript checking, and the build are
+also run by the `test` job in `.github/workflows/ci.yml`. The `e2e` job runs the
+Playwright suite against local Supabase as described above. The Husky pre-push
+hook still gates local pushes with the same checks.
 
 ---
 
@@ -160,11 +223,12 @@ several focused development sessions.
 | 2026-09-10 | Edge functions migrated to `withSupabase` pattern |
 | 2026-09-11 | Demo links added; responsiveness improvements |
 | 2026-09-11 | Deploy script added (`pnpm deploy`) |
+| 2026-11-04 | Release 1.7.0 |
 
 ### Commit statistics
 
-- **Total commits (as of 2026-09-11):** 213
-- **Commit range:** 2026-07-24 to 2026-09-11
+- **Total commits (at `a9c5bef`, 2026-11-04):** 312
+- **Commit range:** 2026-07-24 to 2026-11-04
 - **Primary language:** TypeScript
 - **Repository:** https://github.com/re1sub/opencadre
 
@@ -180,7 +244,7 @@ several focused development sessions.
 | Security | Output sanitization in Markdown editor, Content-Security-Policy headers, `.env.example` completeness |
 | Error handling | Global `ErrorBoundary` for uncaught runtime errors |
 | Component tests | SolidJS component unit tests (auth form, editable text, confirm dialog) |
-| CI/CD | GitHub Actions pipeline for lint, typecheck, test, build, and Cloudflare Pages deploy |
+| CI/CD | GitHub Actions pipeline for lint, typecheck, test, build, and Cloudflare Pages deploy (not yet present; checks currently run in Husky hooks) |
 
 ### Medium-term
 
@@ -189,7 +253,7 @@ several focused development sessions.
 | Markdown table editing | Native table block inside the TipTap editor |
 | Search | Full-text search across workspace pages |
 | Profile avatars | User-uploaded avatars in `profiles.avatar_url` |
-| `profiles` table triggers | `sync_profile_display_name` to stay in sync with auth metadata |
+| Shared display names | Make display names decryptable by teammates under the workspace key |
 | Owner transfer | Transfer workspace ownership to another member |
 | Export workspace | Full JSON/CSV export of workspace content |
 

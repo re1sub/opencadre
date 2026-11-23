@@ -3,6 +3,10 @@ import type { DragDropProviderProps } from "@dnd-kit/solid";
 import { isSortable } from "@dnd-kit/solid/sortable";
 import { createEffect, createSignal, onCleanup } from "solid-js";
 import * as Y from "yjs";
+import { reportDecryptionError } from "#/features/crypto/decryptionErrors";
+import { VaultDecryptionError } from "#/features/crypto/errors";
+import { useVault } from "#/features/crypto/VaultProvider";
+import { cardAad, columnAad } from "#/features/crypto/vault";
 import type { Database, Tables } from "#/types/database";
 import { indexBy } from "#/utils/array";
 import { nowIso, toIsoDate } from "#/utils/date";
@@ -38,7 +42,7 @@ type CardTagsInsert = Database["public"]["Tables"]["card_tags"]["Insert"];
 
 const toColumn = (row: ColumnRow): Column => ({
 	id: row.id,
-	title: row.title,
+	title: "",
 	color: row.color ?? "",
 	cards: [],
 	position: row.position ?? 0,
@@ -46,8 +50,8 @@ const toColumn = (row: ColumnRow): Column => ({
 
 const toCard = (row: CardRow, tagIds?: string[]): Card => ({
 	id: row.id,
-	title: row.title,
-	description: row.description ?? "",
+	title: "",
+	description: "",
 	dueDate: row.due_date ? toIsoDate(new Date(row.due_date)) : null,
 	assigneeIds: row.assignee_ids ?? [],
 	tagIds: tagIds ?? [],
@@ -70,10 +74,95 @@ export function useKanbanBoardAdapter(options: UseKanbanBoardAdapterOptions) {
 	const [confirmDialog, setConfirmDialog] =
 		createSignal<ConfirmDialogState | null>(null);
 
+	const vault = useVault();
+
+	const sealBoardText = (text: string, aad: string): Promise<string> => {
+		if (!options.workspaceId) {
+			return Promise.reject(new Error("Missing workspace for this board"));
+		}
+		return vault.sealText(options.workspaceId, text, aad);
+	};
+
+	const decryptionKey = (key: string) =>
+		`${options.workspaceId ?? "unknown"}:${key}`;
+
+	const openBoardText = (sealed: string, aad: string, errorKey: string) => {
+		if (!options.workspaceId) {
+			const err = new VaultDecryptionError("Missing workspace for this board.");
+			reportDecryptionError(decryptionKey(errorKey), err);
+			throw err;
+		}
+		return vault.openTextSafe(options.workspaceId, sealed, aad, errorKey);
+	};
+
+	const malformed = (errorKey: string): VaultDecryptionError => {
+		const err = new VaultDecryptionError(
+			"Decrypted board metadata was malformed.",
+		);
+		reportDecryptionError(decryptionKey(errorKey), err);
+		return err;
+	};
+
+	const columnFromRow = async (row: ColumnRow): Promise<Column> => {
+		const base = toColumn(row);
+		const errorKey = `column:${row.id}`;
+		const opened = await openBoardText(
+			row.ciphertext,
+			columnAad(row.id),
+			errorKey,
+		);
+		let meta: { title?: unknown };
+		try {
+			meta = JSON.parse(opened) as { title?: unknown };
+		} catch {
+			throw malformed(errorKey);
+		}
+		if (typeof meta.title !== "string") throw malformed(errorKey);
+		return { ...base, title: meta.title };
+	};
+
+	const cardFromRow = async (
+		row: CardRow,
+		tagIds?: string[],
+	): Promise<Card> => {
+		const base = toCard(row, tagIds);
+		const errorKey = `card:${row.id}`;
+		const opened = await openBoardText(
+			row.ciphertext,
+			cardAad(row.id),
+			errorKey,
+		);
+		let meta: { title?: unknown; description?: unknown };
+		try {
+			meta = JSON.parse(opened) as {
+				title?: unknown;
+				description?: unknown;
+			};
+		} catch {
+			throw malformed(errorKey);
+		}
+		if (
+			typeof meta.title !== "string" ||
+			typeof meta.description !== "string"
+		) {
+			throw malformed(errorKey);
+		}
+		return { ...base, title: meta.title, description: meta.description };
+	};
+
 	const yjs = useYjsDoc({
 		entityType: () => "kanban",
 		entityId: () => options.pageId,
 		workspaceId: () => options.workspaceId ?? "",
+	});
+
+	createEffect(() => {
+		vault.epoch();
+		if (vault.status() !== "unlocked") {
+			setColumns([]);
+			setCardDialog(null);
+			setColumnDialog(null);
+		}
 	});
 
 	let syncTimeout: number | undefined;
@@ -83,22 +172,35 @@ export function useKanbanBoardAdapter(options: UseKanbanBoardAdapterOptions) {
 	const persistToSupabase = async (currentCols: Column[]) => {
 		if (!options.pageId) return;
 
-		const colRows = currentCols.map((c) => ({
-			id: c.id,
-			page_id: options.pageId,
-			title: c.title,
-			color: c.color || null,
-			position: c.position,
-		}));
-		if (colRows.length > 0) await supabase.from("columns").upsert(colRows);
+		const colRows = await Promise.all(
+			currentCols.map(async (c) => ({
+				id: c.id,
+				page_id: options.pageId,
+				ciphertext: await sealBoardText(
+					JSON.stringify({ title: c.title }),
+					columnAad(c.id),
+				),
+				color: c.color || null,
+				position: c.position,
+			})),
+		);
+		if (colRows.length > 0) {
+			const { error } = await supabase.from("columns").upsert(colRows);
+			if (error) throw error;
+		}
 
 		const currentColIds = new Set(currentCols.map((c) => c.id));
 		if (lastPersistedColIds !== null) {
 			const colIdsToDelete = [...lastPersistedColIds].filter(
 				(id) => !currentColIds.has(id),
 			);
-			if (colIdsToDelete.length > 0)
-				await supabase.from("columns").delete().in("id", colIdsToDelete);
+			if (colIdsToDelete.length > 0) {
+				const { error } = await supabase
+					.from("columns")
+					.delete()
+					.in("id", colIdsToDelete);
+				if (error) throw error;
+			}
 		} else {
 			const { data: existingCols } = await supabase
 				.from("columns")
@@ -107,47 +209,62 @@ export function useKanbanBoardAdapter(options: UseKanbanBoardAdapterOptions) {
 			const colsToDelete = (existingCols || []).filter(
 				(c) => !currentColIds.has(c.id),
 			);
-			if (colsToDelete.length > 0)
-				await supabase
+			if (colsToDelete.length > 0) {
+				const { error } = await supabase
 					.from("columns")
 					.delete()
 					.in(
 						"id",
 						colsToDelete.map((c) => c.id),
 					);
+				if (error) throw error;
+			}
 		}
 
 		const cardRows: CardsInsert[] = [];
 		const tagRows: CardTagsInsert[] = [];
-		currentCols.forEach((col) => {
-			col.cards.forEach((card) => {
+		for (const col of currentCols) {
+			for (const card of col.cards) {
 				cardRows.push({
 					id: card.id,
 					column_id: col.id,
 					page_id: options.pageId,
-					title: card.title,
-					description: card.description || null,
+					ciphertext: await sealBoardText(
+						JSON.stringify({
+							title: card.title,
+							description: card.description,
+						}),
+						cardAad(card.id),
+					),
 					due_date: card.dueDate || null,
 					assignee_ids: card.assigneeIds || [],
 					position: card.position,
 				});
 				if (card.tagIds) {
-					card.tagIds.forEach((tagId) => {
+					for (const tagId of card.tagIds) {
 						tagRows.push({ card_id: card.id, tag_id: tagId });
-					});
+					}
 				}
-			});
-		});
+			}
+		}
 
-		if (cardRows.length > 0) await supabase.from("cards").upsert(cardRows);
+		if (cardRows.length > 0) {
+			const { error } = await supabase.from("cards").upsert(cardRows);
+			if (error) throw error;
+		}
 
 		const currentCardIds = new Set(cardRows.map((c) => c.id));
 		if (lastPersistedCardIds !== null) {
 			const cardIdsToDelete = [...lastPersistedCardIds].filter(
 				(id) => !currentCardIds.has(id),
 			);
-			if (cardIdsToDelete.length > 0)
-				await supabase.from("cards").delete().in("id", cardIdsToDelete);
+			if (cardIdsToDelete.length > 0) {
+				const { error } = await supabase
+					.from("cards")
+					.delete()
+					.in("id", cardIdsToDelete);
+				if (error) throw error;
+			}
 		} else {
 			const { data: existingCards } = await supabase
 				.from("cards")
@@ -156,14 +273,16 @@ export function useKanbanBoardAdapter(options: UseKanbanBoardAdapterOptions) {
 			const cardsToDelete = (existingCards || []).filter(
 				(c) => !currentCardIds.has(c.id),
 			);
-			if (cardsToDelete.length > 0)
-				await supabase
+			if (cardsToDelete.length > 0) {
+				const { error } = await supabase
 					.from("cards")
 					.delete()
 					.in(
 						"id",
 						cardsToDelete.map((c) => c.id),
 					);
+				if (error) throw error;
+			}
 		}
 
 		const allCardIds = cardRows.map((c) => c.id);
@@ -185,38 +304,41 @@ export function useKanbanBoardAdapter(options: UseKanbanBoardAdapterOptions) {
 				(t) => !existingSet.has(`${t.card_id}:${t.tag_id}`),
 			);
 
-			if (toDelete.length > 0)
-				await supabase
+			if (toDelete.length > 0) {
+				const { error } = await supabase
 					.from("card_tags")
 					.delete()
 					.in(
 						"id",
 						toDelete.map((t) => t.id),
 					);
-			if (toInsert.length > 0)
-				await supabase.from("card_tags").insert(toInsert);
+				if (error) throw error;
+			}
+			if (toInsert.length > 0) {
+				const { error } = await supabase.from("card_tags").insert(toInsert);
+				if (error) throw error;
+			}
 		}
 
 		lastPersistedColIds = currentColIds;
 		lastPersistedCardIds = currentCardIds;
 
-		// Touch pages.updated_at so "Edited" badge and recents stay live for kanban edits
-		try {
-			await supabase
-				.from("pages")
-				.update({ updated_at: nowIso() })
-				.eq("id", options.pageId);
-		} catch {
-			// best-effort
-		}
+		const { error: pageError } = await supabase
+			.from("pages")
+			.update({ updated_at: nowIso() })
+			.eq("id", options.pageId);
+		if (pageError) throw pageError;
 	};
 
 	const schedulePersist = (currentCols: Column[]) => {
 		if (syncTimeout) window.clearTimeout(syncTimeout);
-		syncTimeout = window.setTimeout(() => persistToSupabase(currentCols), 1500);
+		syncTimeout = window.setTimeout(() => {
+			void persistToSupabase(currentCols).catch((err) =>
+				console.error("Failed to persist board", err),
+			);
+		}, 1500);
 	};
 
-	// Initialize sync ONLY when the doc is loaded
 	createEffect(() => {
 		const doc = yjs.doc();
 		if (!yjs.loaded() || !doc) return;
@@ -236,7 +358,6 @@ export function useKanbanBoardAdapter(options: UseKanbanBoardAdapterOptions) {
 
 		doc.on("update", updateHandler);
 
-		// Handle first-load hydration from legacy DB
 		if (yjs.isNew()) {
 			const fetchLegacyData = async () => {
 				const { data: colData } = await supabase
@@ -267,26 +388,26 @@ export function useKanbanBoardAdapter(options: UseKanbanBoardAdapterOptions) {
 				const cardsByColumn = new Map<string, Card[]>();
 				for (const card of cardData ?? []) {
 					const existing = cardsByColumn.get(card.column_id) ?? [];
-					existing.push(toCard(card, tagsByCard.get(card.id)));
+					existing.push(await cardFromRow(card, tagsByCard.get(card.id)));
 					cardsByColumn.set(card.column_id, existing);
 				}
 
-				const mapped: Column[] = (colData ?? []).map((col) => ({
-					...toColumn(col),
-					cards: (cardsByColumn.get(col.id) ?? []).sort(
-						(a, b) => (a.position ?? 0) - (b.position ?? 0),
-					),
-				}));
+				const mapped: Column[] = await Promise.all(
+					(colData ?? []).map(async (col) => ({
+						...(await columnFromRow(col)),
+						cards: (cardsByColumn.get(col.id) ?? []).sort(
+							(a, b) => (a.position ?? 0) - (b.position ?? 0),
+						),
+					})),
+				);
 
 				initKanbanDoc(doc, mapped);
 				schedulePersist(mapped);
 			};
-			fetchLegacyData();
+			void fetchLegacyData().catch(() => {});
 		}
 
 		syncLocal();
-		// Seed last-persisted tracking from the initially loaded doc so
-		// sweep-deletes only remove ids this client has previously persisted.
 		if (lastPersistedColIds === null && lastPersistedCardIds === null) {
 			const initial = parseKanbanDoc(doc);
 			lastPersistedColIds = new Set(initial.map((c) => c.id));
@@ -296,7 +417,6 @@ export function useKanbanBoardAdapter(options: UseKanbanBoardAdapterOptions) {
 		}
 
 		onCleanup(() => {
-			// Flush any pending debounced persist best-effort before the doc changes
 			if (syncTimeout) {
 				window.clearTimeout(syncTimeout);
 				syncTimeout = undefined;
@@ -314,7 +434,6 @@ export function useKanbanBoardAdapter(options: UseKanbanBoardAdapterOptions) {
 		}
 	});
 
-	// Keep the open card dialog in sync with remote Yjs updates (focus-guarded merge is in CardDialog)
 	createEffect(() => {
 		const dlg = cardDialog();
 		if (!dlg || dlg.isNew) return;
@@ -481,9 +600,7 @@ export function useKanbanBoardAdapter(options: UseKanbanBoardAdapterOptions) {
 			if (colCards) colCards.insert(colCards.length, [draft.id]);
 		});
 		if (options.workspaceId) {
-			await logActivity(options.workspaceId, "card", draft.id, "card_create", {
-				title,
-			});
+			await logActivity(options.workspaceId, "card", draft.id, "card_create");
 		}
 	};
 

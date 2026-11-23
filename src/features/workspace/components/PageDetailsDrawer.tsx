@@ -1,7 +1,6 @@
 import { createEffect, createSignal, For, onCleanup, Show } from "solid-js";
 import { useAuth } from "#/features/auth/AuthContext";
 import type { Tables } from "#/types/database";
-import { uniqueValues } from "#/utils/array";
 import { formatDateTime, formatTimestamp } from "#/utils/date";
 import { registerRealtimeHandlers } from "#/utils/realtime/registrar";
 import { supabase } from "#/utils/supabase";
@@ -15,6 +14,7 @@ import {
 	detailSection,
 	detailValue,
 	drawerBody,
+	emptyActivity,
 	kindBadge,
 	sectionTitle,
 	timeline,
@@ -48,7 +48,6 @@ const PageDetailsDrawer = (props: PageDetailsDrawerProps) => {
 
 	const humanizeAction = (log: ActivityRow) => {
 		const actor = getActorName(log);
-		const meta = log.metadata as { title?: string; excerpt?: string } | null;
 
 		switch (log.action) {
 			case "page_create":
@@ -56,9 +55,6 @@ const PageDetailsDrawer = (props: PageDetailsDrawerProps) => {
 			case "page_delete":
 				return `${actor} deleted this page`;
 			case "page_edit":
-				if (meta?.title) return `${actor} renamed this page to "${meta.title}"`;
-				if (meta?.excerpt)
-					return `${actor} edited this page — added "${meta.excerpt}"`;
 				return `${actor} edited this page`;
 			default:
 				return `${actor} ${log.action.replace(/_/g, " ")}`;
@@ -95,19 +91,10 @@ const PageDetailsDrawer = (props: PageDetailsDrawerProps) => {
 				setLogs([]);
 				return;
 			}
-			const userIds = uniqueValues(data, (l) => l.user_id);
-			let profileMap = new Map<string, string | null>();
-			if (userIds.length > 0) {
-				const { data: profiles } = await supabase
-					.from("profiles")
-					.select("id, display_name")
-					.in("id", userIds as string[]);
-				profileMap = new Map(profiles?.map((p) => [p.id, p.display_name]));
-			}
 			setLogs(
 				data.map((l) => ({
 					...l,
-					display_name: l.user_id ? (profileMap.get(l.user_id!) ?? null) : null,
+					display_name: null,
 				})),
 			);
 		})();
@@ -119,19 +106,9 @@ const PageDetailsDrawer = (props: PageDetailsDrawerProps) => {
 
 		const handleInsert = async (r: Tables<"activity_logs">) => {
 			if (r.entity_type !== "page" || r.entity_id !== id) return;
-			let display_name: string | null = null;
-			if (r.user_id) {
-				display_name =
-					props.members.find((m) => m.id === r.user_id)?.name ?? null;
-				if (!display_name) {
-					const { data } = await supabase
-						.from("profiles")
-						.select("display_name")
-						.eq("id", r.user_id)
-						.maybeSingle();
-					display_name = data?.display_name ?? null;
-				}
-			}
+			const display_name: string | null = r.user_id
+				? (props.members.find((m) => m.id === r.user_id)?.name ?? null)
+				: null;
 			setLogs((prev) => {
 				if (prev.some((p) => p.id === r.id)) return prev;
 				return [{ ...r, display_name } as ActivityRow, ...prev].slice(0, 50);
@@ -233,15 +210,7 @@ const PageDetailsDrawer = (props: PageDetailsDrawerProps) => {
 					<Show
 						when={logs().length > 0}
 						fallback={
-							<p
-								style={{
-									color: "var(--wa-color-text-quiet)",
-									"font-size": "var(--wa-font-size-xs)",
-									margin: "0",
-								}}
-							>
-								No activity yet for this page.
-							</p>
+							<p class={emptyActivity}>No activity yet for this page.</p>
 						}
 					>
 						<div class={timeline}>

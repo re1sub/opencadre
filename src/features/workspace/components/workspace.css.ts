@@ -538,20 +538,6 @@ export const memberAddRow = style({
 	flexWrap: "wrap",
 });
 
-export const memberAvatar = style({
-	display: "inline-flex",
-	alignItems: "center",
-	justifyContent: "center",
-	width: "2rem",
-	height: "2rem",
-	borderRadius: "50%",
-	fontSize: "0.7rem",
-	fontWeight: 700,
-	color: "#fff",
-	flexShrink: 0,
-	userSelect: "none",
-});
-
 export const memberMeta = style({
 	display: "flex",
 	flexDirection: "column",
@@ -623,8 +609,10 @@ export const settingsFooter = style({
 	width: "100%",
 });
 
-export const settingsFooterSpacer = style({
+export const settingsFooterVersion = style({
 	flex: 1,
+	color: "var(--wa-color-text-quiet)",
+	fontSize: "0.75rem",
 });
 
 export const dangerZone = style({
@@ -645,4 +633,141 @@ export const workspaceDangerRow = style({
 			alignItems: "stretch",
 		},
 	},
+});
+
+export const settingsRow = style({
+	display: "flex",
+	alignItems: "center",
+	justifyContent: "space-between",
+});
+
+export const settingsRowWithGap = style({
+	display: "flex",
+	alignItems: "center",
+	justifyContent: "space-between",
+	gap: "var(--wa-space-s)",
+});
+
+export const flexEndRow = style({
+	display: "flex",
+	alignItems: "flex-end",
+	gap: "var(--wa-space-s)",
+});
+
+export const borderedSettingsRow = style({
+	borderTop:
+		"var(--wa-border-width-s) var(--wa-border-style) var(--wa-color-surface-border)",
+	padding: "var(--wa-space-s) 0 0",
+	display: "flex",
+	alignItems: "center",
+	justifyContent: "space-between",
+	gap: "var(--wa-space-s)",
+});
+
+export const codeBlock = style({
+	display: "block",
+	padding: "var(--wa-space-s)",
+	borderRadius: "var(--wa-border-radius-m)",
+	backgroundColor: "var(--wa-color-surface-lowered)",
+	fontFamily: "var(--wa-font-family-code)",
+	wordBreak: "break-all",
+});
+
+export const dangerText = style({
+	margin: 0,
+	color: "var(--wa-color-danger-text)",
+	fontSize: "var(--wa-font-size-small)",
+});
+
+export const deleteErrorText = style({
+	marginBlock: "var(--wa-space-s)",
+	paddingInline: "var(--wa-space-s)",
+	color: "var(--wa-color-danger-text)",
+	fontSize: "var(--wa-font-size-small)",
+});
+
+export const settingsActions = style({
+	display: "flex",
+	flexWrap: "wrap",
+	gap: "var(--wa-space-s)",
+	alignItems: "center",
+});
+
+export const emptyWorkspacePage = style({
+	display: "flex",
+	alignItems: "center",
+	justifyContent: "center",
+	height: "100vh",
+});
+
+export const emptyWorkspaceText = style({
+	fontSize: "0.875rem",
+	color: "var(--wa-color-text-quiet)",
+	margin: 0,
+});
+
+export const keyMissingBanner = style({
+	padding: "var(--wa-space-s) var(--wa-space-m)",
+	borderBottom:
+		"var(--wa-border-width-s) var(--wa-border-style) var(--wa-color-warning-border)",
+	backgroundColor: "var(--wa-color-warning-fill-quiet)",
+	color: "var(--wa-color-warning-on-quiet)",
+	fontSize: "var(--wa-font-size-small)",
+});
+
+export const securityBanner = style({
+	padding: "var(--wa-space-s) var(--wa-space-m)",
+	borderBottom:
+		"var(--wa-border-width-s) var(--wa-border-style) var(--wa-color-brand-border)",
+	backgroundColor: "var(--wa-color-brand-fill-quiet)",
+	color: "var(--wa-color-brand-on-quiet)",
+	fontSize: "var(--wa-font-size-small)",
+	display: "flex",
+	alignItems: "center",
+	justifyContent: "space-between",
+	gap: "var(--wa-space-m)",
+});
+
+export const decryptionErrorBanner = style({
+	padding: "var(--wa-space-s) var(--wa-space-m)",
+	borderBottom:
+		"var(--wa-border-width-s) var(--wa-border-style) var(--wa-color-danger-border)",
+	backgroundColor: "var(--wa-color-danger-fill-quiet)",
+	color: "var(--wa-color-danger-on-quiet)",
+	fontSize: "var(--wa-font-size-small)",
+	display: "flex",
+	alignItems: "center",
+	justifyContent: "space-between",
+	gap: "var(--wa-space-m)",
+});
+
+export const pageTitleHeader = style({
+	paddingBottom: "var(--wa-space-3xs)",
+	marginBottom: "var(--wa-space-s)",
+	borderBottom:
+		"var(--wa-border-width-s) var(--wa-border-style) var(--wa-color-surface-border)",
+	cursor: "text",
+});
+
+export const pageTitleText = style({
+	paddingTop: "2px",
+	paddingBottom: "4px",
+	whiteSpace: "pre-wrap",
+});
+
+export const keyMissingToast = style({
+	position: "fixed",
+	bottom: "var(--wa-space-l)",
+	left: "50%",
+	transform: "translateX(-50%)",
+	zIndex: 1000,
+	maxWidth: "560px",
+	display: "flex",
+	alignItems: "center",
+	gap: "var(--wa-space-m)",
+	padding: "var(--wa-space-m) var(--wa-space-l)",
+	borderRadius: "8px",
+	backgroundColor: "var(--wa-color-surface-raised)",
+	boxShadow: "0 6px 24px rgba(0, 0, 0, 0.18)",
+	fontSize: "0.875rem",
 });

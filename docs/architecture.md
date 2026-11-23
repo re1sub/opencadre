@@ -42,12 +42,13 @@ flowchart LR
 
     subgraph supabase [Supabase]
         AUTH[Auth<br/>GoTrue]
-        PG[(Postgres<br/>18 tables + RLS)]
+        PG[(Postgres<br/>29 tables + RLS)]
         RT[Realtime<br/>workspace channels]
         subgraph efc [Edge Functions]
             AI[ai-generate]
             IM[invite-member]
             DA[delete-account]
+            RV[revoke-user-sessions]
             CR[cleanup-retention]
         end
     end
@@ -93,9 +94,12 @@ write, and up through them on read.
 - Location: `src/features/<feature>/hooks/*Adapter.ts` and `src/utils/`
 - This is the project's **repository layer**. Each `*Adapter` encapsulates
   every Supabase query and mutation for its aggregate and exposes a typed
-  interface to the layer above. Components never call `supabase` directly.
+  interface to the layer above. UI components do not call `supabase` directly.
 - The Supabase client itself is centralized in `src/utils/supabase.ts`, so
   connection is configured in exactly one place.
+- Key material and security events are owned by `src/features/crypto/`. That
+  module uses the same typed client but is not an `*Adapter`, so it is a second
+  data-access owner alongside the adapters.
 - Shared utilities (realtime, logging, Yjs sync, debounce) also live here.
 
 **Representative adapters:**
@@ -119,11 +123,23 @@ write, and up through them on read.
   (`src/types/database.ts` generated from the schema), so the adapter layer is
   boundary-checked by TypeScript.
 
+### Cryptography layer (cross-cutting)
+
+`src/features/crypto/` owns E2EE state and key operations. `VaultProvider`
+mounts under the authenticated workspace routes and gates them until the vault
+is unlocked. `vault.ts`, `crypto.ts`, `envelope.ts`, and `nonces.ts` implement
+sealing, opening, key wrapping, recovery, device links, and nonce reservation.
+Content is sealed in the browser; RLS still limits which ciphertext rows a user
+can reach, but the database never holds protected plaintext or private keys.
+
+See [api.md](./api.md#11-end-to-end-encryption) for the key hierarchy.
+
 ### Contract between layers
 
 - Components request state through feature hooks (`Layer 2`).
 - Feature hooks own signals and orchestrate side effects.
-- Adapters (`Layer 3`) are the *only* place that talks to Supabase.
+- Adapters (`Layer 3`) and the crypto module's vault layer are the only places
+  that talk to Supabase.
 - On top of that, RLS (`Layer 4`) is a second, server-side authorization
   boundary that the client cannot bypass.
 
@@ -172,6 +188,8 @@ notifications) and collaborative markdown editing (Yjs).
   cursor jumps and loops.
 - Authorization is enforced by the server (RLS SELECT policies); a user only
   ever receives rows they are allowed to read.
+- A second channel, `vault-keys:<user_id>`, is opened by `VaultProvider` so a
+  newly invited member picks up a `workspace_keys` wrap without reloading.
 
 For Yjs, `src/utils/yjs/useYjsDoc.ts` persists Yjs document state to the
 `ydocs` table and syncs updates through the same realtime channel.
@@ -193,14 +211,15 @@ For Yjs, `src/utils/yjs/useYjsDoc.ts` persists Yjs document state to the
 ## 7. Edge functions (server-side layer)
 
 Operations that must not run with user credentials, or that need secrets
-(SMTP, OpenRouter), run as Supabase edge functions. They use the
-`withSupabase({ auth: "user" })` middleware:
+(SMTP, OpenRouter), run as Supabase edge functions. They use `withSupabase` from
+`npm:@supabase/server` with `auth: "user"` or `auth: "none"`:
 
 | Function | Purpose | Auth |
 | --- | --- | --- |
 | `ai-generate` | Streams AI content via OpenRouter | JWT (user) |
 | `invite-member` | Creates a pending invite + sends email | JWT (user), role check via RLS |
 | `delete-account` | Atomic account erasure | JWT (user) + service role RPC |
+| `revoke-user-sessions` | Revoke refresh sessions | JWT (user) or service role |
 | `cleanup-retention` | RGPD retention purges | Cron secret / service role |
 
 See [api.md](./api.md) for full request/response contracts.
@@ -209,12 +228,11 @@ See [api.md](./api.md) for full request/response contracts.
 
 ```mermaid
 flowchart LR
-    GitHub[GitHub repo] --> CI[CI pipeline]
-    CI --> Build[vite build]
-    Build --> Pages[Cloudflare Pages]
+    GitHub[GitHub repo] --> Checks[Husky pre-push<br/>lint + test + typecheck + build]
+    Checks --> Pages[Cloudflare Pages]
     Pages --> Prod[opencadre.pages.dev<br/>production]
     Pages --> Preview[dev.opencadre.pages.dev<br/>preview]
-    Build --> Supabase[Supabase project<br/>DB + functions + secrets]
+    Pages --> Supabase[Supabase project<br/>DB + functions + secrets]
 ```
 
 | Environment | Branch | URL |
@@ -223,8 +241,9 @@ flowchart LR
 | Preview | `dev` | https://dev.opencadre.pages.dev |
 
 Deployments are triggered by pushing to `main` (production) and `dev`
-(preview). The build runs lint, type checking, unit tests, and the production
-bundle before publishing.
+(preview). Cloudflare Pages runs `vite build` and publishes `dist/`. Lint, unit
+tests, and type checking are enforced locally by the Husky pre-push hook; there
+is no separate CI workflow.
 
 ## 9. Technology stack
 
@@ -258,11 +277,11 @@ src/
 │   ├── ai/                     # AI assistant
 │   ├── auth/                   # Auth UI, context, schemas, guard
 │   ├── comments/               # Comments, reactions, threads
+│   ├── crypto/                 # Vault, keys, device links, recovery, rotation
 │   ├── home/                   # Landing page
 │   ├── kanban/                 # Board, columns, cards
 │   ├── legal/                  # Terms & privacy
 │   ├── markdown/               # TipTap editor, preview
-│   ├── search/                 # (placeholder)
 │   ├── table/                  # Tables + CSV
 │   ├── tags/                   # Tag editor/picker
 │   ├── ui/                     # Shared primitives

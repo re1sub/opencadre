@@ -1,5 +1,6 @@
-import { Show } from "solid-js";
+import { Show, Suspense } from "solid-js";
 import { useAuth } from "#/features/auth/AuthContext";
+import LoadingSpinner from "#/features/ui/LoadingSpinner";
 import { useTheme } from "#theme/ThemeProvider";
 import { auth, drawerContent, logo, menuButton, navbar } from "./navbar.css";
 
@@ -14,36 +15,38 @@ const Navbar = () => {
 					opencadre
 				</a>
 
-				<div class={auth}>
-					<Show when={user()}>
-						<wa-button href="/workspace" variant="brand">
-							Go to app
-						</wa-button>
-					</Show>
+				<Suspense fallback={<LoadingSpinner />}>
+					<div class={auth}>
+						<Show when={user()}>
+							<wa-button href="/workspace" variant="brand">
+								Go to app
+							</wa-button>
+						</Show>
 
-					<Show when={!user() && !loading()}>
-						<wa-button href="/auth/signin" appearance="plain">
-							Sign in
-						</wa-button>
+						<Show when={!user()}>
+							<wa-button href="/auth/signin" appearance="plain">
+								Sign in
+							</wa-button>
 
-						<wa-button href="/auth/signup" variant="brand">
-							Get started
-						</wa-button>
-					</Show>
+							<wa-button href="/auth/signup" variant="brand">
+								Get started
+							</wa-button>
+						</Show>
 
-					<wa-button
-						variant="neutral"
-						appearance="plain"
-						onClick={toggleTheme}
-						aria-label="Toggle theme"
-					>
-						<wa-icon
-							name={theme() === "dark" ? "sun" : "moon"}
-							label="Toggle theme"
-							style={{ "font-size": "1.5rem" }}
-						></wa-icon>
-					</wa-button>
-				</div>
+						<wa-button
+							variant="neutral"
+							appearance="plain"
+							onClick={toggleTheme}
+							aria-label="Toggle theme"
+						>
+							<wa-icon
+								name={theme() === "dark" ? "sun" : "moon"}
+								label="Toggle theme"
+								style={{ "font-size": "1.5rem" }}
+							></wa-icon>
+						</wa-button>
+					</div>
+				</Suspense>
 
 				<wa-button
 					class={menuButton}

@@ -22,3 +22,25 @@ jobs:
       - run: pnpm lint:full
       - run: pnpm test:run
       - run: pnpm build
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 3.2.0
+      - run: pnpm install --frozen-lockfile
+      - run: supabase start
+      - run: supabase db reset
+      - run: pnpm exec playwright install --with-deps chromium firefox webkit
+      - name: Point the app at local Supabase
+        run: |
+          supabase status -o env \
+            | sed -nE 's/^API_URL="([^"]*)"/VITE_SUPABASE_URL=\1/p; s/^PUBLISHABLE_KEY="([^"]*)"/VITE_SUPABASE_PUBLISHABLE_KEY=\1/p' \
+            >> "$GITHUB_ENV"
+      - run: pnpm test:e2e

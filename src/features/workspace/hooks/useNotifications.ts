@@ -1,12 +1,21 @@
 import type { RealtimeChannel } from "@supabase/supabase-js";
 import { createEffect, createSignal, onCleanup } from "solid-js";
 import { useAuth } from "#/features/auth/AuthContext";
+import { reportDecryptionError } from "#/features/crypto/decryptionErrors";
+import { VaultDecryptionError } from "#/features/crypto/errors";
+import { useVault } from "#/features/crypto/VaultProvider";
+import { notificationAad } from "#/features/crypto/vault";
 import type { Json, Tables } from "#/types/database";
 import { nowIso } from "#/utils/date";
 import { isPlainObject } from "#/utils/misc";
 import { supabase } from "#/utils/supabase";
 
-export type NotificationRow = Tables<"notifications">;
+type RawNotificationRow = Tables<"notifications">;
+
+export type NotificationRow = Omit<
+	RawNotificationRow,
+	"title_ciphertext" | "body_ciphertext"
+> & { title: string; body: string | null };
 
 export type NotificationPrefs = {
 	comments: boolean;
@@ -25,6 +34,7 @@ const [prefs, setPrefs] = createSignal<NotificationPrefs>({
 
 let channel: RealtimeChannel | null = null;
 let subscribedForUserId: string | null = null;
+let subscribedEpoch = -1;
 
 function parsePrefs(raw: Json | null): NotificationPrefs {
 	const next: NotificationPrefs = { ...DEFAULT_NOTIFICATION_PREFS };
@@ -39,7 +49,7 @@ function parsePrefs(raw: Json | null): NotificationPrefs {
 	return next;
 }
 
-async function loadNotifications(userId: string) {
+async function fetchNotifications(userId: string) {
 	const [notesResult, prefsResult] = await Promise.all([
 		supabase
 			.from("notifications")
@@ -54,13 +64,14 @@ async function loadNotifications(userId: string) {
 			.maybeSingle(),
 	]);
 
-	if (!notesResult.error && notesResult.data) {
-		setNotifications(notesResult.data as NotificationRow[]);
-	}
-
-	if (!prefsResult.error && prefsResult.data) {
-		setPrefs(parsePrefs(prefsResult.data.notifications as Json));
-	}
+	return {
+		rows: (notesResult.error ? [] : (notesResult.data ?? [])) as
+			| RawNotificationRow[]
+			| never[],
+		prefsRaw: prefsResult.error
+			? null
+			: (prefsResult.data?.notifications ?? null),
+	};
 }
 
 async function persistPrefs(userId: string, next: NotificationPrefs) {
@@ -76,14 +87,58 @@ async function persistPrefs(userId: string, next: NotificationPrefs) {
 
 export function useNotifications() {
 	const { user } = useAuth();
+	const vault = useVault();
+
+	const commentIdOf = (row: RawNotificationRow): string | null => {
+		const data = row.data;
+		if (!data || typeof data !== "object" || Array.isArray(data)) return null;
+		const value = (data as Record<string, unknown>).comment_id;
+		return typeof value === "string" ? value : null;
+	};
+
+	const openNotification = async (
+		row: RawNotificationRow,
+	): Promise<NotificationRow> => {
+		const { title_ciphertext, body_ciphertext, ...rest } = row;
+		const commentId = commentIdOf(row);
+		if (!commentId) {
+			const err = new VaultDecryptionError(
+				"This notification is missing its comment reference.",
+			);
+			reportDecryptionError(`${row.workspace_id}:notification:${row.id}`, err);
+			throw err;
+		}
+		const titleAad = notificationAad(row.workspace_id, commentId, "title");
+		const bodyAad = notificationAad(row.workspace_id, commentId, "body");
+
+		const [title, body] = await Promise.all([
+			vault.openTextSafe(
+				row.workspace_id,
+				title_ciphertext,
+				titleAad,
+				`notification:${row.id}:title`,
+			),
+			body_ciphertext
+				? vault.openTextSafe(
+						row.workspace_id,
+						body_ciphertext,
+						bodyAad,
+						`notification:${row.id}:body`,
+					)
+				: Promise.resolve(null),
+		]);
+		return { ...rest, title, body };
+	};
 
 	const unreadCount = () =>
 		notifications().filter((n) => n.read_at === null).length;
 
 	createEffect(() => {
 		const id = user()?.id ?? null;
+		const status = vault.status();
+		const epoch = vault.epoch();
 
-		if (id === subscribedForUserId) return;
+		if (id === subscribedForUserId && epoch === subscribedEpoch) return;
 
 		if (channel) {
 			void supabase.removeChannel(channel);
@@ -91,14 +146,30 @@ export function useNotifications() {
 		}
 
 		subscribedForUserId = id;
+		subscribedEpoch = epoch;
 
-		if (!id) {
+		if (!id || status !== "unlocked") {
 			setNotifications([]);
-			setPrefs({ ...DEFAULT_NOTIFICATION_PREFS });
+			if (!id) setPrefs({ ...DEFAULT_NOTIFICATION_PREFS });
 			return;
 		}
 
-		void loadNotifications(id);
+		void (async () => {
+			const { rows, prefsRaw } = await fetchNotifications(id);
+			const opened = (
+				await Promise.all(
+					rows.map(async (row) => {
+						try {
+							return await openNotification(row);
+						} catch {
+							return null;
+						}
+					}),
+				)
+			).filter((item): item is NotificationRow => item !== null);
+			setNotifications(opened);
+			setPrefs(parsePrefs(prefsRaw as Json | null));
+		})();
 
 		const userChannel = supabase
 			.channel(`notifications:${id}`)
@@ -111,13 +182,16 @@ export function useNotifications() {
 					filter: `user_id=eq.${id}`,
 				},
 				(payload) => {
-					const row = payload.new as NotificationRow;
-
-					setNotifications((prev) =>
-						prev.some((n) => n.id === row.id)
-							? prev
-							: [row, ...prev].slice(0, 50),
-					);
+					const row = payload.new as RawNotificationRow;
+					void openNotification(row)
+						.then((item) => {
+							setNotifications((prev) =>
+								prev.some((n) => n.id === item.id)
+									? prev
+									: [item, ...prev].slice(0, 50),
+							);
+						})
+						.catch(() => {});
 				},
 			)
 			.subscribe();
@@ -131,11 +205,11 @@ export function useNotifications() {
 			}
 
 			subscribedForUserId = null;
+			subscribedEpoch = -1;
 		});
 	});
 
 	const markRead = async (notificationId: NotificationRow["id"]) => {
-		// Don't make another request if it's already read.
 		const notification = notifications().find((n) => n.id === notificationId);
 
 		if (!notification || notification.read_at !== null) return;

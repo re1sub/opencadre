@@ -5,12 +5,11 @@ type RequestBody = {
 	workspace_id: string;
 	email: string;
 	role: "admin" | "member" | "guest";
+	invite_label?: string | null;
 };
 
 const INVITE_REDIRECT_PATH = "/accept-invite?token=";
 
-// Invites a user into a workspace. Only workspace owners and admins may do so;
-// the caller's role is enforced through an RLS-scoped client using their own JWT.
 export default {
 	fetch: withSupabase({ auth: "user" }, async (req, ctx) => {
 		const { supabase, supabaseAdmin, userClaims } = ctx;
@@ -28,6 +27,14 @@ export default {
 
 		const email = body.email?.trim().toLowerCase();
 		const { workspace_id: workspaceId, role } = body;
+
+		const rawLabel = body.invite_label;
+		const inviteLabel =
+			typeof rawLabel === "string" &&
+			rawLabel.length <= 4096 &&
+			/^n1\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/.test(rawLabel)
+				? rawLabel
+				: null;
 		if (
 			!workspaceId ||
 			!email ||
@@ -39,8 +46,6 @@ export default {
 			);
 		}
 
-		// Members are stored both by user_id (linked) and email (pending invites).
-		// The caller's own membership (scoped by RLS) authorizes the invite.
 		const { data: membership, error: membershipError } = await supabase
 			.from("workspace_members")
 			.select("role")
@@ -60,7 +65,6 @@ export default {
 			return Response.json({ error: "Forbidden" }, { status: 403 });
 		}
 
-		// Already a member (linked) or pending invite for this workspace by email?
 		const { data: existingByEmail, error: existingByEmailError } =
 			await supabaseAdmin
 				.from("workspace_members")
@@ -80,10 +84,6 @@ export default {
 		if (existingByEmail?.user_id) {
 			return Response.json({ status: "already-member" }, { status: 409 });
 		}
-		// Pending invite already exists for this email in this workspace: allow
-		// re-invite by refreshing the token and resending the email instead of
-		// hard 409. Workspace invites are independent from app accounts, so
-		// re-inviting must always be possible.
 		let pendingId: string | null = existingByEmail?.id ?? null;
 		let inviteToken: string;
 
@@ -123,14 +123,11 @@ export default {
 		}
 
 		const origin = req.headers.get("origin");
+		const fragment = inviteLabel ? `#n=${encodeURIComponent(inviteLabel)}` : "";
 		const redirectTo = origin
-			? `${origin}${INVITE_REDIRECT_PATH}${inviteToken}`
+			? `${origin}${INVITE_REDIRECT_PATH}${inviteToken}${fragment}`
 			: null;
 
-		// Send a plain workspace invite email via the Gmail SMTP already wired
-		// for Auth. This does NOT create an auth.users row. The link itself
-		// never creates an account on open, the account is only created when the
-		// recipient follows the link and completes Sign up at the gate.
 		let emailSent = false;
 		let emailError: string | null = null;
 		const smtpHost = Deno.env.get("SMTP_HOST");
@@ -141,13 +138,6 @@ export default {
 		const smtpFromName = Deno.env.get("SMTP_FROM_NAME") ?? "OpenCadre";
 		if (smtpHost && smtpPort && smtpUser && smtpPass && redirectTo) {
 			try {
-				const { data: ws } = await supabaseAdmin
-					.from("workspaces")
-					.select("name")
-					.eq("id", workspaceId)
-					.maybeSingle();
-				const workspaceName =
-					(ws as { name?: string } | null)?.name ?? "a workspace";
 				const port = Number(smtpPort);
 				const cleanPass = smtpPass.replace(/\s+/g, "");
 				const transporter = nodemailer.createTransport({
@@ -159,9 +149,9 @@ export default {
 				await transporter.sendMail({
 					from: smtpFromName ? `"${smtpFromName}" <${smtpFrom}>` : smtpFrom,
 					to: email,
-					subject: `You've been invited to ${workspaceName} on OpenCadre`,
-					text: `You've been invited to join "${workspaceName}" as ${role}.\n\nOpen this link to accept:\n${redirectTo}\n\nIf you don't have an account yet you'll be asked to sign up first, the link itself does not create an account until you do.`,
-					html: `<p>You've been invited to join "<strong>${workspaceName}</strong>" as ${role}.</p><p><a href="${redirectTo}">Accept invite</a></p><p style="color:#6b7280;font-size:12px">If you don't have an account yet you'll be asked to sign up first. Opening the link alone does not create an account.</p>`,
+					subject: "You've been invited to a workspace on OpenCadre",
+					text: `You've been invited to join a workspace as ${role}.\n\nOpen this link to accept:\n${redirectTo}\n\nIf you don't have an account yet you'll be asked to sign up first, the link itself does not create an account until you do.`,
+					html: `<p>You've been invited to join a workspace as ${role}.</p><p><a href="${redirectTo}">Accept invite</a></p><p style="color:#6b7280;font-size:12px">If you don't have an account yet you'll be asked to sign up first. Opening the link alone does not create an account. The workspace name is shown when you open the link.</p>`,
 				});
 				emailSent = true;
 			} catch (e) {
@@ -175,8 +165,6 @@ export default {
 			emailError = "Missing origin for redirectTo";
 		}
 
-		// Workspace invites must NOT create an app account. The pending row with
-		// invite_token is the source of truth.
 		return Response.json({
 			status: "invited",
 			pending: true,

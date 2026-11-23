@@ -1,15 +1,21 @@
 import { createSignal, For, Show } from "solid-js";
 import { useAuth } from "#/features/auth/AuthContext";
+import { useVault } from "#/features/crypto/VaultProvider";
 import ConfirmDialog from "#/features/ui/ConfirmDialog";
-import { dropdownItemValue } from "#/utils/misc";
+import { dropdownItemValue, getErrorMessage } from "#/utils/misc";
 import { emailPrefix } from "#/utils/string";
-import { supabase } from "#/utils/supabase";
 import { type ThemePreference, useTheme } from "#theme/ThemeProvider";
 import { useProfile } from "../hooks/useProfile";
 import {
+	borderedSettingsRow,
+	dangerText,
 	dangerZone,
+	deleteErrorText,
 	dialogBody,
 	dialogLabel,
+	flexEndRow,
+	settingsRow,
+	settingsRowWithGap,
 	settingsSection,
 	settingsSectionTitle,
 	workspaceDangerRow,
@@ -32,6 +38,7 @@ const isThemePreference = (
 
 const SettingsGeneralSection = () => {
 	const { user, deleteAccount } = useAuth();
+	const vault = useVault();
 	const { themePreference, setThemePreference } = useTheme();
 	const { name: profileName, setCustomName } = useProfile(user);
 
@@ -51,23 +58,29 @@ const SettingsGeneralSection = () => {
 	const displayNameValue = () => nameDraft() ?? profileName();
 
 	const handleDisplayNameInput = (e: Event) => {
-		const value = (e.currentTarget as HTMLInputElement).value || null;
-		setNameDraft(value);
-		setCustomName(value);
+		setNameDraft((e.currentTarget as HTMLInputElement).value || null);
 	};
 
 	const handleDisplayNameCommit = () => {
 		const next = (nameDraft() ?? "").trim();
 		setCustomName(next || null);
 		setNameDraft(null);
-		void supabase.auth.updateUser({
-			data: { display_name: next || null },
-		});
 	};
 
 	const handleThemeSelect = (e: Event) => {
 		const value = dropdownItemValue(e);
 		if (isThemePreference(value)) setThemePreference(value);
+	};
+
+	const [privacyError, setPrivacyError] = createSignal<string | null>(null);
+
+	const handleRememberDevice = async () => {
+		setPrivacyError(null);
+		try {
+			await vault.rememberThisDevice();
+		} catch (err) {
+			setPrivacyError(getErrorMessage(err, "Could not remember this device"));
+		}
 	};
 
 	const handleDeleteAccount = async () => {
@@ -77,9 +90,10 @@ const SettingsGeneralSection = () => {
 			window.location.href = "/";
 		} catch (err) {
 			setDeleteError(
-				err instanceof Error
-					? err.message
-					: "Something went wrong deleting your account. Please try again.",
+				getErrorMessage(
+					err,
+					"Something went wrong deleting your account. Please try again.",
+				),
 			);
 		}
 	};
@@ -89,16 +103,10 @@ const SettingsGeneralSection = () => {
 			<h3 class={settingsSectionTitle}>Appearance</h3>
 			<wa-divider style={{ "--spacing": "0" }}></wa-divider>
 			<div class={settingsSection}>
-				<div
-					style={{
-						display: "flex",
-						"align-items": "center",
-						"justify-content": "space-between",
-					}}
-				>
+				<div class={settingsRow}>
 					<div class={dialogBody}>
 						Theme
-						<small style={{ color: "var(--wa-color-text-quiet" }}>
+						<small style={{ color: "var(--wa-color-text-quiet)" }}>
 							Custom themes are coming!
 						</small>
 					</div>
@@ -141,13 +149,7 @@ const SettingsGeneralSection = () => {
 			<h3 class={settingsSectionTitle}>Profile</h3>
 			<wa-divider style={{ "--spacing": "0" }}></wa-divider>
 			<div class={settingsSection}>
-				<div
-					style={{
-						display: "flex",
-						"align-items": "flex-end",
-						gap: "var(--wa-space-s)",
-					}}
-				>
+				<div class={flexEndRow}>
 					<wa-input
 						style={{ "flex-grow": "1" }}
 						label="Display name"
@@ -161,6 +163,68 @@ const SettingsGeneralSection = () => {
 				<p class={dialogLabel}>
 					Your display name appears on comments, assignees and the members list.
 				</p>
+			</div>
+
+			<h3 class={settingsSectionTitle}>Privacy</h3>
+			<wa-divider style={{ "--spacing": "0" }}></wa-divider>
+			<div class={settingsSection}>
+				<div class={settingsRowWithGap}>
+					<div class={dialogBody}>
+						End-to-end encryption
+						<small style={{ color: "var(--wa-color-text-quiet)" }}>
+							On. Content is encrypted in this browser.
+						</small>
+					</div>
+					<wa-button
+						type="button"
+						variant="neutral"
+						appearance="outlined"
+						onClick={() => vault.lock()}
+					>
+						Lock now
+					</wa-button>
+				</div>
+
+				<div class={borderedSettingsRow}>
+					<div class={dialogBody}>
+						This device
+						<small style={{ color: "var(--wa-color-text-quiet)" }}>
+							{vault.hasDevice()
+								? "Unlocks automatically on this device"
+								: "Use your recovery code on this device"}
+						</small>
+					</div>
+					<Show
+						when={!vault.hasDevice()}
+						fallback={
+							<wa-tag appearance="outlined">Trusted on this device</wa-tag>
+						}
+					>
+						<wa-button
+							type="button"
+							variant="neutral"
+							appearance="outlined"
+							disabled={vault.status() !== "unlocked"}
+							onClick={handleRememberDevice}
+						>
+							Remember device
+						</wa-button>
+					</Show>
+				</div>
+
+				<div class={borderedSettingsRow}>
+					<div class={dialogBody}>
+						Recovery code
+						<small style={{ color: "var(--wa-color-text-quiet)" }}>
+							Regenerate codes in the Security section, where re-authentication
+							and one-time acknowledgement are required.
+						</small>
+					</div>
+				</div>
+
+				<Show when={privacyError()}>
+					<p class={dangerText}>{privacyError()}</p>
+				</Show>
 			</div>
 
 			<h3 class={settingsSectionTitle}>Danger Zone</h3>
@@ -199,16 +263,7 @@ const SettingsGeneralSection = () => {
 			</Show>
 
 			<Show when={deleteError()}>
-				<p
-					style={{
-						"margin-block": "var(--wa-space-s)",
-						"padding-inline": "var(--wa-space-s)",
-						color: "var(--wa-color-danger-text)",
-						"font-size": "var(--wa-font-size-small)",
-					}}
-				>
-					{deleteError()}
-				</p>
+				<p class={deleteErrorText}>{deleteError()}</p>
 			</Show>
 		</div>
 	);

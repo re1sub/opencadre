@@ -1,12 +1,22 @@
 import { Navigate, useNavigate, useSearchParams } from "@solidjs/router";
 import { createEffect, createSignal, Show } from "solid-js";
 import { useAuth } from "#/features/auth/AuthContext";
+import {
+	openInviteLabel,
+	readInviteLabelFromHash,
+} from "#/features/crypto/inviteLabel";
+import LoadingSpinner from "#/features/ui/LoadingSpinner";
 import { toStringOrNull } from "#/utils/misc";
 import { supabase } from "#/utils/supabase";
+import {
+	centeredActions,
+	centeredPanel,
+	errorActions,
+	helpText,
+} from "./acceptInvite.css";
 
 type InviteDetails = {
 	workspace_id: string;
-	workspace_name: string;
 	email: string;
 	role: string;
 };
@@ -16,6 +26,8 @@ const AcceptInvite = () => {
 	const navigate = useNavigate();
 	const { user, loading: authLoading } = useAuth();
 	const [invite, setInvite] = createSignal<InviteDetails | null>(null);
+	const [inviteName, setInviteName] = createSignal<string | null>(null);
+	const [inviteLabelError, setInviteLabelError] = createSignal(false);
 	const [inviteLoading, setInviteLoading] = createSignal(true);
 	const [inviteError, setInviteError] = createSignal(false);
 	const [acceptStatus, setAcceptStatus] = createSignal<
@@ -36,6 +48,25 @@ const AcceptInvite = () => {
 		}
 		setInviteLoading(true);
 		setInviteError(false);
+
+		const storageKey = `opencadre:invite-label:${t}`;
+		const hashLabel = readInviteLabelFromHash(window.location.hash);
+		if (hashLabel) sessionStorage.setItem(storageKey, hashLabel);
+		const label = hashLabel ?? sessionStorage.getItem(storageKey);
+		if (label) {
+			void openInviteLabel(label).then((name) => {
+				if (!name) {
+					setInviteLabelError(true);
+					setInviteName(null);
+					return;
+				}
+				setInviteName(name);
+			});
+		} else {
+			setInviteLabelError(false);
+			setInviteName(null);
+		}
+
 		(async () => {
 			const { data, error } = await supabase.rpc("get_invite_details", {
 				p_token: t,
@@ -94,7 +125,7 @@ const AcceptInvite = () => {
 			when={!inviteLoading() && !authLoading()}
 			fallback={
 				<div style={{ padding: "var(--wa-space-xl)", "text-align": "center" }}>
-					<p style={{ margin: "0" }}>Loading invite…</p>
+					<LoadingSpinner></LoadingSpinner>
 				</div>
 			}
 		>
@@ -116,6 +147,14 @@ const AcceptInvite = () => {
 					</div>
 				}
 			>
+				<Show when={inviteLabelError()}>
+					<p
+						style={{ color: "var(--wa-color-danger)", "text-align": "center" }}
+					>
+						The workspace name in this invite link could not be decrypted. The
+						link may have been altered.
+					</p>
+				</Show>
 				<Show when={user()}>
 					<Show
 						when={acceptStatus() !== "error"}
@@ -130,14 +169,7 @@ const AcceptInvite = () => {
 									{acceptError() ??
 										"This invite link is invalid or has already been used."}
 								</p>
-								<div
-									style={{
-										display: "flex",
-										gap: "var(--wa-space-m)",
-										"justify-content": "center",
-										"margin-top": "var(--wa-space-m)",
-									}}
-								>
+								<div class={errorActions}>
 									<wa-button
 										variant="neutral"
 										appearance="outlined"
@@ -168,7 +200,7 @@ const AcceptInvite = () => {
 									}}
 								>
 									<p style={{ margin: "0" }}>
-										Accepting your invite to {invite()?.workspace_name}…
+										Accepting your invite to {inviteName() ?? "the workspace"}…
 									</p>
 								</div>
 							}
@@ -178,21 +210,14 @@ const AcceptInvite = () => {
 					</Show>
 				</Show>
 				<Show when={!user()}>
-					<div
-						style={{
-							padding: "var(--wa-space-xl)",
-							"text-align": "center",
-							"max-width": "520px",
-							margin: "0 auto",
-						}}
-					>
+					<div class={centeredPanel}>
 						<h2
 							style={{
 								"font-size": "1.5rem",
 								margin: "0 0 var(--wa-space-m) 0",
 							}}
 						>
-							To access {invite()?.workspace_name} please sign up
+							To access {inviteName() ?? "this workspace"} please sign up
 						</h2>
 						<p
 							style={{
@@ -204,13 +229,7 @@ const AcceptInvite = () => {
 							in if you already have an account, or create a new one to join the
 							workspace.
 						</p>
-						<div
-							style={{
-								display: "flex",
-								gap: "var(--wa-space-m)",
-								"justify-content": "center",
-							}}
-						>
+						<div class={centeredActions}>
 							<wa-button
 								variant="brand"
 								appearance="outlined"
@@ -222,13 +241,7 @@ const AcceptInvite = () => {
 								Sign up
 							</wa-button>
 						</div>
-						<p
-							style={{
-								"margin-top": "var(--wa-space-m)",
-								"font-size": "0.875rem",
-								color: "var(--wa-color-text-quiet)",
-							}}
-						>
+						<p class={helpText}>
 							After signing in you'll be taken directly to the workspace.
 						</p>
 					</div>

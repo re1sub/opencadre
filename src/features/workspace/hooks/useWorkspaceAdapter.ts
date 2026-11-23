@@ -1,4 +1,8 @@
 import { createEffect, createSignal, onCleanup } from "solid-js";
+import { reportDecryptionError } from "#/features/crypto/decryptionErrors";
+import { VaultDecryptionError } from "#/features/crypto/errors";
+import { useVault } from "#/features/crypto/VaultProvider";
+import { workspaceFieldAad } from "#/features/crypto/vault";
 import type { Tables } from "#/types/database";
 import { nowIso } from "#/utils/date";
 import { registerRealtimeHandlers } from "#/utils/realtime/registrar";
@@ -7,35 +11,76 @@ import type { PageKind, Workspace } from "../types";
 
 type WorkspaceRow = Tables<"workspaces">;
 
-const toWorkspace = (row: WorkspaceRow) => ({
+const toWorkspace = (
+	row: WorkspaceRow,
+	name: string,
+	description: string | null,
+) => ({
 	id: row.id,
-	name: row.name,
-	description: row.description ?? undefined,
+	name,
+	description: description ?? undefined,
 	defaultPageKind: row.default_page_kind as PageKind,
 	createdAt: row.created_at,
 	updatedAt: row.updated_at,
 });
 
 export function useWorkspaceAdapter() {
+	const vault = useVault();
 	const [workspaces, setWorkspaces] = createSignal<Workspace[]>([]);
 	const [activeWorkspaceId, setActiveWorkspaceId] = createSignal<string>("");
 	const [loaded, setLoaded] = createSignal(false);
 
-	// Apply remote workspace edits (rename/settings) and new workspaces.
+	const openName = async (row: WorkspaceRow): Promise<string> => {
+		if (!row.name_ciphertext) {
+			const err = new VaultDecryptionError(
+				"This workspace does not have an encrypted name yet.",
+			);
+			reportDecryptionError(`${row.id}:name`, err);
+			throw err;
+		}
+		return vault.openTextSafe(
+			row.id,
+			row.name_ciphertext,
+			workspaceFieldAad(row.id, "name"),
+			"name",
+		);
+	};
+
+	const openDescription = async (row: WorkspaceRow): Promise<string | null> => {
+		if (!row.description_ciphertext) return null;
+		return vault.openTextSafe(
+			row.id,
+			row.description_ciphertext,
+			workspaceFieldAad(row.id, "description"),
+			"description",
+		);
+	};
+
 	const unregister = registerRealtimeHandlers("workspaces", {
 		applyInsert: (row) => {
-			const workspacesList = workspaces();
-			if (workspacesList.some((w) => w.id === row.id)) return;
-			setWorkspaces((prev) => [
-				...prev,
-				toWorkspace(row as unknown as WorkspaceRow),
-			]);
+			const r = row as unknown as WorkspaceRow;
+			if (workspaces().some((w) => w.id === r.id)) return;
+			void Promise.all([openName(r), openDescription(r)])
+				.then(([name, description]) => {
+					setWorkspaces((prev) =>
+						prev.some((w) => w.id === r.id)
+							? prev
+							: [...prev, toWorkspace(r, name, description)],
+					);
+				})
+				.catch(() => {});
 		},
 		applyUpdate: (row) => {
 			const r = row as unknown as WorkspaceRow;
-			setWorkspaces((prev) =>
-				prev.map((w) => (w.id === r.id ? toWorkspace(r) : w)),
-			);
+			void Promise.all([openName(r), openDescription(r)])
+				.then(([name, description]) => {
+					setWorkspaces((prev) =>
+						prev.map((w) =>
+							w.id === r.id ? toWorkspace(r, name, description) : w,
+						),
+					);
+				})
+				.catch(() => {});
 		},
 		applyDelete: (row) => {
 			setWorkspaces((prev) => prev.filter((w) => w.id !== row.id));
@@ -50,7 +95,6 @@ export function useWorkspaceAdapter() {
 		} = await supabase.auth.getUser();
 		if (!user) return;
 
-		// Get workspaces the user is a member of
 		const { data: memberships, error: memberError } = await supabase
 			.from("workspace_members")
 			.select("workspace_id")
@@ -70,7 +114,16 @@ export function useWorkspaceAdapter() {
 			.order("created_at", { ascending: true });
 		if (wsError) throw wsError;
 
-		const mapped = wsData.map(toWorkspace);
+		const mapped: Workspace[] = [];
+		for (const row of wsData) {
+			try {
+				mapped.push(
+					toWorkspace(row, await openName(row), await openDescription(row)),
+				);
+			} catch {
+				// The field error is already reported by openTextSafe.
+			}
+		}
 		setWorkspaces(mapped);
 		if (!activeWorkspaceId() && mapped.length > 0) {
 			setActiveWorkspaceId(mapped[0].id);
@@ -78,9 +131,14 @@ export function useWorkspaceAdapter() {
 		setLoaded(true);
 	};
 
-	// Initial fetch
 	createEffect(() => {
-		fetchWorkspaces();
+		const status = vault.status();
+		vault.epoch();
+		if (status !== "unlocked") {
+			setWorkspaces([]);
+			return;
+		}
+		void fetchWorkspaces();
 	});
 
 	const activeWorkspace = () =>
@@ -92,13 +150,21 @@ export function useWorkspaceAdapter() {
 		} = await supabase.auth.getUser();
 		if (!user) return null;
 
+		const workspaceId = crypto.randomUUID();
+		const workspaceName = name ?? "Untitled workspace";
+
 		const { data: workspace, error } = await supabase
 			.from("workspaces")
-			.insert({ name: name ?? "Untitled workspace", owner_id: user.id })
+			.insert({
+				id: workspaceId,
+				owner_id: user.id,
+			})
 			.select()
 			.single();
 		if (error) throw error;
 
+		// Key creation, nonce reservation, and the sealed-name update all check
+		// RLS against the caller's membership, so it must exist first.
 		const { error: memberError } = await supabase
 			.from("workspace_members")
 			.insert({
@@ -109,8 +175,31 @@ export function useWorkspaceAdapter() {
 			});
 		if (memberError && memberError.code !== "23505") throw memberError;
 
-		const mapped = toWorkspace(workspace);
-		setWorkspaces((prev) => [...prev, mapped]);
+		const available = await vault.ensureWorkspaceKey(workspace.id);
+		if (!available) {
+			throw new Error("Could not create the workspace encryption key");
+		}
+
+		const sealedName = await vault.sealText(
+			workspace.id,
+			workspaceName,
+			workspaceFieldAad(workspace.id, "name"),
+		);
+		const { error: nameError } = await supabase
+			.from("workspaces")
+			.update({ name_ciphertext: sealedName })
+			.eq("id", workspace.id);
+		if (nameError) throw nameError;
+
+		const mapped = toWorkspace(
+			{ ...workspace, name_ciphertext: sealedName },
+			workspaceName,
+			null,
+		);
+		setWorkspaces((prev) => [
+			...prev.filter((entry) => entry.id !== mapped.id),
+			mapped,
+		]);
 		return mapped;
 	};
 
@@ -130,9 +219,14 @@ export function useWorkspaceAdapter() {
 	};
 
 	const renameWorkspace = async (id: string, name: string) => {
+		const sealed = await vault.sealText(
+			id,
+			name,
+			workspaceFieldAad(id, "name"),
+		);
 		const { error } = await supabase
 			.from("workspaces")
-			.update({ name })
+			.update({ name_ciphertext: sealed })
 			.eq("id", id);
 		if (error) throw error;
 
@@ -150,13 +244,27 @@ export function useWorkspaceAdapter() {
 		},
 	) => {
 		const update: {
-			name?: string;
-			description?: string | null;
+			name_ciphertext?: string;
+			description_ciphertext?: string | null;
 			default_page_kind?: PageKind;
 		} = {};
-		if (fields.name !== undefined) update.name = fields.name;
-		if (fields.description !== undefined)
-			update.description = fields.description;
+		if (fields.name !== undefined) {
+			update.name_ciphertext = await vault.sealText(
+				id,
+				fields.name,
+				workspaceFieldAad(id, "name"),
+			);
+		}
+		if (fields.description !== undefined) {
+			update.description_ciphertext =
+				fields.description === null || fields.description === ""
+					? null
+					: await vault.sealText(
+							id,
+							fields.description,
+							workspaceFieldAad(id, "description"),
+						);
+		}
 		if (fields.defaultPageKind !== undefined)
 			update.default_page_kind = fields.defaultPageKind;
 

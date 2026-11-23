@@ -1,6 +1,10 @@
 import { unzipSync, zipSync } from "fflate";
+import { reportDecryptionError } from "#/features/crypto/decryptionErrors";
+import { VaultDecryptionError } from "#/features/crypto/errors";
+import { cardAad, columnAad, tagAad } from "#/features/crypto/vault";
 import type { Page, PageKind, Workspace } from "#/features/workspace/types";
 import { nowIso } from "#/utils/date";
+import { downloadBlob } from "#/utils/download";
 import { toSlug } from "#/utils/string";
 import { supabase } from "#/utils/supabase";
 
@@ -24,17 +28,69 @@ interface PageManifestEntry {
 
 const slugify = toSlug;
 
-const downloadBlob = (blob: Blob, filename: string) => {
-	const url = URL.createObjectURL(blob);
-	const a = document.createElement("a");
-	a.href = url;
-	a.download = filename;
-	a.click();
-	URL.revokeObjectURL(url);
+type SealedOpener = (sealed: string, aad: string) => Promise<string | null>;
+
+const requiredOpen = async (
+	openSealed: SealedOpener | undefined,
+	sealed: string,
+	aad: string,
+	errorKey: string,
+): Promise<string> => {
+	if (!openSealed) {
+		const err = new VaultDecryptionError(
+			"Content could not be decrypted because no unlocked key is available.",
+		);
+		reportDecryptionError(errorKey, err);
+		throw err;
+	}
+	const raw = await openSealed(sealed, aad);
+	if (!raw) {
+		const err = new VaultDecryptionError(
+			"This content could not be decrypted.",
+		);
+		reportDecryptionError(errorKey, err);
+		throw err;
+	}
+	return raw;
+};
+
+const requireString = (
+	value: unknown,
+	label: string,
+	errorKey: string,
+): string => {
+	if (typeof value !== "string") {
+		const err = new VaultDecryptionError(`Decrypted ${label} was malformed.`);
+		reportDecryptionError(errorKey, err);
+		throw err;
+	}
+	return value;
+};
+
+const openSealedJson = async <T>(
+	openSealed: SealedOpener | undefined,
+	sealed: string,
+	aad: string,
+	workspaceId: string,
+	field: string,
+): Promise<T> => {
+	const errorKey = `${workspaceId}:export:${field}`;
+	const raw = await requiredOpen(openSealed, sealed, aad, errorKey);
+	try {
+		return JSON.parse(raw) as T;
+	} catch {
+		const err = new VaultDecryptionError(
+			"Decrypted board metadata was malformed.",
+		);
+		reportDecryptionError(errorKey, err);
+		throw err;
+	}
 };
 
 const fetchKanbanBoard = async (
 	pageId: string,
+	workspaceId: string,
+	openSealed: SealedOpener | undefined,
 ): Promise<KanbanExportColumn[]> => {
 	const { data: colData, error: colError } = await supabase
 		.from("columns")
@@ -52,15 +108,32 @@ const fetchKanbanBoard = async (
 
 	const { data: tagData, error: tagError } = await supabase
 		.from("tags")
-		.select("id, name");
+		.select("id, ciphertext");
 	if (tagError) throw tagError;
 
-	const tagNameById = new Map((tagData ?? []).map((t) => [t.id, t.name]));
+	const tagNameById = new Map<string, string>();
+	for (const tag of tagData ?? []) {
+		const name = await requiredOpen(
+			openSealed,
+			tag.ciphertext,
+			tagAad(tag.id),
+			`${workspaceId}:export:tag:${tag.id}`,
+		);
+		tagNameById.set(tag.id, name);
+	}
 
 	const columnsById = new Map<string, KanbanExportColumn>();
 	for (const col of colData ?? []) {
+		const errorKey = `${workspaceId}:export:column:${col.id}`;
+		const meta = await openSealedJson<{ title?: unknown }>(
+			openSealed,
+			col.ciphertext,
+			columnAad(col.id),
+			workspaceId,
+			`column:${col.id}`,
+		);
 		columnsById.set(col.id, {
-			title: col.title,
+			title: requireString(meta.title, "column title", errorKey),
 			color: col.color ?? "",
 			cards: [],
 		});
@@ -72,9 +145,24 @@ const fetchKanbanBoard = async (
 		const tagNames = (card.card_tags ?? [])
 			.map((ct: { tag_id: string }) => tagNameById.get(ct.tag_id))
 			.filter((name): name is string => Boolean(name));
+		const errorKey = `${workspaceId}:export:card:${card.id}`;
+		const meta = await openSealedJson<{
+			title?: unknown;
+			description?: unknown;
+		}>(
+			openSealed,
+			card.ciphertext,
+			cardAad(card.id),
+			workspaceId,
+			`card:${card.id}`,
+		);
 		column.cards.push({
-			title: card.title,
-			description: card.description ?? "",
+			title: requireString(meta.title, "card title", errorKey),
+			description: requireString(
+				meta.description,
+				"card description",
+				errorKey,
+			),
 			dueDate: card.due_date,
 			assigneeIds: card.assignee_ids ?? [],
 			tagNames,
@@ -84,7 +172,11 @@ const fetchKanbanBoard = async (
 	return Array.from(columnsById.values());
 };
 
-export const exportAllPages = async (workspace: Workspace, pages: Page[]) => {
+export const exportAllPages = async (
+	workspace: Workspace,
+	pages: Page[],
+	openSealed?: SealedOpener,
+) => {
 	const manifest: PageManifestEntry[] = [];
 	const files: Record<string, Uint8Array> = {};
 
@@ -101,7 +193,7 @@ export const exportAllPages = async (workspace: Workspace, pages: Page[]) => {
 			payload = page.content;
 		} else {
 			filename = `pages/${n}-kanban.json`;
-			const board = await fetchKanbanBoard(page.id);
+			const board = await fetchKanbanBoard(page.id, workspace.id, openSealed);
 			payload = JSON.stringify(board, null, 2);
 		}
 
@@ -153,7 +245,6 @@ const uniqueTitle = (title: string, existing: Set<string>): string => {
 	while (existing.has(`${title} (${n})`)) n += 1;
 	return `${title} (${n})`;
 };
-
 export const importAllPages = async (
 	file: File,
 	options: {
@@ -162,6 +253,8 @@ export const importAllPages = async (
 			kind: PageKind,
 			opts?: { title?: string; content?: string },
 		) => Promise<Page>;
+		sealText: (text: string, aad: string) => Promise<string>;
+		openSealed: (sealed: string, aad: string) => Promise<string | null>;
 	},
 ): Promise<number> => {
 	const bytes = new Uint8Array(await file.arrayBuffer());
@@ -196,7 +289,13 @@ export const importAllPages = async (
 		existingTitles.add(title);
 
 		if (entry.kind === "kanban" && board) {
-			await importKanbanBoard(options.workspaceId, page.id, board);
+			await importKanbanBoard(
+				options.workspaceId,
+				page.id,
+				board,
+				options.sealText,
+				options.openSealed,
+			);
 		}
 
 		imported += 1;
@@ -209,6 +308,8 @@ const importKanbanBoard = async (
 	workspaceId: string,
 	pageId: string,
 	board: KanbanExportColumn[],
+	sealText: (text: string, aad: string) => Promise<string>,
+	openSealed: (sealed: string, aad: string) => Promise<string | null>,
 ) => {
 	const normalized = board.map((col) => ({
 		...col,
@@ -220,19 +321,35 @@ const importKanbanBoard = async (
 
 	const { data: existingTags, error: tagFetchError } = await supabase
 		.from("tags")
-		.select("id, name")
+		.select("id, ciphertext")
 		.eq("workspace_id", workspaceId);
 	if (tagFetchError) throw tagFetchError;
 
-	const tagIdByName = new Map((existingTags ?? []).map((t) => [t.name, t.id]));
+	const tagIdByName = new Map<string, string>();
+	for (const tag of existingTags ?? []) {
+		const name = await requiredOpen(
+			openSealed,
+			tag.ciphertext,
+			tagAad(tag.id),
+			`${workspaceId}:import:tag:${tag.id}`,
+		);
+		tagIdByName.set(name, tag.id);
+	}
 
 	const ensureTag = async (name: string): Promise<string> => {
 		const existing = tagIdByName.get(name);
 		if (existing) return existing;
+		const tagId = crypto.randomUUID();
+		const sealed = await sealText(name, tagAad(tagId));
 		const { data, error } = await supabase
 			.from("tags")
-			.insert({ workspace_id: workspaceId, name, color: "#6b7280" })
-			.select()
+			.insert({
+				id: tagId,
+				workspace_id: workspaceId,
+				ciphertext: sealed,
+				color: "#6b7280",
+			})
+			.select("id")
 			.single();
 		if (error) throw error;
 		tagIdByName.set(name, data.id);
@@ -240,11 +357,17 @@ const importKanbanBoard = async (
 	};
 
 	for (const [columnIndex, col] of normalized.entries()) {
+		const columnId = crypto.randomUUID();
+		const sealedColumn = await sealText(
+			JSON.stringify({ title: col.title }),
+			columnAad(columnId),
+		);
 		const { data: column, error: colError } = await supabase
 			.from("columns")
 			.insert({
+				id: columnId,
 				page_id: pageId,
-				title: col.title,
+				ciphertext: sealedColumn,
 				position: columnIndex,
 				color: col.color || null,
 			})
@@ -253,13 +376,21 @@ const importKanbanBoard = async (
 		if (colError) throw colError;
 
 		for (const [cardIndex, card] of col.cards.entries()) {
+			const cardId = crypto.randomUUID();
+			const sealedCard = await sealText(
+				JSON.stringify({
+					title: card.title,
+					description: card.description,
+				}),
+				cardAad(cardId),
+			);
 			const { data: createdCard, error: cardError } = await supabase
 				.from("cards")
 				.insert({
+					id: cardId,
 					page_id: pageId,
 					column_id: column.id,
-					title: card.title,
-					description: card.description || null,
+					ciphertext: sealedCard,
 					position: cardIndex,
 					due_date: card.dueDate,
 					assignee_ids: card.assigneeIds ?? [],
