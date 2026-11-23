@@ -15,6 +15,7 @@ import { useDebouncedPush } from "#/utils/realtime/useDebouncedPush";
 import { useWorkspaceRealtime } from "#/utils/realtime/useWorkspaceRealtime";
 import { useHotkey } from "#/utils/useHotkey";
 import LoadingSpinner from "../ui/LoadingSpinner";
+import AiAssistantPanel from "./components/AiAssistantPanel";
 import CreateWorkspace from "./components/CreateWorkspace";
 import { card } from "./components/createWorkspace.css";
 import NewWorkspaceDialog from "./components/NewWorkspaceDialog";
@@ -44,6 +45,7 @@ import {
 
 import { PAGE_KIND_LOADERS } from "./constants/pageViewLoaders";
 import { PAGE_TEMPLATES } from "./constants/templates";
+import { useAiAssistant } from "./hooks/useAiAssistant";
 import { useNotifications } from "./hooks/useNotifications";
 import type { AddPageOptions } from "./hooks/usePagesAdapter";
 import { usePagesAdapter } from "./hooks/usePagesAdapter";
@@ -289,6 +291,7 @@ const Workspace = () => {
 	});
 
 	const { shortcuts } = useShortcuts();
+	const { open: aiAssistantOpen } = useAiAssistant();
 	useNotifications();
 	useHotkey(
 		() => {
@@ -366,6 +369,8 @@ const Workspace = () => {
 								sidebarCollapsed() && !sidebarHovered()
 									? "0px"
 									: `${sidebarWidth()}px`,
+							"--aside-width":
+								!isMobile() && aiAssistantOpen() ? "340px" : "0px",
 						}}
 						// @ts-expect-error: WA doesn't include onPointerOver/Out types
 						onPointerOver={(e: PointerEvent) => {
@@ -594,6 +599,8 @@ const Workspace = () => {
 								}}
 							</Show>
 						</main>
+
+						<AiAssistantPanel isMobile={isMobile} />
 
 						<Show when={keyMissing()}>
 							<div class={keyMissingToast}>
