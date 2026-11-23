@@ -1,3 +1,19 @@
+# [1.8.0](https://github.com/re1sub/opencadre/compare/v1.7.0...v1.8.0) (2026-11-23)
+
+
+### Features
+
+* **db:** add E2EE schema, device links, rotation, and security events ([f256fc9](https://github.com/re1sub/opencadre/commit/f256fc95557d5b7e01b80be25e28c961b03d672a))
+* **e2ee:** seal protected content end to end ([574899d](https://github.com/re1sub/opencadre/commit/574899df3340dc350f1e44d539be4016e85b1615))
+* **edge:** add session revocation and harden invite and cleanup functions ([c4dc2a9](https://github.com/re1sub/opencadre/commit/c4dc2a9169b04a42b7cbf1ddd6398c2a6d4dfc88))
+* **ui:** add AI assistant aside to workspace ([50e4063](https://github.com/re1sub/opencadre/commit/50e4063763958e975b36f55f16ccf25171a7a7e7))
+* **ui:** show app version on auth page and settings dialog ([1535a52](https://github.com/re1sub/opencadre/commit/1535a52caf3478fb2fdb9347fae8c7909f1d056b))
+
+
+### Performance Improvements
+
+* **test:** reuse jsdom environments with vmThreads ([9327e64](https://github.com/re1sub/opencadre/commit/9327e64e37b06c5c30a592999c2a6bb34f9f720d))
+
 # [1.7.0](https://github.com/re1sub/opencadre/compare/v1.6.0...v1.7.0) (2026-11-04)
 
 
