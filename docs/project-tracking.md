@@ -96,6 +96,8 @@ docs: add architecture and database documentation
 | `pnpm format` | Biome format |
 | `pnpm test:run` | Run Vitest unit tests (single run) |
 | `pnpm test` | Start Vitest in watch mode |
+| `pnpm test:e2e` | Run Playwright E2E tests (Chromium, Firefox, WebKit) |
+| `pnpm test:e2e:ui` | Open Playwright UI mode for debugging |
 | `pnpm deploy` | Build + deploy to Cloudflare Pages production |
 | `make deploy-dev` | Build + deploy to Cloudflare Pages preview |
 
@@ -113,6 +115,63 @@ pnpm supabase:status    # Show local URLs and keys
 
 The local stack mirrors the remote schema, seed data, and RLS policies. The
 Makefile only contains `deploy-dev`; there are no `make supabase-*` targets.
+
+### Playwright end-to-end tests
+
+E2E specs live in `e2e/` and run with `pnpm test:e2e`. Playwright starts the Vite
+dev server through `webServer` in `playwright.config.ts`, and `webServer.env`
+points the app at local Supabase (`http://127.0.0.1:54321`) by default,
+overriding the remote URL in `.env`. Tests run in Chromium, Firefox, and WebKit.
+Use `pnpm test:e2e:ui` for time-travel debugging.
+
+The authenticated journey test uses one seeded dev user per browser project
+(`dev@opencadre.local`, `dev-firefox@opencadre.local`,
+`dev-webkit@opencadre.local`, all with password `dev-password-123`). Separate
+users keep first-time vault setup isolated across browsers. The device-link test
+uses its own `dev-link@opencadre.local` user and runs only in the Chromium
+project. Chromium onboards and creates a workspace, Firefox asks Chromium for a
+link and unlocks after approval, then WebKit picks Firefox from the trusted
+device list and unlocks after Firefox approves. Firefox and WebKit contexts set
+explicit user agents because Playwright Test otherwise applies the Chromium
+project's `Desktop Chrome` options to contexts created from manually launched
+browsers, which gives every device the same label. The approval notifications in
+this test travel over Supabase Realtime, so the local stack must run the image
+versions pinned by the installed CLI. Containers created by an older CLI can keep
+Realtime v2.120.3, which cannot register filtered `postgres_changes`
+subscriptions against the newer `realtime.subscription` hash index and fails
+with SQLSTATE `42P10`. Recreate them with `pnpm supabase stop` followed by
+`pnpm supabase start` if approval dialogs never appear.
+
+The stateful tests use a pool of 196 seeded accounts,
+`e2e-005@opencadre.local` through `e2e-200@opencadre.local`, all with password
+`dev-password-123`. `testAccount(testInfo, slot)` in `e2e/helpers.ts` assigns a
+unique account to each test execution by combining its slot with a per-project
+offset and a retry offset, so Chromium, Firefox, WebKit, and every retry attempt
+never share a vault, device list, or workspace. Secondary users such as invitees
+and removable members come from a separate band of the same pool through
+`secondaryAccount`. With the six original tests plus fourteen new journeys, the
+suite is 20 tests across three projects. The new
+journeys cover sign-out, vault recovery and rejection, page management,
+markdown editing, AI insertion, kanban fields and drag and drop, table editing
+and CSV/bulk actions, shared tags and comments, invites, roles and removal,
+settings, and concurrent editing. Only the AI edge function is mocked; all other
+state goes through local Supabase. `e2e/global-setup.ts` runs
+`pnpm exec supabase db reset` at the start of every `pnpm test:e2e` run, so a
+previous run's registered devices cannot switch the gate to the device-link
+panel. It skips the reset only when `VITE_SUPABASE_URL` points away from local
+Supabase. Start the stack once, then run the suite:
+
+```bash
+pnpm supabase:start
+pnpm test:e2e
+```
+
+CI runs the same flow in the `e2e` job of `.github/workflows/ci.yml`: it starts
+local Supabase, seeds it with `supabase db reset`, installs the three browsers,
+exports the local Supabase URL and publishable key into `GITHUB_ENV`, then runs
+`pnpm test:e2e`. To exercise the job locally with `act`, run
+`act -j e2e --pull=false`. The medium `act` runner image is configured in
+`~/.config/act/actrc`.
 
 ---
 
@@ -141,8 +200,10 @@ flowchart LR
 | PR merged to `dev` or `main` | Automatic rebuild |
 
 Cloudflare Pages runs `pnpm build`, which is `vite build` only, and serves the
-`dist/` output. Biome checks, unit tests, and TypeScript checking are enforced
-locally by the Husky pre-push hook. There is no separate CI workflow.
+`dist/` output. Biome checks, unit tests, TypeScript checking, and the build are
+also run by the `test` job in `.github/workflows/ci.yml`. The `e2e` job runs the
+Playwright suite against local Supabase as described above. The Husky pre-push
+hook still gates local pushes with the same checks.
 
 ---
 
