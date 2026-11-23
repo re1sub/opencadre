@@ -1,6 +1,6 @@
 import { fileURLToPath } from "node:url";
 import solid from "vite-plugin-solid";
-import { defineConfig } from "vitest/config";
+import { configDefaults, defineConfig } from "vitest/config";
 
 export default defineConfig({
 	plugins: [solid()],
@@ -15,5 +15,6 @@ export default defineConfig({
 		globals: true,
 		pool: "vmThreads",
 		setupFiles: ["./src/test/setup.ts"],
+		exclude: [...configDefaults.exclude, "e2e/**"],
 	},
 });
