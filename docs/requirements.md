@@ -220,10 +220,14 @@ Open a markdown page
 ### 5.5 RGPD erasure: delete account
 
 ```
-User settings -> Delete account
+User settings -> Delete account (impact summary shown, type email to confirm)
   -> Edge function delete-account (JWT verified)
-  -> delete_user_account() RPC erases personal rows and the auth user in one
-     transaction
+  -> delete_user_account() RPC runs in one transaction:
+     transfer ownership of owned workspaces to a successor when possible
+     (or delete orphaned owned workspaces with no members), scrub assignees,
+     null page owners, anonymize comments (kept, shown as "Deleted member"),
+     remove user reactions/notifications/AI/activity/settings/crypto/device rows,
+     then delete memberships/profiles and the auth user
   -> Client signs out and returns to the landing page
 ```
 

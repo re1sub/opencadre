@@ -39,7 +39,7 @@ production.
   validate the message against Conventional Commits.
 - **pre-push:** `.husky/pre-push` runs
   `pnpm lint:full && pnpm test:run && pnpm typecheck && pnpm build` to ensure
-  every push is lint-clean, tested, typed, and buildable.
+  pushes are lint-clean, tested, typed, and buildable before leaving your machine.
 
 ---
 
@@ -200,10 +200,10 @@ flowchart LR
 | PR merged to `dev` or `main` | Automatic rebuild |
 
 Cloudflare Pages runs `pnpm build`, which is `vite build` only, and serves the
-`dist/` output. Biome checks, unit tests, TypeScript checking, and the build are
-also run by the `test` job in `.github/workflows/ci.yml`. The `e2e` job runs the
-Playwright suite against local Supabase as described above. The Husky pre-push
-hook still gates local pushes with the same checks.
+`dist/` output. GitHub Actions (`.github/workflows/ci.yml`) runs the `test` job
+(typecheck, lint, unit tests, build) and the `e2e` job (Playwright against local
+Supabase). The Husky pre-push hook provides a local gate with the same core
+checks (`lint:full`, `test:run`, `typecheck`, `build`).
 
 ---
 
@@ -244,7 +244,7 @@ several focused development sessions.
 | Security | Output sanitization in Markdown editor, Content-Security-Policy headers, `.env.example` completeness |
 | Error handling | Global `ErrorBoundary` for uncaught runtime errors |
 | Component tests | SolidJS component unit tests (auth form, editable text, confirm dialog) |
-| CI/CD | GitHub Actions pipeline for lint, typecheck, test, build, and Cloudflare Pages deploy (not yet present; checks currently run in Husky hooks) |
+| CI/CD | GitHub Actions pipeline for lint, typecheck, test, build, and E2E runs (present in `.github/workflows/ci.yml`); review deploy/preview automation as needed |
 
 ### Medium-term
 

@@ -102,7 +102,7 @@ Run the migrations to create all tables, functions, RLS policies, and triggers:
 npx supabase db push
 ```
 
-This applies the base schema plus the nine E2EE v3 migrations:
+This applies the base schema plus later migrations (E2EE v3 and follow-ups), including:
 
 - `20260910132550_remote_schema.sql`: base app tables, functions, RLS, triggers
 - `20261122000000_e2ee_core.sql`: encrypted columns, key and nonce tables, scope checks
@@ -114,6 +114,7 @@ This applies the base schema plus the nine E2EE v3 migrations:
 - `20261122060000_device_link_last_used.sql`: `last_used_at` backfill and 30-minute approval window
 - `20261122070000_device_link_target.sql`: targeted link requests and matching approval
 - `20261122080000_delete_account_device_links.sql`: device-link deletion order for account erasure
+- `20261124130000_delete_account_ownership_transfer.sql`: account deletion ownership transfer, comment anonymization, assignee scrub, comment RLS updates
 
 The result is 29 tables, including key material tables (`content_keys`,
 `workspace_keys`, `user_keys`, `user_devices`, `crypto_nonces`, `key_rotations`,
@@ -250,10 +251,7 @@ pnpm deploy        # build + deploy dist/ to production (branch=main)
 make deploy-dev    # build + deploy dist/ to preview (branch=dev)
 ```
 
-`pnpm build` runs `vite build` only. Biome lint, TypeScript checking, and Vitest
-are enforced by the Husky `pre-push` hook (`.husky/pre-push`), which runs
-`pnpm lint:full && pnpm test:run && pnpm typecheck && pnpm build`. Cloudflare
-Pages builds the static bundle on each push; there is no separate CI workflow.
+`pnpm build` runs `vite build` only. The Husky `pre-push` hook (`.husky/pre-push`) runs `pnpm lint:full && pnpm test:run && pnpm typecheck && pnpm build` as a local gate. GitHub Actions (`.github/workflows/ci.yml`) also runs lint, typecheck, unit tests, build, and E2E tests.
 
 ## Desktop App Build (Tauri)
 
@@ -318,7 +316,7 @@ Android adaptive padding comes from the `scale(...)` in the group transform of
 | ----------------------- | --------- | -------------------------------------------------------- |
 | `ai-generate`           | Yes (JWT) | AI content generation via TanStack AI / OpenRouter       |
 | `invite-member`         | Yes (JWT) | Send workspace invite emails                             |
-| `delete-account`        | Yes (JWT) | Atomic account deletion (auth.users + all data)          |
+| `delete-account`        | Yes (JWT) | Account deletion with ownership transfer when possible, anonymized comments, and data cleanup          |
 | `revoke-user-sessions`  | Yes (JWT) | Revoke refresh sessions for account security responses   |
 | `cleanup-retention`     | No (cron) | Purge expired activity, security, AI, and notification rows |
 
