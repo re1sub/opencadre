@@ -170,9 +170,10 @@ pnpm test:e2e
 ```
 
 CI runs the same flow in the `e2e` job of `.github/workflows/ci.yml`: it starts
-local Supabase, seeds it with `supabase db reset`, installs the three browsers,
-exports the local Supabase URL and publishable key into `GITHUB_ENV`, then runs
-`pnpm test:e2e`. If you have `act` installed, you can exercise the same job
+local Supabase, installs the three browsers, exports the local Supabase URL and
+publishable key into `GITHUB_ENV`, builds the E2E bundle with
+`vite build --mode e2e`, then runs `pnpm exec playwright test` against
+`vite preview`. If you have `act` installed, you can exercise the same job
 locally with `act -j e2e --pull=false`. The `--pull=false` flag reuses the cached
 runner image instead of downloading it again. The medium runner image is
 configured in `~/.config/act/actrc`.
