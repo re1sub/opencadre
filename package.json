@@ -19,8 +19,8 @@
 		"check:staged": "lint-staged",
 		"test": "vitest",
 		"test:run": "vitest run",
-		"test:e2e": "playwright test",
-		"test:e2e:ui": "playwright test --ui",
+		"test:e2e": "pnpm supabase:start && playwright test",
+		"test:e2e:ui": "pnpm supabase:start && playwright test --ui",
 		"supabase:start": "supabase start",
 		"supabase:stop": "supabase stop",
 		"supabase:status": "supabase status"
