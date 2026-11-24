@@ -1,14 +1,15 @@
-import { createSignal } from "solid-js";
+import { createSignal, type JSXElement } from "solid-js";
 import { useDialog } from "#/utils/useDialog";
 import { confirmActions, confirmMessage } from "./confirmDialog.css";
 import DeleteButton from "./DeleteButton";
 
 interface ConfirmDialogProps {
 	label: string;
-	message: string;
+	message: string | JSXElement;
 	confirmText?: string;
 	onConfirm: () => void;
 	onClose: () => void;
+	children?: JSXElement;
 }
 
 const ConfirmDialog = (props: ConfirmDialogProps) => {
@@ -30,7 +31,8 @@ const ConfirmDialog = (props: ConfirmDialogProps) => {
 			label={props.label}
 			on:wa-after-hide={dialog.handleHide}
 		>
-			<p class={confirmMessage}>{props.message}</p>
+			<div class={confirmMessage}>{props.message}</div>
+			{props.children}
 
 			{props.confirmText !== undefined && (
 				<wa-input
