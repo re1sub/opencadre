@@ -1,7 +1,9 @@
 import { Show } from "solid-js";
 import { Portal } from "solid-js/web";
 import { useAiAssistant } from "../hooks/useAiAssistant";
+import { useAiSidebarResize } from "../hooks/useAiSidebarResize";
 import {
+	aiSidebarResizer,
 	body,
 	bodyText,
 	bodyTitle,
@@ -15,27 +17,31 @@ import {
 } from "./aiAssistantPanel.css";
 
 interface AiAssistantPanelProps {
-	isMobile?: () => boolean;
+	useDrawer?: () => boolean;
 }
 
 const AiAssistantPanel = (props: AiAssistantPanelProps) => {
 	const { open, close } = useAiAssistant();
-	const mobile = () => props.isMobile?.() ?? false;
+	const { width, minWidth, maxWidth, onResizePointerDown, onResizeKeyDown } =
+		useAiSidebarResize();
+	const drawer = () => props.useDrawer?.() ?? false;
+
+	const customHeader = () => (
+		<div class={header}>
+			<wa-button
+				appearance="plain"
+				variant="neutral"
+				aria-label="Close AI Assistant"
+				onClick={close}
+				class={closeButton}
+			>
+				<wa-icon name="x" label="Close"></wa-icon>
+			</wa-button>
+		</div>
+	);
 
 	const content = () => (
 		<>
-			<div class={header}>
-				<wa-button
-					appearance="plain"
-					variant="neutral"
-					aria-label="Close AI Assistant"
-					onClick={close}
-					class={closeButton}
-				>
-					<wa-icon name="x" label="Close"></wa-icon>
-				</wa-button>
-			</div>
-
 			<div class={body}>
 				<wa-icon name="sparkles" label="AI Assistant"></wa-icon>
 				<h2 class={bodyTitle}>How can I help?</h2>
@@ -85,7 +91,7 @@ const AiAssistantPanel = (props: AiAssistantPanelProps) => {
 
 	return (
 		<Show
-			when={mobile()}
+			when={drawer()}
 			fallback={
 				<aside
 					id="ai-assistant-panel"
@@ -95,6 +101,19 @@ const AiAssistantPanel = (props: AiAssistantPanelProps) => {
 					aria-hidden={!open()}
 					inert={!open()}
 				>
+					<hr
+						class={aiSidebarResizer}
+						aria-label="Resize AI Assistant"
+						aria-controls="ai-assistant-panel"
+						aria-orientation="vertical"
+						aria-valuemin={minWidth}
+						aria-valuemax={maxWidth()}
+						aria-valuenow={width()}
+						tabIndex={open() ? 0 : -1}
+						onPointerDown={onResizePointerDown}
+						onKeyDown={onResizeKeyDown}
+					/>
+					{customHeader()}
 					{content()}
 				</aside>
 			}
@@ -106,7 +125,7 @@ const AiAssistantPanel = (props: AiAssistantPanelProps) => {
 					placement="end"
 					open={open()}
 					light-dismiss
-					style={{ "--size": "min(22rem, 90vw)" }}
+					style={{ "--size": `min(${width()}px, 90vw)` }}
 					on:wa-after-hide={close}
 				>
 					{content()}

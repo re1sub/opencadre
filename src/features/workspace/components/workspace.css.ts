@@ -218,7 +218,7 @@ export const addPageGroup = style({
 export const mainContent = style({
 	padding: "var(--wa-space-xl)",
 	position: "relative",
-	minHeight: "100vh",
+	// minHeight: "100vh",
 	"@media": {
 		"(max-width: 767px)": {
 			padding: "var(--wa-space-m)",

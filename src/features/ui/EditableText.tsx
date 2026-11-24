@@ -78,6 +78,7 @@ export function EditableText(props: EditableTextProps) {
 		});
 
 		if (props.autoFocus) {
+			inputRef.setAttribute("autofocus", "");
 			queueMicrotask(() => {
 				inputRef?.focus();
 			});

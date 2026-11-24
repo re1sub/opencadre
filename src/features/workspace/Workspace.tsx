@@ -13,8 +13,8 @@ import ConfirmDialog from "#/features/ui/ConfirmDialog";
 import EditableText from "#/features/ui/EditableText";
 import { useDebouncedPush } from "#/utils/realtime/useDebouncedPush";
 import { useWorkspaceRealtime } from "#/utils/realtime/useWorkspaceRealtime";
+import { useElementWidth } from "#/utils/useElementWidth";
 import { useHotkey } from "#/utils/useHotkey";
-import { useIsMobile } from "#/utils/useIsMobile";
 import LoadingSpinner from "../ui/LoadingSpinner";
 import AiAssistantPanel from "./components/AiAssistantPanel";
 import CreateWorkspace from "./components/CreateWorkspace";
@@ -47,6 +47,7 @@ import {
 import { PAGE_KIND_LOADERS } from "./constants/pageViewLoaders";
 import { PAGE_TEMPLATES } from "./constants/templates";
 import { useAiAssistant } from "./hooks/useAiAssistant";
+import { useAiSidebarResize } from "./hooks/useAiSidebarResize";
 import { useNotifications } from "./hooks/useNotifications";
 import type { AddPageOptions } from "./hooks/usePagesAdapter";
 import { usePagesAdapter } from "./hooks/usePagesAdapter";
@@ -58,15 +59,21 @@ import { useWorkspaceAdapter } from "./hooks/useWorkspaceAdapter";
 import { useWorkspaceMembersAdapter } from "./hooks/useWorkspaceMembersAdapter";
 import type { PageKind } from "./types";
 
+const MOBILE_BREAKPOINT = 768;
+const MIN_PAGE_VIEW_WIDTH = 520;
+
 const Workspace = () => {
 	const { user, logout } = useAuth();
 	const vault = useVault();
 	const navigate = useNavigate();
 	const [error, setError] = createSignal<string | null>(null);
 
-	const isMobile = useIsMobile();
-
 	let pageRef!: WaPage;
+	const [pageElement, setPageElement] = createSignal<WaPage>();
+	const pageWidth = useElementWidth(pageElement);
+	const measuredPageWidth = () =>
+		pageWidth() > 0 ? pageWidth() : Number.POSITIVE_INFINITY;
+	const isMobile = () => pageWidth() > 0 && pageWidth() < MOBILE_BREAKPOINT;
 
 	const wsHook = useWorkspaceAdapter();
 	const pagesHook = usePagesAdapter(
@@ -261,6 +268,9 @@ const Workspace = () => {
 		inNav,
 	} = useSidebarResize();
 
+	const menuWidth = () =>
+		sidebarCollapsed() && !sidebarHovered() ? 0 : sidebarWidth();
+
 	const openDrawer = () => {
 		setSidebarHovered(false);
 
@@ -287,7 +297,23 @@ const Workspace = () => {
 
 	const { shortcuts } = useShortcuts();
 	const { open: aiAssistantOpen } = useAiAssistant();
+	const {
+		width: aiSidebarWidth,
+		minWidth: aiSidebarMinWidth,
+		setMaxWidth: setAiSidebarMaxWidth,
+	} = useAiSidebarResize();
 	useNotifications();
+
+	const availableForAi = () =>
+		measuredPageWidth() - menuWidth() - MIN_PAGE_VIEW_WIDTH;
+	const aiCanDock = () => availableForAi() >= aiSidebarMinWidth;
+	const useAiDrawer = () => !aiCanDock();
+
+	createEffect(() => {
+		setAiSidebarMaxWidth(useAiDrawer() ? null : availableForAi());
+	});
+
+	const asideWidth = () => `${aiSidebarWidth()}px`;
 
 	useHotkey(
 		() => {
@@ -357,16 +383,16 @@ const Workspace = () => {
 					}
 				>
 					<wa-page
-						ref={(el) => (pageRef = el)}
+						ref={(el) => {
+							pageRef = el;
+							setPageElement(el);
+						}}
 						navigation-placement="start"
 						class={`${page} ${sidebarCollapsed() ? "sidebar-collapsed" : ""}`}
 						style={{
-							"--menu-width":
-								sidebarCollapsed() && !sidebarHovered()
-									? "0px"
-									: `${sidebarWidth()}px`,
+							"--menu-width": `${menuWidth()}px`,
 							"--aside-width":
-								!isMobile() && aiAssistantOpen() ? "340px" : "0px",
+								!useAiDrawer() && aiAssistantOpen() ? asideWidth() : "0px",
 						}}
 						// @ts-expect-error: WA doesn't include onPointerOver/Out types
 						onPointerOver={(e: PointerEvent) => {
@@ -595,7 +621,7 @@ const Workspace = () => {
 							</Show>
 						</main>
 
-						<AiAssistantPanel isMobile={isMobile} />
+						<AiAssistantPanel useDrawer={useAiDrawer} />
 
 						<Show when={keyMissing()}>
 							<div class={keyMissingToast}>
