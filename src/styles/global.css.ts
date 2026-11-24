@@ -8,7 +8,6 @@ globalStyle("*", {
 
 globalStyle("*, *::before, *::after", {
 	boxSizing: "border-box",
-	scrollbarColor: "var(--wa-color-surface-border) transparent",
 });
 
 globalStyle("html, body", {
