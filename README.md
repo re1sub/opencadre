@@ -23,7 +23,7 @@
 </p>
 
 <p align="center">
-  <img src="src/assets/img/home/hero-dark.png" alt="OpenCadre workspace preview" width="100%">
+  <img src="src/assets/img/home/desktop.png" alt="OpenCadre workspace preview" width="100%">
 </p>
 
 <p align="center">
