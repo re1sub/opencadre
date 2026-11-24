@@ -1,3 +1,15 @@
+# [1.9.0](https://github.com/re1sub/opencadre/compare/v1.8.0...v1.9.0) (2026-11-24)
+
+
+### Bug Fixes
+
+* **sidebar:** resize handler height ([b1379c4](https://github.com/re1sub/opencadre/commit/b1379c4da70f572f1cba9b82065b5fbd1ca019fa))
+
+
+### Features
+
+* **account:** transfer ownership on delete and anonymize comments ([ae1297f](https://github.com/re1sub/opencadre/commit/ae1297fce6e97a5f9beb3242212f82f9d25d6bc8))
+
 # [1.8.0](https://github.com/re1sub/opencadre/compare/v1.7.0...v1.8.0) (2026-11-23)
 
 
