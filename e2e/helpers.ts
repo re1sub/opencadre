@@ -41,6 +41,11 @@ export const waitForCardPersist = (page: Page) =>
 export const waitForPageTitlePersist = (page: Page) =>
 	waitForSupabaseWrite(page, "pages");
 
+export const waitForAppReady = async (page: Page) => {
+	await page.waitForFunction(() => !!customElements.get("wa-input"));
+	await expect(page.locator("h1").first()).toBeVisible({ timeout: 30_000 });
+};
+
 const PROJECT_OFFSETS: Record<string, number> = {
 	chromium: 0,
 	firefox: 1,
@@ -161,20 +166,16 @@ export const addPage = async (page: Page, kindLabel: string, title: string) => {
 	await expect(page).toHaveURL(/\/workspace\/p\//, { timeout: 15_000 });
 	await expect(pageViewReady(page, kindLabel)).toBeVisible({ timeout: 15_000 });
 
+	await page.waitForFunction(() => !!customElements.get("wa-input"));
+
 	const titleInput = page
 		.locator('wa-input[aria-label="Page title"]')
 		.locator("input");
 	const titleHeading = page.locator("main").getByRole("heading", { level: 1 });
-	await expect
-		.poll(
-			async () => {
-				if (await titleInput.isVisible()) return true;
-				await titleHeading.first().click();
-				return false;
-			},
-			{ timeout: 15_000 },
-		)
-		.toBe(true);
+	if (!(await titleInput.isVisible())) {
+		await titleHeading.first().click();
+	}
+	await expect(titleInput).toBeVisible({ timeout: 30_000 });
 
 	const titlePersisted = waitForPageTitlePersist(page);
 	await titleInput.fill(title);

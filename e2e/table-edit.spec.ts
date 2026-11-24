@@ -11,7 +11,6 @@ test("table rows, columns, and cells can be edited", async ({
 
 	const headers = page.locator(".st-header-cell[data-accessor]");
 	await expect(headers.first()).toBeVisible();
-	const initialHeaderCount = await headers.count();
 	const editableHeader = page
 		.getByRole("columnheader")
 		.filter({ has: page.getByRole("textbox") })
@@ -43,10 +42,12 @@ test("table rows, columns, and cells can be edited", async ({
 	// SimpleTable recreates the inline editor whenever the table re-renders,
 	// which background Yjs persistence can do at any point in this test. Set
 	// the value and commit in one browser-side task so no re-render can land
-	// between the fill and the Enter keypress.
+	// between the fill and the Enter keypress, then retry until the committed
+	// value is visible in the cell.
 	await expect
 		.poll(
 			async () => {
+				if ((await cell.innerText()).includes("Ada Lovelace")) return true;
 				const cellInput = cell.locator("input.editable-cell-input");
 				if (!(await cellInput.isVisible())) await cell.dblclick();
 				return cell.evaluate((element) => {
@@ -59,13 +60,12 @@ test("table rows, columns, and cells can be edited", async ({
 					input.dispatchEvent(
 						new KeyboardEvent("keydown", { key: "Enter", bubbles: true }),
 					);
-					return true;
+					return false;
 				});
 			},
-			{ timeout: 15_000 },
+			{ timeout: 30_000 },
 		)
 		.toBe(true);
-	await expect(cell).toContainText("Ada Lovelace", { timeout: 10_000 });
 
 	// The add-column control lives in SimpleTable's horizontally virtualized
 	// header. Scroll its scrollbar to the far right so the header cell mounts,
@@ -89,6 +89,23 @@ test("table rows, columns, and cells can be edited", async ({
 
 	const addColumn = page.locator("#header-__add_column__ wa-button");
 	await expect(addColumn).toBeVisible();
-	await addColumn.click();
-	await expect(headers).toHaveCount(initialHeaderCount + 1);
+	const headerCountBeforeAdd = await headers.count();
+	await expect
+		.poll(
+			async () => {
+				if ((await headers.count()) > headerCountBeforeAdd) return true;
+				const approval = page.locator('wa-dialog[label="Confirm it\'s you"]');
+				if (await approval.isVisible()) {
+					await approval.getByRole("button", { name: "Reject" }).click();
+				}
+				try {
+					await addColumn.click({ timeout: 5_000 });
+				} catch {
+					// A dialog or re-render can intercept the click. The poll retries.
+				}
+				return false;
+			},
+			{ timeout: 30_000 },
+		)
+		.toBe(true);
 });

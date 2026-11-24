@@ -38,8 +38,10 @@ production.
 - **commit-msg:** `.husky/commit-msg` runs `pnpm exec commitlint --edit "$1"` to
   validate the message against Conventional Commits.
 - **pre-push:** `.husky/pre-push` runs
-  `pnpm lint:full && pnpm test:run && pnpm typecheck && pnpm build` to ensure
-  pushes are lint-clean, tested, typed, and buildable before leaving your machine.
+  `pnpm lint:full && pnpm test:run && pnpm typecheck && pnpm build && pnpm test:e2e`
+  to ensure pushes are lint-clean, tested, typed, buildable, and browser-tested
+  before leaving your machine. The E2E script starts local Supabase automatically
+  (see [Playwright end-to-end tests](#playwright-end-to-end-tests)).
 
 ---
 
@@ -118,11 +120,13 @@ Makefile only contains `deploy-dev`; there are no `make supabase-*` targets.
 
 ### Playwright end-to-end tests
 
-E2E specs live in `e2e/` and run with `pnpm test:e2e`. Playwright starts the Vite
-dev server through `webServer` in `playwright.config.ts`, and `webServer.env`
-points the app at local Supabase (`http://127.0.0.1:54321`) by default,
-overriding the remote URL in `.env`. Tests run in Chromium, Firefox, and WebKit.
-Use `pnpm test:e2e:ui` for time-travel debugging.
+E2E specs live in `e2e/` and run with `pnpm test:e2e`, which starts local
+Supabase first through `pnpm supabase:start`, so Docker must be available.
+Playwright starts the Vite dev server through `webServer` in
+`playwright.config.ts`, and `webServer.env` points the app at local Supabase
+(`http://127.0.0.1:54321`) by default, overriding the remote URL in `.env`. Tests
+run in Chromium, Firefox, and WebKit. Use `pnpm test:e2e:ui` for time-travel
+debugging.
 
 The authenticated journey test uses one seeded dev user per browser project
 (`dev@opencadre.local`, `dev-firefox@opencadre.local`,
@@ -159,19 +163,19 @@ state goes through local Supabase. `e2e/global-setup.ts` runs
 `pnpm exec supabase db reset` at the start of every `pnpm test:e2e` run, so a
 previous run's registered devices cannot switch the gate to the device-link
 panel. It skips the reset only when `VITE_SUPABASE_URL` points away from local
-Supabase. Start the stack once, then run the suite:
+Supabase. Run the suite with one command:
 
 ```bash
-pnpm supabase:start
 pnpm test:e2e
 ```
 
 CI runs the same flow in the `e2e` job of `.github/workflows/ci.yml`: it starts
 local Supabase, seeds it with `supabase db reset`, installs the three browsers,
 exports the local Supabase URL and publishable key into `GITHUB_ENV`, then runs
-`pnpm test:e2e`. To exercise the job locally with `act`, run
-`act -j e2e --pull=false`. The medium `act` runner image is configured in
-`~/.config/act/actrc`.
+`pnpm test:e2e`. If you have `act` installed, you can exercise the same job
+locally with `act -j e2e --pull=false`. The `--pull=false` flag reuses the cached
+runner image instead of downloading it again. The medium runner image is
+configured in `~/.config/act/actrc`.
 
 ---
 
@@ -202,8 +206,8 @@ flowchart LR
 Cloudflare Pages runs `pnpm build`, which is `vite build` only, and serves the
 `dist/` output. GitHub Actions (`.github/workflows/ci.yml`) runs the `test` job
 (typecheck, lint, unit tests, build) and the `e2e` job (Playwright against local
-Supabase). The Husky pre-push hook provides a local gate with the same core
-checks (`lint:full`, `test:run`, `typecheck`, `build`).
+Supabase). The Husky pre-push hook provides a local gate with the same checks
+plus E2E (`lint:full`, `test:run`, `typecheck`, `build`, `test:e2e`).
 
 ---
 

@@ -14,6 +14,7 @@ import EditableText from "#/features/ui/EditableText";
 import { useDebouncedPush } from "#/utils/realtime/useDebouncedPush";
 import { useWorkspaceRealtime } from "#/utils/realtime/useWorkspaceRealtime";
 import { useHotkey } from "#/utils/useHotkey";
+import { useIsMobile } from "#/utils/useIsMobile";
 import LoadingSpinner from "../ui/LoadingSpinner";
 import AiAssistantPanel from "./components/AiAssistantPanel";
 import CreateWorkspace from "./components/CreateWorkspace";
@@ -63,13 +64,7 @@ const Workspace = () => {
 	const navigate = useNavigate();
 	const [error, setError] = createSignal<string | null>(null);
 
-	const [isMobile, setIsMobile] = createSignal(window.innerWidth < 768);
-
-	onMount(() => {
-		const handleResize = () => setIsMobile(window.innerWidth < 768);
-		window.addEventListener("resize", handleResize);
-		onCleanup(() => window.removeEventListener("resize", handleResize));
-	});
+	const isMobile = useIsMobile();
 
 	let pageRef!: WaPage;
 
@@ -293,6 +288,7 @@ const Workspace = () => {
 	const { shortcuts } = useShortcuts();
 	const { open: aiAssistantOpen } = useAiAssistant();
 	useNotifications();
+
 	useHotkey(
 		() => {
 			const config = shortcuts()["toggle-sidebar"];
@@ -534,6 +530,7 @@ const Workspace = () => {
 										pages={pagesHook.activePages()}
 										recentPages={pagesHook.recentPages()}
 										memberCount={membersHook.members().length}
+										isMobile={isMobile}
 										onAddPage={handleAddPage}
 										onCreateFromTemplate={handleCreateFromTemplate}
 										onOpenPage={(pageId) => navigate(`/workspace/p/${pageId}`)}

@@ -1,5 +1,18 @@
-import { expect, test } from "@playwright/test";
+import { expect, type Locator, test } from "@playwright/test";
 import { onboard, testAccount } from "./helpers";
+
+const fillAndVerify = async (input: Locator, value: string) => {
+	await expect
+		.poll(
+			async () => {
+				if ((await input.inputValue()) === value) return true;
+				await input.fill(value);
+				return false;
+			},
+			{ timeout: 15_000 },
+		)
+		.toBe(true);
+};
 
 test("settings update the display name and workspace name", async ({
 	page,
@@ -13,17 +26,7 @@ test("settings update the display name and workspace name", async ({
 	const dialog = page.locator("wa-dialog");
 
 	const displayName = dialog.getByLabel("Display name");
-	await displayName.fill("");
-	await displayName.pressSequentially("Renamed Tester");
-	try {
-		await expect(displayName).toHaveValue("Renamed Tester", {
-			timeout: 5_000,
-		});
-	} catch {
-		await displayName.fill("");
-		await displayName.pressSequentially("Renamed Tester");
-		await expect(displayName).toHaveValue("Renamed Tester");
-	}
+	await fillAndVerify(displayName, "Renamed Tester");
 	await displayName.press("Tab");
 	await expect(
 		page.getByRole("button", { name: /Renamed Tester/ }).first(),
@@ -34,17 +37,7 @@ test("settings update the display name and workspace name", async ({
 		.first()
 		.click();
 	const workspaceName = dialog.getByLabel("Workspace name");
-	await workspaceName.fill("");
-	await workspaceName.pressSequentially("Renamed Workspace");
-	try {
-		await expect(workspaceName).toHaveValue("Renamed Workspace", {
-			timeout: 5_000,
-		});
-	} catch {
-		await workspaceName.fill("");
-		await workspaceName.pressSequentially("Renamed Workspace");
-		await expect(workspaceName).toHaveValue("Renamed Workspace");
-	}
+	await fillAndVerify(workspaceName, "Renamed Workspace");
 	await workspaceName.press("Tab");
 	await expect(
 		page.getByRole("button", { name: /Renamed Workspace/ }).first(),
