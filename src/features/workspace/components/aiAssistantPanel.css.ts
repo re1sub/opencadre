@@ -4,8 +4,41 @@ globalStyle("wa-page::part(aside)", {
 	overflow: "hidden",
 });
 
+export const aiSidebarResizer = style({
+	position: "absolute",
+	top: 0,
+	bottom: 0,
+	left: 0,
+	width: "3px",
+	margin: 0,
+	border: 0,
+	backgroundColor: "transparent",
+	touchAction: "none",
+	cursor: "col-resize",
+	transition: "background-color 0.2s",
+	":hover": {
+		backgroundColor: "var(--wa-color-brand)",
+	},
+	":active": {
+		backgroundColor: "var(--wa-color-brand)",
+	},
+	":focus-visible": {
+		outline: "var(--wa-focus-ring)",
+		outlineOffset: "var(--wa-focus-ring-offset)",
+	},
+});
+
+globalStyle(`wa-page:has(.${aiSidebarResizer}:active)::part(body)`, {
+	transition: "none",
+});
+
+globalStyle(`wa-page:has(.${aiSidebarResizer}:focus-visible)::part(body)`, {
+	transition: "none",
+});
+
 export const panel = style({
 	display: "flex",
+	position: "relative",
 	flexDirection: "column",
 	width: "100%",
 	height: "100%",
