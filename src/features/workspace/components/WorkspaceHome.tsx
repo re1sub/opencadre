@@ -1,6 +1,7 @@
-import { For, Show } from "solid-js";
+import { For, onMount, Show } from "solid-js";
 import ActionCard from "#/features/ui/ActionCard";
 import { PAGE_TEMPLATES } from "../constants/templates";
+import { useAiAssistant } from "../hooks/useAiAssistant";
 import { PAGE_KIND_META, type Page, type PageKind } from "../types";
 import {
 	actionGrid,
@@ -15,14 +16,20 @@ interface WorkspaceHomeProps {
 	pages: Page[];
 	recentPages: Page[];
 	memberCount: number;
+	isMobile: () => boolean;
 	onAddPage: (kind: PageKind) => void;
 	onCreateFromTemplate: (templateId: string) => void;
 	onOpenPage: (id: string) => void;
 }
 
 const WorkspaceHome = (props: WorkspaceHomeProps) => {
+	const { open, setOpen } = useAiAssistant();
 	const showRecent = () => props.recentPages.length > 0;
 	const listToShow = () => (showRecent() ? props.recentPages : props.pages);
+
+	onMount(() => {
+		if (!props.isMobile() && !open()) setOpen(true);
+	});
 
 	let recentGrid: HTMLDivElement | undefined;
 	let quickActionsGrid: HTMLDivElement | undefined;

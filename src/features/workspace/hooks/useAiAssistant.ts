@@ -1,11 +1,16 @@
-import { createSignal } from "solid-js";
+import { useLocalStorage } from "#/utils/useLocalStorage";
 
-const [open, setOpen] = createSignal(false);
+const [open, setOpen] = useLocalStorage(
+	"opencadre:ai-assistant-open",
+	false,
+	(raw) => raw === "true",
+);
 
 export function useAiAssistant() {
 	return {
 		open,
-		toggle: () => setOpen((value) => !value),
+		setOpen,
+		toggle: () => setOpen(!open()),
 		close: () => setOpen(false),
 	};
 }
