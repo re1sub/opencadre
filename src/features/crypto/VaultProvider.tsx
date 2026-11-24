@@ -117,7 +117,7 @@ export interface VaultApi {
 	sealDisplayName: (name: string) => Promise<string>;
 	openDisplayName: (sealed: string) => Promise<string>;
 	deviceLinks: () => DeviceLinkRequestRow[];
-	refreshDeviceLinks: () => Promise<void>;
+	refreshDeviceLinks: (silent?: boolean) => Promise<void>;
 	trustedDevices: () => TrustedDevice[];
 	refreshTrustedDevices: () => Promise<void>;
 	deviceId: () => string | null;
@@ -176,6 +176,7 @@ const VaultProvider = (props: { children: JSXElement }) => {
 	const keyCache = new Map<string, CachedKey>();
 	const activeKeyId = new Map<string, string>();
 	const pendingKeys = new Map<string, Promise<boolean>>();
+	let deviceLinksRefresh: Promise<void> | null = null;
 
 	const clearKeys = () => {
 		privateKey = null;
@@ -210,18 +211,28 @@ const VaultProvider = (props: { children: JSXElement }) => {
 		setError(null);
 		setPendingRecoveryCode(null);
 		setDeviceLinks([]);
+		deviceLinksRefresh = null;
 		setRotations([]);
 		setFailedRotation(null);
 		setRequiredRotations([]);
 		deviceRecord = null;
 	};
 
-	const refreshDeviceLinks = async () => {
-		try {
-			setDeviceLinks(await listDeviceLinkRequests());
-		} catch (err) {
-			setError(messageOf(err));
-		}
+	const refreshDeviceLinks = (silent = false): Promise<void> => {
+		if (deviceLinksRefresh) return deviceLinksRefresh;
+		const refreshToken = initToken;
+		deviceLinksRefresh = (async () => {
+			try {
+				const links = await listDeviceLinkRequests();
+				if (refreshToken !== initToken) return;
+				setDeviceLinks(links);
+			} catch (err) {
+				if (!silent && refreshToken === initToken) setError(messageOf(err));
+			} finally {
+				deviceLinksRefresh = null;
+			}
+		})();
+		return deviceLinksRefresh;
 	};
 
 	const refreshTrustedDevices = async () => {
@@ -951,7 +962,14 @@ const VaultProvider = (props: { children: JSXElement }) => {
 			)
 			.subscribe();
 
+		// Realtime can miss the INSERT when a link is created before the channel
+		// reaches SUBSCRIBED. Poll at a low frequency so approval still appears.
+		const pendingLinksTimer = window.setInterval(() => {
+			void refreshDeviceLinks(true);
+		}, 2500);
+
 		onCleanup(() => {
+			window.clearInterval(pendingLinksTimer);
 			void supabase.removeChannel(channel);
 		});
 	});

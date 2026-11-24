@@ -1,16 +1,7 @@
 import { devices, expect, type Page, test } from "@playwright/test";
+import { deviceLinkAccount, finishVaultOnboarding, signIn } from "./helpers";
 
-const EMAIL = "dev-link@opencadre.local";
-const PASSWORD = "dev-password-123";
 const WORKSPACE = "Device Link E2E";
-
-const signIn = async (page: Page) => {
-	await page.goto("/auth/signin");
-	await page.getByLabel("Email").fill(EMAIL);
-	await page.getByLabel("Password", { exact: true }).fill(PASSWORD);
-	await page.getByRole("button", { name: "Sign in", exact: true }).click();
-	await expect(page).toHaveURL(/\/workspace/);
-};
 
 const approveFrom = async (page: Page) => {
 	await expect(page.getByRole("button", { name: "Approve" })).toBeVisible({
@@ -28,8 +19,9 @@ test.describe("device link approval", () => {
 	test("each new device unlocks after the previous one approves it", async ({
 		browser,
 		playwright,
-	}) => {
+	}, testInfo) => {
 		test.setTimeout(120_000);
+		const user = deviceLinkAccount(testInfo);
 		const trustedContext = await browser.newContext();
 		const trusted = await trustedContext.newPage();
 		const firefox = await playwright.firefox.launch();
@@ -48,11 +40,8 @@ test.describe("device link approval", () => {
 
 		try {
 			await test.step("Chromium onboards and creates a workspace", async () => {
-				await signIn(trusted);
-				await expect(
-					trusted.getByRole("heading", { name: "Save your recovery code" }),
-				).toBeVisible({ timeout: 15000 });
-				await trusted.getByRole("button", { name: "I saved it" }).click();
+				await signIn(trusted, user);
+				await finishVaultOnboarding(trusted);
 				await expect(
 					trusted.getByRole("heading", {
 						name: "Create your first workspace",
@@ -67,7 +56,7 @@ test.describe("device link approval", () => {
 
 			await test.step("Firefox links from Chromium", async () => {
 				// Firefox has no device key, so it asks the only trusted device.
-				await signIn(firefoxDevice);
+				await signIn(firefoxDevice, user);
 				await expect(
 					firefoxDevice.getByText("Waiting for approval on"),
 				).toBeVisible({ timeout: 20000 });
@@ -79,14 +68,12 @@ test.describe("device link approval", () => {
 
 			await test.step("WebKit links from Firefox", async () => {
 				// WebKit has two trusted devices to pick from; choose Firefox.
-				await signIn(webkitDevice);
+				await signIn(webkitDevice, user);
 				await expect(
 					webkitDevice.getByText("Pick a device that is open and unlocked"),
 				).toBeVisible({ timeout: 20000 });
 				await webkitDevice
-					.getByText(/Firefox/)
-					.locator("xpath=../..")
-					.getByRole("button", { name: "Use this device" })
+					.locator('wa-button[data-device-label^="Firefox"]')
 					.click();
 				await expect(
 					webkitDevice.getByText("Waiting for approval on Firefox"),

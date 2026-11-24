@@ -69,6 +69,13 @@ export const testAccount = (testInfo: TestInfo, slot: number): E2EAccount =>
 	);
 
 /**
+ * The cross-browser device-link test runs only in Chromium, so it needs one
+ * account per retry without a project offset.
+ */
+export const deviceLinkAccount = (testInfo: TestInfo): E2EAccount =>
+	account(5 + retryOffset(testInfo));
+
+/**
  * Extra users for tests that need an invitee, a second collaborator, or a
  * removable member. These occupy a separate band of the seeded pool for every
  * retry attempt so they never overlap primary or earlier-attempt accounts.

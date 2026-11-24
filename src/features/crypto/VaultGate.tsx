@@ -407,6 +407,8 @@ ${code}
 												<wa-button
 													variant="brand"
 													appearance="outlined"
+													aria-label={`Use ${device.device_label}`}
+													attr:data-device-label={device.device_label}
 													disabled={busy()}
 													onClick={() => void createLinkFor(device.id)}
 												>
