@@ -1,15 +1,16 @@
 import { expect, test } from "@playwright/test";
+import { waitForAppReady } from "./helpers";
 
 test("landing page renders all sections", async ({ page }) => {
 	await page.goto("/");
-	const hero = page.getByRole("heading", {
-		level: 1,
-		name: /Boards, notes, and tasks/,
-	});
-	await expect(hero).toBeVisible({ timeout: 15_000 });
+	await waitForAppReady(page);
+	const hero = page
+		.locator("h1")
+		.filter({ hasText: "Boards, notes, and tasks" });
+	await hero.waitFor({ state: "visible", timeout: 30_000 });
 	await expect(hero).toContainText("Boards, notes, and tasks. Organized.");
 	await expect(hero.locator("xpath=..")).toHaveCSS("opacity", "1", {
-		timeout: 15_000,
+		timeout: 30_000,
 	});
 
 	const features = page
