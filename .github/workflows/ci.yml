@@ -33,7 +33,7 @@ jobs:
           cache: 'pnpm'
       - uses: supabase/setup-cli@v1
         with:
-          version: 3.2.0
+          version: 3.3.0
       - run: pnpm install --frozen-lockfile
       - run: supabase start
       - run: supabase db reset

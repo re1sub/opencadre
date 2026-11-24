@@ -4,6 +4,7 @@ import { useVault } from "#/features/crypto/VaultProvider";
 import ConfirmDialog from "#/features/ui/ConfirmDialog";
 import { dropdownItemValue, getErrorMessage } from "#/utils/misc";
 import { emailPrefix } from "#/utils/string";
+import { supabase } from "#/utils/supabase";
 import { type ThemePreference, useTheme } from "#theme/ThemeProvider";
 import { useProfile } from "../hooks/useProfile";
 import {
@@ -81,6 +82,77 @@ const SettingsGeneralSection = () => {
 		} catch (err) {
 			setPrivacyError(getErrorMessage(err, "Could not remember this device"));
 		}
+	};
+
+	type DeleteImpact = {
+		ownedWorkspaces: number;
+		ownedWithSuccessor: number;
+		ownedOrphaned: number;
+		otherMemberships: number;
+		loading: boolean;
+	};
+
+	const [deleteImpact, setDeleteImpact] = createSignal<DeleteImpact | null>(
+		null,
+	);
+
+	const loadDeleteImpact = async () => {
+		const uid = user()?.id;
+		if (!uid) return;
+		setDeleteImpact({
+			ownedWorkspaces: 0,
+			ownedWithSuccessor: 0,
+			ownedOrphaned: 0,
+			otherMemberships: 0,
+			loading: true,
+		});
+		try {
+			const { data: owned } = await supabase
+				.from("workspaces")
+				.select("id")
+				.eq("owner_id", uid);
+			const ownedIds = (owned ?? []).map((w) => w.id);
+			let ownedWithSuccessor = 0;
+			let ownedOrphaned = 0;
+			if (ownedIds.length > 0) {
+				const { data: members } = await supabase
+					.from("workspace_members")
+					.select("workspace_id,user_id")
+					.in("workspace_id", ownedIds)
+					.not("user_id", "is", null)
+					.neq("user_id", uid);
+				const successorByWs = new Set(
+					(members ?? []).map((m) => m.workspace_id),
+				);
+				for (const id of ownedIds) {
+					if (successorByWs.has(id)) ownedWithSuccessor++;
+					else ownedOrphaned++;
+				}
+			}
+			const { data: memberships } = await supabase
+				.from("workspace_members")
+				.select("workspace_id,workspaces!inner(owner_id)")
+				.eq("user_id", uid);
+			const otherMemberships = (memberships ?? []).filter(
+				(m: { workspaces?: { owner_id: string } | null }) =>
+					m.workspaces?.owner_id !== uid,
+			).length;
+			setDeleteImpact({
+				ownedWorkspaces: ownedIds.length,
+				ownedWithSuccessor,
+				ownedOrphaned,
+				otherMemberships,
+				loading: false,
+			});
+		} catch {
+			setDeleteImpact(null);
+		}
+	};
+
+	const handleOpenDeleteDialog = () => {
+		setDeleteError(null);
+		setShowDeleteDialog(true);
+		void loadDeleteImpact();
 	};
 
 	const handleDeleteAccount = async () => {
@@ -242,7 +314,7 @@ const SettingsGeneralSection = () => {
 					<wa-button
 						variant="danger"
 						appearance="outlined"
-						onClick={() => setShowDeleteDialog(true)}
+						onClick={handleOpenDeleteDialog}
 					>
 						<wa-icon slot="start" name="trash-2" label="Delete"></wa-icon>
 						Delete Account
@@ -255,11 +327,49 @@ const SettingsGeneralSection = () => {
 			<Show when={showDeleteDialog()}>
 				<ConfirmDialog
 					label="Delete Account"
-					message="This will permanently delete your account and all data including workspaces you own. Members will lose access. This cannot be undone."
+					message="This action is permanent and cannot be undone. Deleting your account will remove your profile, settings, devices, and memberships. You will be signed out everywhere."
 					confirmText={user()?.email}
 					onConfirm={handleDeleteAccount}
 					onClose={() => setShowDeleteDialog(false)}
-				/>
+				>
+					<div
+						style={{ "margin-top": "var(--wa-space-s)", "font-size": "0.9rem" }}
+					>
+						<Show when={deleteImpact()?.loading}>
+							<p style={{ margin: 0, color: "var(--wa-color-text-quiet)" }}>
+								Loading impact...
+							</p>
+						</Show>
+						<Show when={!deleteImpact()?.loading && deleteImpact()}>
+							{(imp) => (
+								<ul style={{ "margin-block": "0", "padding-left": "1.25rem" }}>
+									<li>
+										{imp().ownedWorkspaces === 0
+											? "You do not own any workspaces."
+											: `${imp().ownedWorkspaces} workspace${imp().ownedWorkspaces === 1 ? "" : "s"} you own: ${imp().ownedWithSuccessor} will be transferred to another owner/admin/member, ${imp().ownedOrphaned} will be deleted (no other members).`}
+									</li>
+									<li>
+										{imp().otherMemberships === 0
+											? "You are not a member of other workspaces."
+											: `You will be removed from ${imp().otherMemberships} other workspace${imp().otherMemberships === 1 ? "" : "s"}. Your pages and comments there remain, shown as "Deleted member".`}
+									</li>
+									<li>
+										Comments you wrote are kept (anonymized) for workspace
+										history. Mentions and reactions tied to you are removed.
+									</li>
+								</ul>
+							)}
+						</Show>
+						<p
+							style={{
+								margin: "var(--wa-space-s) 0 0",
+								color: "var(--wa-color-text-quiet)",
+							}}
+						>
+							Export any data you want to keep before deleting your account.
+						</p>
+					</div>
+				</ConfirmDialog>
 			</Show>
 
 			<Show when={deleteError()}>

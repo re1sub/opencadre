@@ -218,7 +218,7 @@ Operations that must not run with user credentials, or that need secrets
 | --- | --- | --- |
 | `ai-generate` | Streams AI content via OpenRouter | JWT (user) |
 | `invite-member` | Creates a pending invite + sends email | JWT (user), role check via RLS |
-| `delete-account` | Atomic account erasure | JWT (user) + service role RPC |
+| `delete-account` | Account deletion (ownership transfer when possible, comment anonymization, cleanup) | JWT (user) + service role RPC |
 | `revoke-user-sessions` | Revoke refresh sessions | JWT (user) or service role |
 | `cleanup-retention` | RGPD retention purges | Cron secret / service role |
 

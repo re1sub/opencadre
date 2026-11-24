@@ -5,8 +5,8 @@ the 29 tables, their relationships, the RLS policies that enforce authorization,
 the triggers and RPC functions that run server-side, and the realtime
 publication.
 
-The schema is defined across ten migrations applied in order: one base migration
-plus nine E2EE v3 migrations.
+The schema is defined across eleven migrations applied in order: one base migration
+plus ten later migrations (E2EE v3 and related follow-ups).
 
 | Migration | Purpose |
 | --- | --- |
@@ -20,6 +20,7 @@ plus nine E2EE v3 migrations.
 | `20261122060000_device_link_last_used.sql` | `last_used_at` backfill and 30-minute approval window |
 | `20261122070000_device_link_target.sql` | Targeted link requests and matching approval |
 | `20261122080000_delete_account_device_links.sql` | Device-link deletion order for account erasure |
+| `20261124130000_delete_account_ownership_transfer.sql` | Account deletion: ownership transfer to successor, comment anonymization (`author_id` nullable, `ON DELETE SET NULL`), assignee scrub, updated comment delete RLS |
 
 The E2EE migrations assume an empty database. They drop legacy plaintext columns
 and do not copy legacy plaintext into the new schema.
@@ -355,11 +356,13 @@ Join table linking cards to tags. Unique on `(card_id, tag_id)`.
 Threads are polymorphic over `page` and `card`. Comment bodies are sealed with
 the workspace key. The scope trigger resolves the workspace through
 `comment_workspace_id(thread_id)`, which follows the thread to its page or card.
+When an author deletes their account, `author_id` becomes `NULL` (`ON DELETE SET NULL`)
+and the UI displays the author as "Deleted member".
 
 | Table | Key columns |
 | --- | --- |
 | `comment_threads` | `id`, `entity_type` IN `('page','card')`, `entity_id`, `created_at` |
-| `comments` | `id`, `thread_id`, `author_id`, `ciphertext` (cap 87,404), generated `key_id`/`iv`, timestamps |
+| `comments` | `id`, `thread_id`, `author_id` (nullable, FK `auth.users(id)` `ON DELETE SET NULL`), `ciphertext` (cap 87,404), generated `key_id`/`iv`, timestamps |
 
 #### `comment_reactions`
 

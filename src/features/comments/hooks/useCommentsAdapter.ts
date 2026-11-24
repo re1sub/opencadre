@@ -51,7 +51,8 @@ export function useCommentsAdapter(entity: () => CommentEntity | null) {
 		return ids;
 	};
 
-	const displayName = (userId: string) => {
+	const displayName = (userId: string | null) => {
+		if (!userId) return "Deleted member";
 		const map = authorNames();
 		return map[userId] ?? userId.slice(0, 8);
 	};

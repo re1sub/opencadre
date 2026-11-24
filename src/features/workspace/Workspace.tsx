@@ -512,9 +512,7 @@ const Workspace = () => {
 									height: sidebarCollapsed() ? "50vh" : "100vh",
 									top: sidebarCollapsed()
 										? "50%"
-										: pagesHook.activePage()
-											? "calc(var(--main-header-height) * -1)"
-											: 0,
+										: "calc(var(--main-header-height) * -1)",
 									width: sidebarCollapsed() ? "6px" : "3px",
 									"border-radius": sidebarCollapsed() ? "0 5px 5px 0" : "",
 									transform: sidebarCollapsed() ? "translateY(-50%)" : "",

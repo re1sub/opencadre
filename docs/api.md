@@ -175,14 +175,18 @@ up. Acceptance is handled by the `accept_invite` RPC (see below).
 
 ### 2.3 `delete-account`
 
-Atomically delete the calling user's account and all of their personal data.
+Atomically delete the calling user's account (via the service role RPC).
 
 - **Route:** `https://<project-ref>/functions/v1/delete-account`
 - **Method:** `POST` (no body)
 - **Auth:** `verify_jwt = true` (user)
-- **Behavior:** calls the `delete_user_account(p_user_id)` RPC with the service
-  role. All statements run inside one transaction, so a failure rolls the whole
-  deletion back.
+- **Behavior:** calls the `delete_user_account(p_user_id)` RPC with the service role. The RPC runs as a single transaction. Current behavior (migration `20261124130000_delete_account_ownership_transfer.sql`):
+  - For each workspace owned by the user: if any other member exists, transfer ownership to the best successor (highest-priority role among `owner`/`admin`/`member`/`guest`, then earliest membership `created_at`) and ensure that member's `workspace_members.role` is set to `owner`. If no other members exist, the workspace is removed by `workspaces.owner_id -> auth.users ON DELETE CASCADE` (along with its cascaded data).
+  - Remove the deleted user from `cards.assignee_ids` arrays.
+  - Set `pages.owner_id = NULL` for pages they owned.
+  - Delete `comment_reactions` by the user; comments remain but `comments.author_id` is set to `NULL` (anonymized as “Deleted member” in the UI).
+  - Delete personal `notifications` (where user is recipient or actor), `ai_requests`, `activity_logs`, `user_settings`, user-scoped crypto rows (`crypto_nonces` for user content keys, `user_content_key_wraps`, `user_content_keys`, `workspace_keys` for the user), device link requests related to the user/devices, `user_devices`, `user_keys`.
+  - Delete `workspace_members` and `profiles` for the user, then delete the `auth.users` row. If the auth user row is missing, the RPC raises an error.
 - **Response** (`200`): `{ "success": true }`
 - **Errors:**
   | Status | Meaning |
@@ -191,8 +195,8 @@ Atomically delete the calling user's account and all of their personal data.
   | `500` | Deletion failed (`{ "error": "Failed to delete account" }`) |
 
 **Secrets:** no function-specific secret. It uses the platform-provided
-`SUPABASE_SERVICE_ROLE_KEY` through `supabaseAdmin`. Device-link rows are deleted
-before devices so account erasure cannot fail with a foreign key violation.
+`SUPABASE_SERVICE_ROLE_KEY` through `supabaseAdmin`. Device-link rows are removed
+before deleting devices to avoid foreign key violations.
 
 ---
 

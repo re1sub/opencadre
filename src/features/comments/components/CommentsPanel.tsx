@@ -88,8 +88,10 @@ const CommentsPanel = (props: CommentsPanelProps) => {
 				>
 					<For each={props.comments}>
 						{(comment) => {
-							const getDisplayName = (userId: string) =>
-								props.authorNames?.[userId] ?? userId.slice(0, 8);
+							const getDisplayName = (userId: string | null) => {
+								if (!userId) return "Deleted member";
+								return props.authorNames?.[userId] ?? userId.slice(0, 8);
+							};
 
 							const name = () => getDisplayName(comment.authorId);
 							const initials = () => getInitials(name());
