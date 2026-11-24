@@ -2,15 +2,17 @@ name: Release
 on:
   workflow_dispatch:
 permissions:
-  contents: write
-  issues: write
-  pull-requests: write
+  contents: read
 env:
   VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
   VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
 jobs:
   create-release:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
     env:
       HUSKY: "0"
     outputs:
@@ -20,6 +22,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          persist-credentials: false
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
@@ -102,8 +105,12 @@ jobs:
           - platform: macos-latest
             args: ''
     runs-on: ${{ matrix.platform }}
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
@@ -126,7 +133,9 @@ jobs:
           workspaces: './src-tauri -> target'
 
       - name: Sync version to release tag
-        run: node scripts/sync-release-version.mjs "${{ needs.create-release.outputs.tag }}"
+        env:
+          TAG: ${{ needs.create-release.outputs.tag }}
+        run: node scripts/sync-release-version.mjs "$TAG"
 
       - name: Build and upload binaries
         uses: tauri-apps/tauri-action@v1
@@ -143,8 +152,12 @@ jobs:
     needs: create-release
     if: needs.create-release.outputs.tag != ''
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
@@ -193,13 +206,17 @@ jobs:
         working-directory: src-tauri/gen/android
         run: |
           echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > "$RUNNER_TEMP/android-upload.jks"
-          echo "keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}" > keystore.properties
-          echo "keyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}" >> keystore.properties
-          echo "storePassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" >> keystore.properties
-          echo "storeFile=$RUNNER_TEMP/android-upload.jks" >> keystore.properties
+          {
+            echo "keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}"
+            echo "keyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}"
+            echo "storePassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}"
+            echo "storeFile=$RUNNER_TEMP/android-upload.jks"
+          } > keystore.properties
 
       - name: Sync version to release tag
-        run: node scripts/sync-release-version.mjs "${{ needs.create-release.outputs.tag }}"
+        env:
+          TAG: ${{ needs.create-release.outputs.tag }}
+        run: node scripts/sync-release-version.mjs "$TAG"
 
       - name: Build and upload APK
         uses: tauri-apps/tauri-action@v1

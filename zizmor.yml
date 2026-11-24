@@ -1,0 +1,7 @@
+# Action references are intentionally kept on immutable major/minor tags.
+# Hash pinning is tracked separately and is not part of this workflow lint pass.
+rules:
+  unpinned-uses:
+    config:
+      policies:
+        "*": ref-pin
