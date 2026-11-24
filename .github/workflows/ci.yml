@@ -44,3 +44,227 @@ jobs:
             | sed -nE 's/^API_URL="([^"]*)"/VITE_SUPABASE_URL=\1/p; s/^PUBLISHABLE_KEY="([^"]*)"/VITE_SUPABASE_PUBLISHABLE_KEY=\1/p' \
             >> "$GITHUB_ENV"
       - run: pnpm test:e2e
+
+  # Publishing depends on both checks passing, and only happens on main pushes.
+  create-release:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [test, e2e]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+    env:
+      HUSKY: "0"
+      VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+      VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
+    outputs:
+      tag: ${{ steps.tag.outputs.tag }}
+      notes: ${{ steps.notes.outputs.notes }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+      - run: pnpm install --frozen-lockfile
+
+      - name: Current latest tag
+        id: current
+        run: echo "tag=$(git describe --tags --abbrev=0 2>/dev/null || true)" >> "$GITHUB_OUTPUT"
+
+      - name: Semantic Release
+        uses: cycjimmy/semantic-release-action@v4
+        with:
+          extra_plugins: |
+            @semantic-release/changelog
+            @semantic-release/git
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+
+      - name: Fetch new tag
+        run: git fetch --tags --force
+
+      - name: Compute release tag
+        id: tag
+        env:
+          RUN: ${{ github.event_name }}
+          CURRENT: ${{ steps.current.outputs.tag }}
+        run: |
+          TAG=$(git describe --tags --abbrev=0 2>/dev/null || true)
+          if [ -z "$TAG" ]; then
+            echo "No tags found, skipping binary build"
+            echo "tag=" >> "$GITHUB_OUTPUT"
+          elif [ "$RUN" = "push" ] && [ "$TAG" = "$CURRENT" ]; then
+            echo "No new release, skipping binary build"
+            echo "tag=" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Extract release notes
+        id: notes
+        env:
+          TAG: ${{ steps.tag.outputs.tag }}
+        run: |
+          if [ -z "$TAG" ]; then
+            echo "notes=" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          VER="${TAG#v}"
+          NOTES="$(awk -v ver="$VER" '
+            /^#{1,2} / {
+              if (found) exit
+              if (index($0, "[" ver "]") > 0 || index($0, "# " ver " ") == 1) found = 1
+              next
+            }
+            found
+          ' CHANGELOG.md)"
+          if [ -z "$NOTES" ]; then
+            echo "No changelog section found for $TAG" >&2
+            exit 1
+          fi
+          {
+            echo 'notes<<RELEASE_NOTES_EOF'
+            printf '%s\n' "$NOTES"
+            echo 'RELEASE_NOTES_EOF'
+          } >> "$GITHUB_OUTPUT"
+
+  build-desktop:
+    needs: [test, e2e, create-release]
+    if: needs.create-release.outputs.tag != ''
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: ubuntu-latest
+            args: ''
+          - platform: windows-latest
+            args: ''
+          - platform: macos-latest
+            args: ''
+    runs-on: ${{ matrix.platform }}
+    permissions:
+      contents: write
+    env:
+      VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+      VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+      - run: pnpm install --frozen-lockfile
+
+      - if: matrix.platform == 'ubuntu-latest'
+        name: Install Linux dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev build-essential curl wget file libssl-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: './src-tauri -> target'
+
+      - name: Sync version to release tag
+        run: node scripts/sync-release-version.mjs "${{ needs.create-release.outputs.tag }}"
+
+      - name: Build and upload binaries
+        uses: tauri-apps/tauri-action@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: ${{ needs.create-release.outputs.tag }}
+          releaseBody: ${{ needs.create-release.outputs.notes }}
+          releaseDraft: false
+          prerelease: false
+          args: ${{ matrix.args }}
+
+  build-android:
+    needs: [test, e2e, create-release]
+    if: needs.create-release.outputs.tag != ''
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+      VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+      - run: pnpm install --frozen-lockfile
+
+      - name: Install Linux dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential curl wget file libssl-dev
+
+      - name: Install Rust stable (android)
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android,armv7-linux-androideabi,i686-linux-android,x86_64-linux-android
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: './src-tauri -> target'
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Accept Android SDK licenses
+        # sdkmanager --licenses prints the pending licenses and exits 1 even
+        # after accepting them, so don't fail the step on its exit code.
+        # The licenses are recorded under $ANDROID_HOME/licenses either way.
+        run: |
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
+          ls "$ANDROID_HOME/licenses"
+
+      - name: Setup Android NDK
+        uses: nttld/setup-ndk@v1
+        id: setup-ndk
+        with:
+          ndk-version: r29
+          link-to-sdk: true
+
+      - name: Setup Android signing
+        # https://v2.tauri.app/distribute/sign/android/
+        working-directory: src-tauri/gen/android
+        run: |
+          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > "$RUNNER_TEMP/android-upload.jks"
+          echo "keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}" > keystore.properties
+          echo "keyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}" >> keystore.properties
+          echo "storePassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" >> keystore.properties
+          echo "storeFile=$RUNNER_TEMP/android-upload.jks" >> keystore.properties
+
+      - name: Sync version to release tag
+        run: node scripts/sync-release-version.mjs "${{ needs.create-release.outputs.tag }}"
+
+      - name: Build and upload APK
+        uses: tauri-apps/tauri-action@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
+        with:
+          tagName: ${{ needs.create-release.outputs.tag }}
+          releaseBody: ${{ needs.create-release.outputs.notes }}
+          releaseDraft: false
+          prerelease: false
+          mobile: android
+          args: '--apk'
