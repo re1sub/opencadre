@@ -1,3 +1,17 @@
+# [1.10.0](https://github.com/re1sub/opencadre/compare/v1.9.0...v1.10.0) (2026-11-24)
+
+
+### Bug Fixes
+
+* **release:** disable husky hooks in create-release job ([266a7e0](https://github.com/re1sub/opencadre/commit/266a7e05ec3e30e02c16a2448a99894d46cbaf38))
+* **ui:** honor autofocus in Web Awesome dialogs ([a1a06d8](https://github.com/re1sub/opencadre/commit/a1a06d819b09384a8b29c4843e035ff344684f0b))
+
+
+### Features
+
+* **workspace:** add resizable space-aware AI sidebar ([d2fdb54](https://github.com/re1sub/opencadre/commit/d2fdb54a8ef33826ab422f0bbeeccd567eaddc03))
+* **workspace:** open AI sidebar on desktop home ([52a45d0](https://github.com/re1sub/opencadre/commit/52a45d0d6296e9911b351ce0d0a59e0cb2f599b0))
+
 # [1.9.0](https://github.com/re1sub/opencadre/compare/v1.8.0...v1.9.0) (2026-11-24)
 
 
