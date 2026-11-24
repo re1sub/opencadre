@@ -25,10 +25,23 @@ test("a card can carry a workspace tag and a comment", async ({
 	// Comments resolve the card row from the database, so wait for the card
 	// write before opening the dialog.
 	await persisted;
-	await page
+	const card = page
 		.locator("a[data-card-id]")
-		.filter({ hasText: "Review access policy" })
-		.click();
+		.filter({ hasText: "Review access policy" });
+	await expect(card).toBeVisible({ timeout: 20_000 });
+	await expect
+		.poll(
+			async () => {
+				try {
+					await card.click({ timeout: 2_000 });
+					return true;
+				} catch {
+					return false;
+				}
+			},
+			{ timeout: 30_000 },
+		)
+		.toBe(true);
 
 	const dialog = page.locator("wa-dialog");
 	await dialog.getByRole("button", { name: "Add tag" }).click();

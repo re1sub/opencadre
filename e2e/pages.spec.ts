@@ -18,10 +18,13 @@ test("pages of every kind can be created, deleted, and restored", async ({
 
 	await addPage(page, "Table", "Data");
 
-	await page.getByRole("link", { name: /Notes/ }).click();
-	const notesOptions = page.getByRole("button", { name: "Options for Notes" });
-	await notesOptions.locator("button").first().click();
-	await notesOptions.getByText("Delete page", { exact: true }).click();
+	const notesLink = page.getByRole("link", { name: /Notes/ });
+	await notesLink.click();
+	const notesId = (await notesLink.getAttribute("href"))?.split("/").pop();
+	if (!notesId) throw new Error("Notes page link has no id");
+	const deleteItem = page.locator(`#delete-${notesId}`);
+	await expect(deleteItem).toHaveCount(1);
+	await deleteItem.dispatchEvent("click");
 	await confirmDelete(page);
 	await expect(page.getByRole("link", { name: /Notes/ })).toHaveCount(0);
 

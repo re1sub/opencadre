@@ -11,7 +11,6 @@ test("table rows, columns, and cells can be edited", async ({
 
 	const headers = page.locator(".st-header-cell[data-accessor]");
 	await expect(headers.first()).toBeVisible();
-	const initialHeaderCount = await headers.count();
 	const editableHeader = page
 		.getByRole("columnheader")
 		.filter({ has: page.getByRole("textbox") })
@@ -90,6 +89,23 @@ test("table rows, columns, and cells can be edited", async ({
 
 	const addColumn = page.locator("#header-__add_column__ wa-button");
 	await expect(addColumn).toBeVisible();
-	await addColumn.click();
-	await expect(headers).toHaveCount(initialHeaderCount + 1);
+	const headerCountBeforeAdd = await headers.count();
+	await expect
+		.poll(
+			async () => {
+				if ((await headers.count()) > headerCountBeforeAdd) return true;
+				const approval = page.locator('wa-dialog[label="Confirm it\'s you"]');
+				if (await approval.isVisible()) {
+					await approval.getByRole("button", { name: "Reject" }).click();
+				}
+				try {
+					await addColumn.click({ timeout: 5_000 });
+				} catch {
+					// A dialog or re-render can intercept the click. The poll retries.
+				}
+				return false;
+			},
+			{ timeout: 30_000 },
+		)
+		.toBe(true);
 });

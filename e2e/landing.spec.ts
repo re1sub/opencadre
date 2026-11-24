@@ -7,7 +7,14 @@ test("landing page renders all sections", async ({ page }) => {
 	const hero = page
 		.locator("h1")
 		.filter({ hasText: "Boards, notes, and tasks" });
-	await hero.waitFor({ state: "visible", timeout: 30_000 });
+	try {
+		await hero.waitFor({ state: "visible", timeout: 15_000 });
+	} catch {
+		// Vite can serve the shell before its lazy route module is ready.
+		await page.reload();
+		await waitForAppReady(page);
+		await hero.waitFor({ state: "visible", timeout: 30_000 });
+	}
 	await expect(hero).toContainText("Boards, notes, and tasks. Organized.");
 	await expect(hero.locator("xpath=..")).toHaveCSS("opacity", "1", {
 		timeout: 30_000,
