@@ -1,3 +1,11 @@
+## [1.10.1](https://github.com/re1sub/opencadre/compare/v1.10.0...v1.10.1) (2026-11-25)
+
+
+### Bug Fixes
+
+* **android:** respect safe-area insets across app layout ([0c00da0](https://github.com/re1sub/opencadre/commit/0c00da070dad158c3b6320021efcb549e397f682))
+* **ui:** anchor AI assistant composer to drawer footer ([6b9c2e5](https://github.com/re1sub/opencadre/commit/6b9c2e55ea4694277379130f38b952cdea7550a0))
+
 # [1.10.0](https://github.com/re1sub/opencadre/compare/v1.9.0...v1.10.0) (2026-11-24)
 
 
