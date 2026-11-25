@@ -81,6 +81,7 @@ export const body = style({
 	gap: "var(--wa-space-2xs)",
 	padding: "var(--wa-space-l)",
 	textAlign: "center",
+	height: "100%",
 });
 
 export const bodyTitle = style({

@@ -51,7 +51,7 @@ const AiAssistantPanel = (props: AiAssistantPanelProps) => {
 				</p>
 			</div>
 
-			<div>
+			<div slot="footer" style={{ width: "100%" }}>
 				<div class={composerBox}>
 					<wa-textarea
 						placeholder="Coming soon..."
