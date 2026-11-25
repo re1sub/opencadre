@@ -230,6 +230,7 @@ jobs:
       - name: Sync version to release tag
         env:
           TAG: ${{ needs.create-release.outputs.tag }}
+        shell: bash
         run: node scripts/sync-release-version.mjs "$TAG"
 
       - name: Build and upload binaries
@@ -314,6 +315,7 @@ jobs:
       - name: Sync version to release tag
         env:
           TAG: ${{ needs.create-release.outputs.tag }}
+        shell: bash
         run: node scripts/sync-release-version.mjs "$TAG"
 
       - name: Build and upload APK
