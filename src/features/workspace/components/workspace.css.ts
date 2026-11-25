@@ -216,12 +216,18 @@ export const addPageGroup = style({
 });
 
 export const mainContent = style({
-	padding: "var(--wa-space-xl)",
 	position: "relative",
-	// minHeight: "100vh",
+	padding: "var(--wa-space-xl)",
+	paddingRight: "calc(env(safe-area-inset-right, 0px) + var(--wa-space-xl))",
+	paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + var(--wa-space-xl))",
+	paddingLeft: "calc(env(safe-area-inset-left, 0px) + var(--wa-space-xl))",
 	"@media": {
 		"(max-width: 767px)": {
 			padding: "var(--wa-space-m)",
+			paddingRight: "calc(env(safe-area-inset-right, 0px) + var(--wa-space-m))",
+			paddingBottom:
+				"calc(env(safe-area-inset-bottom, 0px) + var(--wa-space-m))",
+			paddingLeft: "calc(env(safe-area-inset-left, 0px) + var(--wa-space-m))",
 		},
 	},
 });

@@ -138,3 +138,8 @@ globalStyle("wa-tooltip, wa-copy-button::part(feedback)", {
 globalStyle("wa-popup wa-button::part(button)", {
 	justifyContent: "flex-start",
 });
+
+globalStyle("::part(dialog), wa-page::part(drawer__dialog)", {
+	paddingTop: "env(safe-area-inset-top)",
+	paddingBottom: "env(safe-area-inset-bottom)",
+});

@@ -90,8 +90,13 @@ globalStyle(".st-content-wrapper, .st-content, .st-body-container", {
 
 globalStyle(".simple-table-root.st-external-scroll .st-header-container", {
 	vars: {
-		"--st-external-scroll-padding-top": "calc(-1 * var(--main-header-height))",
+		"--st-external-scroll-padding-top":
+			"calc(-1 * var(--main-header-height) + env(safe-area-inset-top, 0px) + 8px)",
 	},
+});
+
+globalStyle(".st-header-container", {
+	zIndex: "1",
 });
 
 globalStyle(".st-content", {

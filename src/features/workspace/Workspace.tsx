@@ -1,6 +1,6 @@
 import type WaPage from "@awesome.me/webawesome/dist/components/page/page.js";
 import { useNavigate } from "@solidjs/router";
-import { createEffect, createSignal, onCleanup, onMount, Show } from "solid-js";
+import { createEffect, createSignal, onCleanup, Show } from "solid-js";
 import { useAuth } from "#/features/auth/AuthContext";
 import DeviceLinkApproval from "#/features/crypto/DeviceLinkApproval";
 import {
@@ -333,21 +333,6 @@ const Workspace = () => {
 			void handleAddPage(kind);
 		},
 	);
-
-	onMount(() => {
-		setTimeout(() => {
-			const page = document.querySelector("wa-page") as WaPage | null;
-			const drawer = page?.shadowRoot?.querySelector('[part="drawer"]');
-			const dialog = drawer?.shadowRoot?.querySelector(
-				'[part="dialog"]',
-			) as HTMLElement | null;
-
-			if (!dialog) return;
-
-			dialog.style.paddingTop = "env(safe-area-inset-top)";
-			dialog.style.paddingBottom = "env(safe-area-inset-bottom)";
-		}, 1000);
-	});
 
 	return (
 		<Show
