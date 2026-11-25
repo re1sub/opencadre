@@ -1,3 +1,10 @@
+## [1.10.2](https://github.com/re1sub/opencadre/compare/v1.10.1...v1.10.2) (2026-11-25)
+
+
+### Bug Fixes
+
+* **ci:** windows runner failing ([fb61516](https://github.com/re1sub/opencadre/commit/fb615160f7170337d461a4301634aa9e314636b3))
+
 ## [1.10.1](https://github.com/re1sub/opencadre/compare/v1.10.0...v1.10.1) (2026-11-25)
 
 
