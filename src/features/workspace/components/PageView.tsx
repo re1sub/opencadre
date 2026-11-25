@@ -20,9 +20,6 @@ const PageView = (props: PageViewProps) => {
 				const page = props.page;
 				if (!page || page.id !== id) return null;
 
-				// Read `props.page` reactively in the JSX below (not via the
-				// frozen `page` const) so content edits on the SAME page flow to
-				// the editors without remounting them.
 				return (
 					<Switch
 						fallback={
