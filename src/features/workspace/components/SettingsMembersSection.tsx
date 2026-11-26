@@ -1,6 +1,8 @@
 import { createSignal, For, Show } from "solid-js";
 import DeleteButton from "#/features/ui/DeleteButton";
-import { dropdownItemValue, getErrorMessage, getInitials } from "#/utils/misc";
+import UserAvatar from "#/features/ui/UserAvatar";
+import { featureFlags } from "#/utils/featureFlags";
+import { dropdownItemValue, getErrorMessage } from "#/utils/misc";
 import {
 	ASSIGNABLE_ROLES,
 	canManageMembers,
@@ -44,6 +46,8 @@ const SettingsMembersSection = (props: SettingsMembersSectionProps) => {
 	};
 
 	const handleAddMember = async () => {
+		if (!featureFlags.memberInvites) return;
+
 		setMemberError(null);
 
 		const result = addMemberSchema.safeParse({
@@ -95,7 +99,7 @@ const SettingsMembersSection = (props: SettingsMembersSectionProps) => {
 			<wa-divider style={{ "--spacing": "0" }}></wa-divider>
 			<p class={dialogLabel}>Manage who has access to this workspace.</p>
 			<Show
-				when={canManageMembers(myRole())}
+				when={featureFlags.memberInvites && canManageMembers(myRole())}
 				fallback={
 					<p class={dialogLabel}>Only owners and admins can manage members.</p>
 				}
@@ -158,16 +162,13 @@ const SettingsMembersSection = (props: SettingsMembersSectionProps) => {
 				<For each={members()}>
 					{(member) => (
 						<div class={memberRow}>
-							<wa-avatar
-								initials={getInitials(member.name)}
-								label={`Avatar with initials: ${getInitials(member.name)}`}
-								style={{
-									"--size": "2rem",
-									"background-color":
-										member.color ?? "var(--wa-color-neutral-fill-normal)",
-									color: "#fff",
-								}}
-							></wa-avatar>
+							<UserAvatar
+								name={member.name}
+								avatarUrl={member.avatarUrl}
+								color={member.color}
+								label={member.name}
+								size="2rem"
+							/>
 							<div class={memberMeta}>
 								<span class={memberName}>
 									{member.name}

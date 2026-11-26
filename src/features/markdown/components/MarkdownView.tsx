@@ -1,8 +1,9 @@
 import DOMPurify from "dompurify";
 import { marked } from "marked";
 import { createEffect, createSignal, For, splitProps } from "solid-js";
+import UserAvatar from "#/features/ui/UserAvatar";
 import type { WorkspaceMember } from "#/features/workspace/types";
-import { cn, getInitials, uid } from "#/utils/misc";
+import { cn, uid } from "#/utils/misc";
 import { view } from "./markdownView.css";
 
 interface MarkdownViewProps {
@@ -70,7 +71,6 @@ const MarkdownView = (props: MarkdownViewProps) => {
 				{(tip) => {
 					const member = getMember(tip.userId);
 					const name = member?.name ?? tip.name;
-					const initials = getInitials(name);
 					return (
 						<wa-tooltip
 							for={tip.id}
@@ -83,11 +83,12 @@ const MarkdownView = (props: MarkdownViewProps) => {
 									gap: "var(--wa-space-xs)",
 								}}
 							>
-								<wa-avatar
-									initials={initials}
-									label={`Avatar with initials: ${initials}`}
-									style={{ "--size": "25px" }}
-								></wa-avatar>
+								<UserAvatar
+									name={name}
+									avatarUrl={member?.avatarUrl}
+									label={name}
+									size="25px"
+								/>
 								<span>{name}</span>
 							</div>
 						</wa-tooltip>

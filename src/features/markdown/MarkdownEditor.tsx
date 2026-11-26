@@ -4,7 +4,13 @@ import Collaboration from "@tiptap/extension-collaboration";
 import { Placeholder } from "@tiptap/extension-placeholder";
 import { Markdown } from "@tiptap/markdown";
 import StarterKit from "@tiptap/starter-kit";
-import { createEffect, createSignal, onCleanup, splitProps } from "solid-js";
+import {
+	createEffect,
+	createSignal,
+	onCleanup,
+	Show,
+	splitProps,
+} from "solid-js";
 import { Motion } from "solid-motionone";
 import AiPopup from "#/features/ai/components/AiPopup";
 import { useCommentsAdapter } from "#/features/comments/hooks/useCommentsAdapter";
@@ -13,6 +19,7 @@ import {
 	CommentMark,
 } from "#/features/comments/mark/CommentMark";
 import { useWorkspaceMembersAdapter } from "#/features/workspace/hooks/useWorkspaceMembersAdapter";
+import { featureFlags } from "#/utils/featureFlags";
 import { useDebouncedPush } from "#/utils/realtime/useDebouncedPush";
 import { useYjsDoc } from "#/utils/yjs/useYjsDoc";
 import CommentPopup from "./components/CommentPopup";
@@ -23,9 +30,11 @@ import { useSlashCommand } from "./hooks/useSlashCommand";
 import { insertMarkdown } from "./insertMarkdown";
 import { editor } from "./markdownEditor.css";
 import {
+	additionalButtons,
 	bubbleToolbarGroups,
 	createMarkdownActions,
 	type MarkdownAction,
+	toolbarGroups,
 } from "./toolbar";
 import "#assets/css/github-markdown.css";
 import EditorMenuItems from "./components/EditorMenuItems";
@@ -66,6 +75,13 @@ const MarkdownEditor = (props: MarkdownEditorProps) => {
 	let instance: Editor | undefined;
 	const slashCommand = useSlashCommand(() => instance);
 	const editorComments = useEditorComments(pageComments);
+	const visibleBubbleToolbarGroups = () =>
+		featureFlags.ai
+			? bubbleToolbarGroups
+			: [
+					...toolbarGroups,
+					additionalButtons.filter((button) => button.id !== "ai"),
+				];
 
 	const [toolbarVersion, setToolbarVersion] = createSignal(0);
 	const [bubbleVisible, setBubbleVisible] = createSignal(false);
@@ -281,7 +297,7 @@ const MarkdownEditor = (props: MarkdownEditorProps) => {
 			ai: {
 				active: () => false,
 				run: () => {
-					if (!instance) return;
+					if (!featureFlags.ai || !instance) return;
 
 					const { from, to } = instance.state.selection;
 					const rect = posToDOMRect(instance.view, from, to);
@@ -367,20 +383,22 @@ const MarkdownEditor = (props: MarkdownEditorProps) => {
 					transition={{ duration: 0.2 }}
 				>
 					<EditorMenuItems
-						groups={bubbleToolbarGroups}
+						groups={visibleBubbleToolbarGroups()}
 						getAction={(id) => actions[id]}
 						isActive={isActive}
 					/>
 				</Motion.div>
 			</div>
 
-			<AiPopup
-				open={() => Boolean(aiRect())}
-				anchorRect={aiRect}
-				onInsert={handleAiInsert}
-				onClose={() => setAiRect(null)}
-				entity={props.pageId ? { type: "page", id: props.pageId } : undefined}
-			/>
+			<Show when={featureFlags.ai}>
+				<AiPopup
+					open={() => Boolean(aiRect())}
+					anchorRect={aiRect}
+					onInsert={handleAiInsert}
+					onClose={() => setAiRect(null)}
+					entity={props.pageId ? { type: "page", id: props.pageId } : undefined}
+				/>
+			</Show>
 
 			<CommentPopup
 				open={() => Boolean(editorComments.activeThreadId())}

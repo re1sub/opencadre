@@ -1,6 +1,7 @@
 import { createSignal, For, Show } from "solid-js";
 import MarkdownField from "#/features/markdown/components/MarkdownField";
 import MarkdownView from "#/features/markdown/components/MarkdownView";
+import UserAvatar from "#/features/ui/UserAvatar";
 import { canManageMembers } from "#/features/workspace/constants/roles";
 import type {
 	WorkspaceMember,
@@ -8,7 +9,7 @@ import type {
 } from "#/features/workspace/types";
 import type { EntityContext } from "#/types/ai";
 import { formatTimestamp } from "#/utils/date";
-import { dropdownItemValue, getInitials } from "#/utils/misc";
+import { dropdownItemValue } from "#/utils/misc";
 import { REACTIONS_LIST } from "../constants/reactions";
 import type { Comment, CommentReaction } from "../types";
 import * as styles from "./commentsPanel.css";
@@ -93,8 +94,13 @@ const CommentsPanel = (props: CommentsPanelProps) => {
 								return props.authorNames?.[userId] ?? userId.slice(0, 8);
 							};
 
+							const getAvatarUrl = (userId: string | null) =>
+								userId
+									? (props.members?.find((member) => member.id === userId)
+											?.avatarUrl ?? null)
+									: null;
+
 							const name = () => getDisplayName(comment.authorId);
-							const initials = () => getInitials(name());
 
 							const reactionGroups = () => {
 								const map = new Map<string, string[]>();
@@ -133,11 +139,12 @@ const CommentsPanel = (props: CommentsPanelProps) => {
 									<div class={styles.commentBubble}>
 										<div class={styles.commentMeta}>
 											<div class={styles.metaAuthorGroup}>
-												<wa-avatar
-													initials={initials()}
-													label={`Avatar with initials: ${initials()}`}
+												<UserAvatar
+													name={name()}
+													avatarUrl={getAvatarUrl(comment.authorId)}
+													label={name()}
 													class={styles.smallAvatar}
-												></wa-avatar>
+												/>
 												<span class={styles.authorName}>{name()}</span>
 												<span class={styles.quietText}>
 													{formatTimestamp(comment.createdAt)}
@@ -210,14 +217,14 @@ const CommentsPanel = (props: CommentsPanelProps) => {
 																	<For each={group.users.slice(0, 5)}>
 																		{(userId) => {
 																			const name = getDisplayName(userId);
-																			const initials = getInitials(name);
 																			return (
 																				<div class={styles.tooltipUserRow}>
-																					<wa-avatar
-																						initials={initials}
-																						label={`Avatar with initials: ${initials}`}
+																					<UserAvatar
+																						name={name}
+																						avatarUrl={getAvatarUrl(userId)}
+																						label={name}
 																						class={styles.smallAvatar}
-																					></wa-avatar>
+																					/>
 																					<span>{name}</span>
 																				</div>
 																			);

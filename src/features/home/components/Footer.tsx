@@ -1,4 +1,5 @@
-import { For } from "solid-js";
+import { For, Show } from "solid-js";
+import { featureFlags } from "#/utils/featureFlags";
 import logoSvg from "#assets/img/brand/logo.svg";
 import {
 	body,
@@ -34,18 +35,20 @@ const Footer = () => {
 					opencadre
 				</a>
 				<div class={columnGroup}>
-					<div>
-						<h4>Legal</h4>
-						<div class={columnLinks}>
-							<For each={legalLinks}>
-								{(item) => (
-									<a class={link} href={item.href}>
-										{item.label}
-									</a>
-								)}
-							</For>
+					<Show when={featureFlags.legalPages}>
+						<div>
+							<h4>Legal</h4>
+							<div class={columnLinks}>
+								<For each={legalLinks}>
+									{(item) => (
+										<a class={link} href={item.href}>
+											{item.label}
+										</a>
+									)}
+								</For>
+							</div>
 						</div>
-					</div>
+					</Show>
 					<div>
 						<h4>Resources</h4>
 						<div class={columnLinks}>

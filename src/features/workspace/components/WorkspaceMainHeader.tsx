@@ -1,6 +1,7 @@
 import type WaPage from "@awesome.me/webawesome/dist/components/page/page.js";
 import { createSignal, For, Show } from "solid-js";
 import { Portal } from "solid-js/web";
+import { featureFlags } from "#/utils/featureFlags";
 import { useAiAssistant } from "../hooks/useAiAssistant";
 import type { Page, WorkspaceMember } from "../types";
 import NotificationsPanel from "./NotificationsPanel";
@@ -139,15 +140,17 @@ const WorkspaceMainHeader = (props: WorkspaceMainHeaderProps) => {
 				</wa-copy-button>
 			</Show>
 
-			<wa-button
-				appearance="plain"
-				variant={isAiAssistantOpen() ? "brand" : "neutral"}
-				aria-label="AI Assistant"
-				aria-controls="ai-assistant-panel"
-				onClick={toggleAiAssistant}
-			>
-				<wa-icon name="sparkles" label="AI Assistant"></wa-icon>
-			</wa-button>
+			<Show when={featureFlags.ai}>
+				<wa-button
+					appearance="plain"
+					variant={isAiAssistantOpen() ? "brand" : "neutral"}
+					aria-label="AI Assistant"
+					aria-controls="ai-assistant-panel"
+					onClick={toggleAiAssistant}
+				>
+					<wa-icon name="sparkles" label="AI Assistant"></wa-icon>
+				</wa-button>
+			</Show>
 
 			<NotificationsPanel />
 		</nav>

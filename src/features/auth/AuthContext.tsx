@@ -6,6 +6,7 @@ import {
 	onCleanup,
 	useContext,
 } from "solid-js";
+import { featureFlags } from "#/utils/featureFlags";
 import { supabase } from "#/utils/supabase";
 
 type AuthContextType = {
@@ -111,6 +112,9 @@ export function AuthProvider(props: { children: JSXElement }) {
 	};
 
 	const signInWithGoogle = async (redirectTo?: string): Promise<void> => {
+		if (!featureFlags.googleSignIn) {
+			throw new Error("Google sign-in is disabled.");
+		}
 		setError(null);
 
 		const { error: authError } = await supabase.auth.signInWithOAuth({

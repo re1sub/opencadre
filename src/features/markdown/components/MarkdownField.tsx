@@ -13,6 +13,7 @@ import {
 import AiPopup from "#/features/ai/components/AiPopup";
 import type { WorkspaceMember } from "#/features/workspace/types";
 import type { EntityContext } from "#/types/ai";
+import { featureFlags } from "#/utils/featureFlags";
 import { cn, dropdownItemValue, uid } from "#/utils/misc";
 import { useMentions } from "../hooks/useMentions";
 import { insertMarkdown } from "../insertMarkdown";
@@ -162,7 +163,9 @@ const MarkdownField = (props: MarkdownFieldProps) => {
 			...createMarkdownActions(editorInstance),
 			ai: {
 				active: () => false,
-				run: toggleAi,
+				run: () => {
+					if (featureFlags.ai) toggleAi();
+				},
 			},
 		};
 
@@ -286,18 +289,20 @@ const MarkdownField = (props: MarkdownFieldProps) => {
 						)}
 					</For>
 
-					<wa-divider
-						orientation="vertical"
-						style={{ "--spacing": "var(--wa-space-3xs)" }}
-					></wa-divider>
+					<Show when={featureFlags.ai}>
+						<wa-divider
+							orientation="vertical"
+							style={{ "--spacing": "var(--wa-space-3xs)" }}
+						></wa-divider>
 
-					<ToolbarButton
-						button={additionalButtons[1]}
-						id={`${ns}-ai`}
-						onClick={toggleAi}
-						activeClass={activeButton}
-						active={() => Boolean(aiRect())}
-					/>
+						<ToolbarButton
+							button={additionalButtons[1]}
+							id={`${ns}-ai`}
+							onClick={toggleAi}
+							activeClass={activeButton}
+							active={() => Boolean(aiRect())}
+						/>
+					</Show>
 
 					<wa-dropdown
 						placement="bottom-end"
@@ -371,13 +376,15 @@ const MarkdownField = (props: MarkdownFieldProps) => {
 					}}
 				/>
 			</div>
-			<AiPopup
-				open={() => Boolean(aiRect())}
-				anchorRect={aiRect}
-				onInsert={handleAiInsert}
-				onClose={() => setAiRect(null)}
-				entity={props.entity}
-			/>
+			<Show when={featureFlags.ai}>
+				<AiPopup
+					open={() => Boolean(aiRect())}
+					anchorRect={aiRect}
+					onInsert={handleAiInsert}
+					onClose={() => setAiRect(null)}
+					entity={props.entity}
+				/>
+			</Show>
 			<MentionPopup
 				open={mentions.mentionVisible}
 				anchorRect={mentions.mentionRect}

@@ -1,5 +1,6 @@
 import { createResource, For, Show } from "solid-js";
 import { Motion } from "solid-motionone";
+import { featureFlags } from "#/utils/featureFlags";
 import { dropdownItemValue } from "#/utils/misc";
 import mobileAppImg from "#assets/img/home/mobile.png";
 import {
@@ -23,6 +24,10 @@ function detectPlatform(): "android" | "mac" | "windows" | "linux" {
 }
 
 async function fetchReleaseData() {
+	if (!featureFlags.githubReleaseCheck) {
+		return { downloads: [], version: "" };
+	}
+
 	const response = await fetch(
 		"https://api.github.com/repos/re1sub/opencadre/releases",
 	);

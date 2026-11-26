@@ -4,9 +4,10 @@ import {
 	useChat,
 } from "@tanstack/ai-solid";
 import type { EntityContext } from "#/types/ai";
+import { featureFlags } from "#/utils/featureFlags";
 import { supabase } from "#/utils/supabase";
 
-const EDGE_FUNCTION_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-generate`;
+const EDGE_FUNCTION_URL = `${import.meta.env.SUPABASE_PUBLIC_URL}/functions/v1/ai-generate`;
 
 const getSessionToken = async (): Promise<string> => {
 	const { data } = await supabase.auth.getSession();
@@ -19,12 +20,19 @@ export interface AiChatOptions {
 
 export function useAiChat(options: AiChatOptions = {}) {
 	const chat = useChat({
-		connection: fetchServerSentEvents(EDGE_FUNCTION_URL, async () => ({
-			headers: {
-				Authorization: `Bearer ${await getSessionToken()}`,
-			},
-		})),
+		connection: fetchServerSentEvents(EDGE_FUNCTION_URL, async () => {
+			if (!featureFlags.ai) {
+				throw new Error("AI is disabled.");
+			}
+			return {
+				headers: {
+					Authorization: `Bearer ${await getSessionToken()}`,
+				},
+			};
+		}),
 		onFinish: async (message: UIMessage) => {
+			if (!featureFlags.ai) return;
+
 			const {
 				data: { user },
 			} = await supabase.auth.getUser();

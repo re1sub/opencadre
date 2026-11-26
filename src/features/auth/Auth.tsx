@@ -8,6 +8,7 @@ import { consentCheckboxRow } from "#/features/legal/legal.css";
 import { setPendingDisplayName } from "#/features/workspace/hooks/useProfile";
 import { useTheme } from "#/theme/ThemeProvider";
 import { APP_VERSION } from "#/utils/appVersion";
+import { featureFlags } from "#/utils/featureFlags";
 import { toStringOrNull } from "#/utils/misc";
 import googleLogo from "#assets/img/google-logo.svg";
 import {
@@ -63,6 +64,8 @@ const Auth = (props: { view?: "signin" | "signup" | "forgot" | "reset" }) => {
 	const inviteToken = () => {
 		return toStringOrNull(searchParams.invite_token);
 	};
+
+	const consentValue = () => (featureFlags.legalPages ? consent() : true);
 
 	createEffect(() => {
 		if (user() && !loading() && view() !== "reset") {
@@ -136,7 +139,7 @@ const Auth = (props: { view?: "signin" | "signup" | "forgot" | "reset" }) => {
 			email: email(),
 			password: password(),
 			...(view() === "signup"
-				? { displayName: displayName(), consent: consent() }
+				? { displayName: displayName(), consent: consentValue() }
 				: {}),
 		});
 		if (!result.success) {
@@ -157,6 +160,7 @@ const Auth = (props: { view?: "signin" | "signup" | "forgot" | "reset" }) => {
 	};
 
 	const handleGoogleSignIn = () => {
+		if (!featureFlags.googleSignIn) return;
 		setError(null);
 		setPending(true);
 
@@ -452,7 +456,7 @@ const Auth = (props: { view?: "signin" | "signup" | "forgot" | "reset" }) => {
 								Forgot password?
 							</a>
 						</Show>
-						<Show when={view() === "signup"}>
+						<Show when={view() === "signup" && featureFlags.legalPages}>
 							<wa-checkbox
 								checked={consent()}
 								onChange={(e) =>
@@ -503,25 +507,29 @@ const Auth = (props: { view?: "signin" | "signup" | "forgot" | "reset" }) => {
 								Sign in with dev account
 							</wa-button>
 						</Show>
-						<div class={orRow}>
-							<wa-divider style={{ flex: 1 }}></wa-divider>
-							<small style={{ color: "var(--wa-color-text-quiet)" }}>OR</small>
-							<wa-divider style={{ flex: 1 }}></wa-divider>
-						</div>
-						<wa-button
-							type="button"
-							disabled={pending()}
-							onClick={handleGoogleSignIn}
-							appearance="outlined"
-						>
-							<wa-icon
-								slot="start"
-								library="custom"
-								src={googleLogo}
-								style={{ "font-size": "1.3rem" }}
-							></wa-icon>
-							Sign {view() === "signup" ? "up" : "in"} with Google
-						</wa-button>
+						<Show when={featureFlags.googleSignIn}>
+							<div class={orRow}>
+								<wa-divider style={{ flex: 1 }}></wa-divider>
+								<small style={{ color: "var(--wa-color-text-quiet)" }}>
+									OR
+								</small>
+								<wa-divider style={{ flex: 1 }}></wa-divider>
+							</div>
+							<wa-button
+								type="button"
+								disabled={pending()}
+								onClick={handleGoogleSignIn}
+								appearance="outlined"
+							>
+								<wa-icon
+									slot="start"
+									library="custom"
+									src={googleLogo}
+									style={{ "font-size": "1.3rem" }}
+								></wa-icon>
+								Sign {view() === "signup" ? "up" : "in"} with Google
+							</wa-button>
+						</Show>
 						{/*<wa-button disabled={true}>
 							Sign {view() === "signup" ? "up" : "in"} with Microsoft
 						</wa-button>*/}

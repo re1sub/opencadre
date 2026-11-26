@@ -6,6 +6,7 @@ import { useVault } from "#/features/crypto/VaultProvider";
 import { supabase } from "#/utils/supabase";
 
 const [customName, setCustomName] = createSignal<string | null>(null);
+const [avatarUrl, setAvatarUrl] = createSignal<string | null>(null);
 const [pendingDisplayName, setPendingDisplayName] = createSignal<string | null>(
 	null,
 );
@@ -27,10 +28,12 @@ export function useProfile(user?: () => User | null | undefined) {
 		void (async () => {
 			const { data, error } = await supabase
 				.from("profiles")
-				.select("display_name_ciphertext")
+				.select("display_name_ciphertext, avatar_url")
 				.eq("id", id)
 				.maybeSingle();
 			if (error) return;
+
+			setAvatarUrl(data?.avatar_url ?? null);
 
 			let name: string | null = null;
 			if (data?.display_name_ciphertext) {
@@ -95,6 +98,7 @@ export function useProfile(user?: () => User | null | undefined) {
 
 	return {
 		name,
+		avatarUrl,
 		customName,
 		setCustomName,
 		setPendingDisplayName,

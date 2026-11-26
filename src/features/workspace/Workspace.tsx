@@ -11,6 +11,7 @@ import VaultGate from "#/features/crypto/VaultGate";
 import { useVault } from "#/features/crypto/VaultProvider";
 import ConfirmDialog from "#/features/ui/ConfirmDialog";
 import EditableText from "#/features/ui/EditableText";
+import { featureFlags } from "#/utils/featureFlags";
 import { useDebouncedPush } from "#/utils/realtime/useDebouncedPush";
 import { useWorkspaceRealtime } from "#/utils/realtime/useWorkspaceRealtime";
 import { useElementWidth } from "#/utils/useElementWidth";
@@ -542,6 +543,7 @@ const Workspace = () => {
 										recentPages={pagesHook.recentPages()}
 										memberCount={membersHook.members().length}
 										isMobile={isMobile}
+										useAiDrawer={useAiDrawer}
 										onAddPage={handleAddPage}
 										onCreateFromTemplate={handleCreateFromTemplate}
 										onOpenPage={(pageId) => navigate(`/workspace/p/${pageId}`)}
@@ -606,7 +608,9 @@ const Workspace = () => {
 							</Show>
 						</main>
 
-						<AiAssistantPanel useDrawer={useAiDrawer} />
+						<Show when={featureFlags.ai}>
+							<AiAssistantPanel useDrawer={useAiDrawer} />
+						</Show>
 
 						<Show when={keyMissing()}>
 							<div class={keyMissingToast}>

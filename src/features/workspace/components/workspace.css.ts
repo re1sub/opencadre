@@ -63,9 +63,11 @@ globalStyle(`wa-page:has(.${sidebarResizer}:active)::part(body)`, {
 });
 
 export const mainHeader = style({
+	position: "sticky",
+	top: "0",
+	left: "0",
 	padding: "0 var(--wa-space-s)",
 	gap: 0,
-	top: 0,
 	width: "100%",
 	zIndex: 100,
 	borderBottom: "0.5px solid var(--wa-color-surface-border)",
@@ -271,11 +273,22 @@ export const userMenuTrigger = style({
 			padding: "var(--wa-space-s) var(--wa-space-xs)",
 			width: "100%",
 		},
+		"&::part(label)": {
+			flex: "1 1 auto",
+			minWidth: 0,
+			overflow: "hidden",
+			textOverflow: "ellipsis",
+			whiteSpace: "nowrap",
+		},
+		"&::part(caret)": {
+			flexShrink: 0,
+		},
 	},
 });
 
 export const userMenuName = style({
-	flexGrow: 1,
+	display: "block",
+	width: "100%",
 	minWidth: 0,
 	textAlign: "left",
 	whiteSpace: "nowrap",

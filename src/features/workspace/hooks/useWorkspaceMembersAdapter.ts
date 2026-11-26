@@ -1,13 +1,14 @@
 import { createEffect, createSignal, onCleanup } from "solid-js";
 import { sealInviteLabel } from "#/features/crypto/inviteLabel";
 import { logSecurityEvent } from "#/features/crypto/securityEvents";
+import { featureFlags } from "#/utils/featureFlags";
 import { logActivity } from "#/utils/log";
 import { registerRealtimeHandlers } from "#/utils/realtime/registrar";
 import { isEmail } from "#/utils/string";
 import { supabase } from "#/utils/supabase";
 import type { WorkspaceMember, WorkspaceRole } from "../types";
 
-const EDGE_FUNCTION_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/invite-member`;
+const EDGE_FUNCTION_URL = `${import.meta.env.SUPABASE_PUBLIC_URL}/functions/v1/invite-member`;
 
 interface WorkspaceMemberRow {
 	id?: string;
@@ -15,6 +16,7 @@ interface WorkspaceMemberRow {
 	user_id?: string | null;
 	role: string;
 	email?: string | null;
+	avatar_url?: string | null;
 }
 
 export type InviteStatus = "invited" | "added" | "already-member";
@@ -24,6 +26,7 @@ const toMember = (m: WorkspaceMemberRow): WorkspaceMember => ({
 	name: m.email?.trim() || (m.user_id ? m.user_id.slice(0, 8) : "Unknown"),
 	email: m.email ?? "",
 	role: m.role as WorkspaceRole,
+	avatarUrl: m.avatar_url ?? null,
 });
 
 export function useWorkspaceMembersAdapter(workspaceId: () => string) {
@@ -48,7 +51,7 @@ export function useWorkspaceMembersAdapter(workspaceId: () => string) {
 			setMembers((prev) =>
 				prev.map((m) =>
 					m.id === mapped.id || (m.email && m.email === mapped.email)
-						? mapped
+						? { ...mapped, avatarUrl: mapped.avatarUrl ?? m.avatarUrl }
 						: m,
 				),
 			);
@@ -83,8 +86,27 @@ export function useWorkspaceMembersAdapter(workspaceId: () => string) {
 		if (error) throw error;
 
 		const rows = (data ?? []) as WorkspaceMemberRow[];
+		const userIds = rows
+			.map((row) => row.user_id)
+			.filter((id): id is string => Boolean(id));
 
-		const mapped: WorkspaceMember[] = rows.map(toMember);
+		const avatarById = new Map<string, string | null>();
+		if (userIds.length > 0) {
+			const { data: profiles } = await supabase
+				.from("profiles")
+				.select("id, avatar_url")
+				.in("id", userIds);
+			for (const profile of profiles ?? []) {
+				avatarById.set(profile.id, profile.avatar_url);
+			}
+		}
+
+		const mapped: WorkspaceMember[] = rows.map((row) =>
+			toMember({
+				...row,
+				avatar_url: row.user_id ? (avatarById.get(row.user_id) ?? null) : null,
+			}),
+		);
 
 		setMembers(mapped);
 
@@ -102,6 +124,10 @@ export function useWorkspaceMembersAdapter(workspaceId: () => string) {
 		role: "admin" | "member" | "guest",
 		workspaceName: string,
 	): Promise<InviteStatus> => {
+		if (!featureFlags.memberInvites) {
+			throw new Error("Member invites are disabled.");
+		}
+
 		const {
 			data: { session },
 		} = await supabase.auth.getSession();

@@ -1,7 +1,7 @@
 import { Index, Show } from "solid-js";
+import UserAvatar from "#/features/ui/UserAvatar";
 import type { WorkspaceMember } from "#/features/workspace/types";
 import { resolveRefs } from "#/utils/array";
-import { getInitials } from "#/utils/misc";
 import { memberChipsRow } from "./cardDialog.css";
 
 interface MemberChipsProps {
@@ -27,16 +27,13 @@ const MemberChips = (props: MemberChipsProps) => {
 							on:wa-remove={() => props.onRemove(member().id)}
 							pill
 						>
-							<wa-avatar
-								initials={getInitials(member().name)}
-								label={`Avatar with initials: ${getInitials(member().name)}`}
-								style={{
-									"--size": "25px",
-									"background-color":
-										member().color ?? "var(--wa-color-neutral-400)",
-									color: "var(--wa-color-text-normal)",
-								}}
-							></wa-avatar>
+							<UserAvatar
+								name={member().name}
+								avatarUrl={member().avatarUrl}
+								color={member().color}
+								label={member().name}
+								size="25px"
+							/>
 
 							{member().name}
 						</wa-tag>

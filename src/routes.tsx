@@ -2,6 +2,7 @@ import { Navigate, type RouteDefinition } from "@solidjs/router";
 import { lazy } from "solid-js";
 import RequireAuth from "#/features/auth/RequireAuth";
 import VaultProvider from "#/features/crypto/VaultProvider";
+import { featureFlags } from "#/utils/featureFlags";
 
 const Auth = lazy(() => import("#/features/auth/Auth"));
 const Home = lazy(() => import("#/features/home/Home"));
@@ -40,7 +41,15 @@ export const routes: RouteDefinition[] = [
 			</RequireAuth>
 		),
 	},
-	{ path: "/privacy", component: PrivacyPage },
-	{ path: "/terms", component: TermsPage },
+	{
+		path: "/privacy",
+		component: () =>
+			featureFlags.legalPages ? <PrivacyPage /> : <Navigate href="/" />,
+	},
+	{
+		path: "/terms",
+		component: () =>
+			featureFlags.legalPages ? <TermsPage /> : <Navigate href="/" />,
+	},
 	{ path: "**", component: () => <Navigate href="/" /> },
 ];

@@ -2,6 +2,7 @@ import { createEffect, createSignal, Show } from "solid-js";
 import { useAiChat } from "#/features/ai/hooks/useAiChat";
 import MarkdownView from "#/features/markdown/components/MarkdownView";
 import type { EntityContext } from "#/types/ai";
+import { featureFlags } from "#/utils/featureFlags";
 import { uid } from "#/utils/misc";
 import { usePopup } from "#/utils/usePopup";
 import { actions, field, panel, result } from "./aiPopup.css";
@@ -87,6 +88,8 @@ const AiPopup = (props: AiPopupProps) => {
 	});
 
 	const handleGenerate = () => {
+		if (!featureFlags.ai) return;
+
 		const text = prompt().trim();
 		if (!text) return;
 		void sendMessage(text);

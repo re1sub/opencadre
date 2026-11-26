@@ -1,4 +1,6 @@
 import { registerIconLibrary } from "@awesome.me/webawesome";
+import { getLocalIconUrl, normalizeIconName } from "#/assets/lucideIcons";
+import { featureFlags } from "#/utils/featureFlags";
 
 // TypeScript definitions
 import "@awesome.me/webawesome/dist/custom-elements-jsx.d.ts";
@@ -8,17 +10,10 @@ import "@awesome.me/webawesome/dist/styles/webawesome.css";
 
 // Register icon libraries
 registerIconLibrary("default", {
-	resolver: (name) => {
-		const iconName =
-			{
-				xmark: "x",
-				bars: "menu",
-				"eye-slash": "eye-off",
-				"circle-xmark": "circle-x",
-			}[name] ?? name;
-
-		return `https://cdn.jsdelivr.net/npm/lucide-static@1.31.0/icons/${iconName}.svg`;
-	},
+	resolver: (name) =>
+		featureFlags.cdnIcons
+			? `https://cdn.jsdelivr.net/npm/lucide-static@1.31.0/icons/${normalizeIconName(name)}.svg`
+			: getLocalIconUrl(name),
 	mutator: (svg) =>
 		svg.querySelectorAll("path").forEach((path) => {
 			path.setAttribute("fill", "none");

@@ -1,10 +1,11 @@
 import { useSortable } from "@dnd-kit/solid/sortable";
 import { For, Show } from "solid-js";
 import type { Tag } from "#/features/tags/types";
+import UserAvatar from "#/features/ui/UserAvatar";
 import type { WorkspaceMember } from "#/features/workspace/types";
 import { resolveRefs } from "#/utils/array";
 import { formatDueDate, getDueDateStatus } from "#/utils/date";
-import { colorMix, getInitials } from "#/utils/misc";
+import { colorMix } from "#/utils/misc";
 import { useDragTilt } from "../hooks/useDragTilt";
 import type { Card } from "../types";
 import * as styles from "./board.css";
@@ -130,15 +131,13 @@ const SortableCard = (props: SortableCardProps) => {
 					<div class={styles.cardAvatarStack}>
 						<For each={assignedMembers().slice(0, 5)}>
 							{(member) => (
-								<wa-avatar
-									initials={getInitials(member.name)}
-									label={member.name}
+								<UserAvatar
+									name={member.name}
+									avatarUrl={member.avatarUrl}
 									class={styles.cardAvatar}
-									style={{
-										"--size": "25px",
-										color: "#fff",
-									}}
-								></wa-avatar>
+									label={member.name}
+									size="25px"
+								/>
 							)}
 						</For>
 						<Show when={assignedMembers().length > 5}>

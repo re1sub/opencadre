@@ -1,6 +1,7 @@
 import type { User } from "@supabase/supabase-js";
 import { createSignal, Show } from "solid-js";
-import { dropdownItemValue, getInitials } from "#/utils/misc";
+import UserAvatar from "#/features/ui/UserAvatar";
+import { dropdownItemValue } from "#/utils/misc";
 import { useHotkey } from "#/utils/useHotkey";
 import { useProfile } from "../hooks/useProfile";
 import { useShortcuts } from "../hooks/useShortcuts";
@@ -36,11 +37,13 @@ const WorkspaceFooter = (props: WorkspaceFooterProps) => {
 	const [showSettings, setShowSettings] = createSignal(false);
 	const [settingsSection, setSettingsSection] = createSignal<SettingsSection>();
 
-	const { name } = useProfile(props.user);
+	const { name, avatarUrl } = useProfile(props.user);
 
 	const displayName = () => name();
-
-	const initials = () => getInitials(displayName()) || "?";
+	const imageUrl = () =>
+		avatarUrl() ??
+		(props.user()?.user_metadata?.avatar_url as string | undefined) ??
+		null;
 
 	const openSettings = (section?: SettingsSection) => {
 		setSettingsSection(section);
@@ -77,13 +80,16 @@ const WorkspaceFooter = (props: WorkspaceFooterProps) => {
 						with-caret
 						class={userMenuTrigger}
 					>
-						<wa-avatar
-							initials={initials()}
+						<UserAvatar
+							name={displayName()}
+							avatarUrl={imageUrl()}
 							label={displayName()}
 							slot="start"
-							style={{ "--size": "2rem" }}
-						></wa-avatar>
-						<span class={userMenuName}>{displayName()}</span>
+							size="2rem"
+						/>
+						<span class={userMenuName} title={displayName()}>
+							{displayName()}
+						</span>
 					</wa-button>
 
 					<wa-dropdown-item value="__members__">

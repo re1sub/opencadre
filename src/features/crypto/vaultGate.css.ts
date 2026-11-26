@@ -65,6 +65,8 @@ export const deviceList = style({
 	display: "flex",
 	flexDirection: "column",
 	gap: "var(--wa-space-s)",
+	maxHeight: "40vh",
+	overflow: "auto",
 });
 
 export const deviceRow = style({

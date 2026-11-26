@@ -1,6 +1,6 @@
 import { createEffect, For, Show } from "solid-js";
+import UserAvatar from "#/features/ui/UserAvatar";
 import type { WorkspaceMember } from "#/features/workspace/types";
-import { getInitials } from "#/utils/misc";
 import { usePopup } from "#/utils/usePopup";
 import { memberLabel, popupPanel } from "./mentionPopup.css";
 
@@ -96,16 +96,13 @@ const MentionPopup = (props: MentionPopupProps) => {
 								variant="neutral"
 								appearance="plain"
 							>
-								<wa-avatar
-									initials={getInitials(member.name)}
+								<UserAvatar
+									name={member.name}
+									avatarUrl={member.avatarUrl}
+									color={member.color}
 									label={member.name}
-									style={{
-										"--size": "25px",
-										"background-color":
-											member.color ?? "var(--wa-color-neutral-400)",
-										color: "var(--wa-color-text-normal)",
-									}}
-								></wa-avatar>
+									size="25px"
+								/>
 								<span class={memberLabel}>{member.name}</span>
 							</wa-button>
 						)}
