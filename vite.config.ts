@@ -55,6 +55,15 @@ export default defineConfig({
 							name: "solid-vendor",
 							test: /[\\/]node_modules[\\/](solid-js|@solidjs|@tanstack\/solid-query)[\\/]/,
 						},
+						{
+							name: "ui-icons",
+							test: /[\\/]node_modules[\\/]lucide-static[\\/]icons[\\/]/,
+							maxSize: 300 * 1024,
+						},
+						{
+							name: "schema-vendor",
+							test: /[\\/]node_modules[\\/](?:\.pnpm[\\/]zod@[^\\/]+[\\/]node_modules[\\/])?zod[\\/]/,
+						},
 					],
 				},
 			},
