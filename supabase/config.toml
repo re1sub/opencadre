@@ -403,9 +403,6 @@ verify_jwt = true
 [functions.delete-account]
 verify_jwt = true
 
-[functions.cleanup-retention]
-verify_jwt = false
-
 [functions.ai-generate]
 verify_jwt = true
 

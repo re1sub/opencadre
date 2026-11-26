@@ -640,7 +640,7 @@ The following columns are constrained by checks rather than enums:
 
 ## 8. Retention policy (RGPD)
 
-Enforced by the `cleanup-retention` edge function (see [api.md](./api.md)):
+Enforced inside Postgres by `public.cleanup_expired_data()`, which `pg_cron` runs daily at 03:00 UTC (see [api.md](./api.md#3-postgres-rpc-functions)):
 
 | Table | Retention | Action |
 | --- | --- | --- |

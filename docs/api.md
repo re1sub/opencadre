@@ -23,7 +23,6 @@ This document focuses on (1) and (2), and notes how (3) is structured in code.
 | Session | Supabase issues a JWT on sign-in; the client sends it as `Authorization: Bearer <token>` on every request. Refresh-token rotation is enabled. |
 | Email confirmation | New accounts must confirm their email before signing in. |
 | Edge function auth | `ai-generate`, `invite-member`, `delete-account`, and `revoke-user-sessions` set `verify_jwt = true`, so the JWT is validated by the edge runtime and the user identity is trusted. |
-| `cleanup-retention` | `verify_jwt = false`; the endpoint authenticates via a cron secret header or the service role bearer token instead of a user JWT. |
 
 ### 1.1 End-to-end encryption
 
@@ -200,49 +199,7 @@ before deleting devices to avoid foreign key violations.
 
 ---
 
-### 2.4 `cleanup-retention`
-
-Purge and anonymize data older than the RGPD retention periods. Intended to be
-invoked on a schedule (cron).
-
-- **Route:** `https://<project-ref>/functions/v1/cleanup-retention`
-- **Method:** any (typically `POST` or `GET` by the scheduler)
-- **Auth:** `verify_jwt = false`. The function requires **one** of:
-  - `Authorization: Bearer <SUPABASE_SERVICE_ROLE_KEY>`, or
-  - `X-Cron-Secret: <CRON_SECRET>` header.
-- **Behavior:**
-  | Table | Retention |
-  | --- | --- |
-  | `activity_logs` | 90 days |
-  | `security_events` | 1 year |
-  | `ai_requests` | 30 days |
-  | `notifications` | 90 days |
-- **Response** (`200`):
-
-```json
-{
-  "success": true,
-  "deletedBefore": {
-    "activity_logs": "2026-08-24T...",
-    "security_events": "2025-11-22T...",
-    "ai_requests": "2026-10-23T...",
-    "notifications": "2026-08-24T..."
-  },
-  "cleanedAt": "2026-11-22T..."
-}
-```
-
-- **Errors:**
-  | Status | Meaning |
-  | --- | --- |
-  | `401` | Missing/invalid auth (`{ "error": "Unauthorized" }`) |
-  | `500` | Cleanup failed |
-
-**Secrets:** `SUPABASE_SERVICE_ROLE_KEY`, `CRON_SECRET`.
-
----
-
-### 2.5 `revoke-user-sessions`
+### 2.4 `revoke-user-sessions`
 
 Revoke a user's refresh sessions. Intended for account security responses.
 
@@ -332,10 +289,24 @@ migration (`20260910132550_remote_schema.sql`) and the nine v3 migrations
 | --- | --- | --- | --- |
 | `rls_auto_enable()` | `event_trigger` | Automatically enables RLS on every new table in `public`. | DB event trigger |
 | `bump_page_content_version()` | `trigger` | Increments `page_content.version` on update. | trigger |
-| `handle_new_user()` | `trigger` | Creates a `profiles` row on auth user creation. | trigger |
+| `handle_new_user()` | `trigger` | Creates a `profiles` row on auth user creation and copies the provider avatar. | trigger |
 | `update_updated_at()` | `trigger` | Sets `updated_at = now()` on update. | triggers |
 | `tg_workspaces_encrypted()` and the other `tg_*_encrypted()` functions | `trigger` | Before insert or update of each protected field, call `assert_sealed_in_scope`. Every encrypted table has one, including notifications for both title and body. | encryption scope triggers |
 | `tg_workspace_member_removed()` | `trigger` | After any membership delete, flag the workspace for a full rotation. | workspace_members |
+
+**Retention**
+
+`public.cleanup_expired_data()` is a `SECURITY DEFINER` function with `EXECUTE`
+granted only to `service_role`. `pg_cron` calls it daily at 03:00 UTC under the
+job name `opencadre-cleanup-retention`. No HTTP endpoint or cron secret is
+involved.
+
+| Table | Retention |
+| --- | --- |
+| `activity_logs` | 90 days |
+| `security_events` | 1 year |
+| `ai_requests` | 30 days |
+| `notifications` | 90 days |
 
 **Grant model:** every function is `REVOKE ALL ... FROM PUBLIC` and then granted
 only to the roles that legitimately need it (typically `authenticated`; `anon`
@@ -401,19 +372,18 @@ table. Authorization comes from RLS SELECT policies.
 
 | Variable | Description |
 | --- | --- |
-| `VITE_SUPABASE_URL` | Supabase project URL |
-| `VITE_SUPABASE_PUBLISHABLE_KEY` | Publishable (anon) key |
+| `SUPABASE_PUBLIC_URL` | Supabase project URL |
+| `SUPABASE_PUBLISHABLE_KEY` | Publishable (anon) key |
 
 ### Edge function secrets (set via `npx supabase secrets set`)
 
 | Secret | Used by | Required |
 | --- | --- | --- |
 | `OPENROUTER_API_KEY` | `ai-generate` | Yes |
-| `SUPABASE_SERVICE_ROLE_KEY` | `invite-member`, `delete-account`, `cleanup-retention`, `revoke-user-sessions` | Yes |
+| `SUPABASE_SERVICE_ROLE_KEY` | `invite-member`, `delete-account`, `revoke-user-sessions` | Yes |
 | `SMTP_HOST` | `invite-member` | No (email skipped) |
 | `SMTP_PORT` | `invite-member` | No |
 | `SMTP_USER` | `invite-member` | No |
 | `SMTP_PASS` | `invite-member` | No |
 | `SMTP_FROM` | `invite-member` | No (defaults to `SMTP_USER`) |
 | `SMTP_FROM_NAME` | `invite-member` | No (defaults to "OpenCadre") |
-| `CRON_SECRET` | `cleanup-retention` | No (alternative to service role) |

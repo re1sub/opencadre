@@ -49,7 +49,6 @@ flowchart LR
             IM[invite-member]
             DA[delete-account]
             RV[revoke-user-sessions]
-            CR[cleanup-retention]
         end
     end
 
@@ -220,7 +219,6 @@ Operations that must not run with user credentials, or that need secrets
 | `invite-member` | Creates a pending invite + sends email | JWT (user), role check via RLS |
 | `delete-account` | Account deletion (ownership transfer when possible, comment anonymization, cleanup) | JWT (user) + service role RPC |
 | `revoke-user-sessions` | Revoke refresh sessions | JWT (user) or service role |
-| `cleanup-retention` | RGPD retention purges | Cron secret / service role |
 
 See [api.md](./api.md) for full request/response contracts.
 
