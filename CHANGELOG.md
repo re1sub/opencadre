@@ -1,3 +1,18 @@
+# [1.12.0](https://github.com/re1sub/opencadre/compare/v1.11.0...v1.12.0) (2026-11-26)
+
+
+### Features
+
+* **app:** add self-host feature flags and avatar fallback ([5ca50e5](https://github.com/re1sub/opencadre/commit/5ca50e5ae8ef19fd8051280c61d0c581a8fe7e95))
+* **config:** rename Supabase client env vars ([487a7d9](https://github.com/re1sub/opencadre/commit/487a7d9e2a1034fd2cdf0624d09faf32087539fc))
+* **db:** move retention to pg_cron and sync avatars ([01d2785](https://github.com/re1sub/opencadre/commit/01d278515fbfabb222ae8cf1147c2d5578a410f0))
+* **self-hosting:** add Docker-only deployment stack ([21336e0](https://github.com/re1sub/opencadre/commit/21336e07901a6a911f8379fc98ae1ac1ae38f9dd))
+
+
+### Performance Improvements
+
+* **build:** split icon and schema chunks ([8e7e5dc](https://github.com/re1sub/opencadre/commit/8e7e5dc13a07e97cabfdb40e01ba7897ea5d0efd))
+
 # [1.11.0](https://github.com/re1sub/opencadre/compare/v1.10.2...v1.11.0) (2026-11-26)
 
 
