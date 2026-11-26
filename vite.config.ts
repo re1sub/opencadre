@@ -5,6 +5,7 @@ import { qrcode } from "vite-plugin-qrcode";
 import solidPlugin from "vite-plugin-solid";
 
 export default defineConfig({
+	envPrefix: ["VITE_", "SUPABASE_PUBLIC_", "SUPABASE_PUBLISHABLE_"],
 	plugins: [devtools(), solidPlugin(), vanillaExtractPlugin(), qrcode()],
 	resolve: {
 		tsconfigPaths: true,

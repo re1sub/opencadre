@@ -3,7 +3,7 @@ import { spawnSync } from "node:child_process";
 const LOCAL_HOSTS = new Set(["127.0.0.1", "localhost", "host.docker.internal"]);
 
 const usesLocalSupabase = () => {
-	const rawUrl = process.env.VITE_SUPABASE_URL;
+	const rawUrl = process.env.SUPABASE_PUBLIC_URL;
 	if (!rawUrl) return true;
 
 	try {
@@ -19,7 +19,7 @@ const usesLocalSupabase = () => {
 const globalSetup = () => {
 	if (!usesLocalSupabase()) {
 		console.log(
-			"[e2e] Skipping Supabase reset because VITE_SUPABASE_URL is not local.",
+			"[e2e] Skipping Supabase reset because SUPABASE_PUBLIC_URL is not local.",
 		);
 		return;
 	}

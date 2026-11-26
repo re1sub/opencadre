@@ -162,7 +162,7 @@ settings, and concurrent editing. Only the AI edge function is mocked; all other
 state goes through local Supabase. `e2e/global-setup.ts` runs
 `pnpm exec supabase db reset` at the start of every `pnpm test:e2e` run, so a
 previous run's registered devices cannot switch the gate to the device-link
-panel. It skips the reset only when `VITE_SUPABASE_URL` points away from local
+panel. It skips the reset only when `SUPABASE_PUBLIC_URL` points away from local
 Supabase. Run the suite with one command:
 
 ```bash

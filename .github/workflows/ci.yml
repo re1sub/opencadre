@@ -37,8 +37,8 @@ jobs:
   test:
     runs-on: ubuntu-latest
     env:
-      VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
-      VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
+      SUPABASE_PUBLIC_URL: ${{ secrets.SUPABASE_PUBLIC_URL }}
+      SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -78,7 +78,7 @@ jobs:
       - name: Point the app at local Supabase
         run: |
           supabase status -o env \
-            | sed -nE 's/^API_URL="([^"]*)"/VITE_SUPABASE_URL=\1/p; s/^PUBLISHABLE_KEY="([^"]*)"/VITE_SUPABASE_PUBLISHABLE_KEY=\1/p' \
+            | sed -nE 's/^API_URL="([^"]*)"/SUPABASE_PUBLIC_URL=\1/p; s/^PUBLISHABLE_KEY="([^"]*)"/SUPABASE_PUBLISHABLE_KEY=\1/p' \
             >> "$GITHUB_ENV"
       - name: Build E2E bundle
         run: pnpm build --mode e2e
@@ -105,8 +105,8 @@ jobs:
       pull-requests: write
     env:
       HUSKY: "0"
-      VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
-      VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
+      SUPABASE_PUBLIC_URL: ${{ secrets.SUPABASE_PUBLIC_URL }}
+      SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
     outputs:
       tag: ${{ steps.tag.outputs.tag }}
       notes: ${{ steps.notes.outputs.notes }}
@@ -200,8 +200,8 @@ jobs:
     permissions:
       contents: write
     env:
-      VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
-      VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
+      SUPABASE_PUBLIC_URL: ${{ secrets.SUPABASE_PUBLIC_URL }}
+      SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -251,8 +251,8 @@ jobs:
     permissions:
       contents: write
     env:
-      VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
-      VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
+      SUPABASE_PUBLIC_URL: ${{ secrets.SUPABASE_PUBLIC_URL }}
+      SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
     steps:
       - uses: actions/checkout@v4
         with:

@@ -35,10 +35,10 @@ export default defineConfig({
 		url: "http://127.0.0.1:3000",
 		reuseExistingServer: !process.env.CI,
 		env: {
-			VITE_SUPABASE_URL:
-				process.env.VITE_SUPABASE_URL ?? "http://127.0.0.1:54321",
-			VITE_SUPABASE_PUBLISHABLE_KEY:
-				process.env.VITE_SUPABASE_PUBLISHABLE_KEY ??
+			SUPABASE_PUBLIC_URL:
+				process.env.SUPABASE_PUBLIC_URL ?? "http://127.0.0.1:54321",
+			SUPABASE_PUBLISHABLE_KEY:
+				process.env.SUPABASE_PUBLISHABLE_KEY ??
 				"sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH",
 		},
 	},

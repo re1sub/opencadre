@@ -4,8 +4,8 @@ on:
 permissions:
   contents: read
 env:
-  VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
-  VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
+  SUPABASE_PUBLIC_URL: ${{ secrets.SUPABASE_PUBLIC_URL }}
+  SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
 jobs:
   create-release:
     runs-on: ubuntu-latest
