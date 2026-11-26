@@ -239,6 +239,9 @@ importers:
       fflate:
         specifier: ^0.8.3
         version: 0.8.3
+      lucide-static:
+        specifier: ^1.81.0
+        version: 1.81.0
       marked:
         specifier: ^17.0.6
         version: 17.0.6
@@ -2774,6 +2777,9 @@ packages:
 
   lru-cache@5.1.1:
     resolution: {integrity: sha512-KpNARQA3Iwv+jTA0utUVVbrh+Jlrr1Fv0e56GGzAFOXN7dk/FviaDW8LHmK52DlcH4WP2n6gI8vN1aesBFgo9w==}
+
+  lucide-static@1.81.0:
+    resolution: {integrity: sha512-/nmIqCSiLOHjt3w9Y0btakes2aaQoVOORovWFPxNqhGNhkhFBwQosB7Nc9CEjULeoHm641O+XsEMC2SndnUmJg==}
 
   lz-string@1.5.0:
     resolution: {integrity: sha512-h5bgJWpxJNswbU7qCrV0tIKQCaS3blPDrqKWx+QxzuzL1zGUzij9XCWLrSLsJPu5t+eWA/ycetzYAO5IOMcWAQ==}
@@ -6272,6 +6278,8 @@ snapshots:
   lru-cache@5.1.1:
     dependencies:
       yallist: 3.1.1
+
+  lucide-static@1.81.0: {}
 
   lz-string@1.5.0: {}
 
