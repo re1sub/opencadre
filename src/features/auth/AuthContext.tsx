@@ -13,6 +13,7 @@ type AuthContextType = {
 	loading: () => boolean;
 	error: () => AuthError | null;
 	login: (email: string, password: string) => Promise<User>;
+	signInWithGoogle: (redirectTo?: string) => Promise<void>;
 	signUp: (email: string, password: string) => Promise<User | null>;
 	sendPasswordReset: (email: string) => Promise<void>;
 	updatePassword: (password: string) => Promise<void>;
@@ -107,6 +108,20 @@ export function AuthProvider(props: { children: JSXElement }) {
 		setUser(data.user);
 
 		return data.user;
+	};
+
+	const signInWithGoogle = async (redirectTo?: string): Promise<void> => {
+		setError(null);
+
+		const { error: authError } = await supabase.auth.signInWithOAuth({
+			provider: "google",
+			options: redirectTo ? { redirectTo } : undefined,
+		});
+
+		if (authError) {
+			setError(authError);
+			throw authError;
+		}
 	};
 
 	const signUp = async (
@@ -235,6 +250,7 @@ export function AuthProvider(props: { children: JSXElement }) {
 				loading,
 				error,
 				login,
+				signInWithGoogle,
 				signUp,
 				sendPasswordReset,
 				updatePassword,

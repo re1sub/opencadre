@@ -5,6 +5,7 @@ import { AuthProvider, useAuth } from "./AuthContext";
 const h = vi.hoisted(() => ({
 	getUser: vi.fn(),
 	getSession: vi.fn(),
+	signInWithOAuth: vi.fn(),
 	signOut: vi.fn(),
 	onAuthStateChange: vi.fn(),
 	unsubscribe: vi.fn(),
@@ -15,6 +16,7 @@ vi.mock("#/utils/supabase", () => ({
 		auth: {
 			getUser: h.getUser,
 			getSession: h.getSession,
+			signInWithOAuth: h.signInWithOAuth,
 			signOut: h.signOut,
 			onAuthStateChange: h.onAuthStateChange,
 		},
@@ -41,6 +43,7 @@ beforeEach(() => {
 	vi.clearAllMocks();
 	h.getUser.mockResolvedValue({ data: { user: user("remote") }, error: null });
 	h.getSession.mockResolvedValue({ data: { session: null } });
+	h.signInWithOAuth.mockResolvedValue({ data: { url: "" }, error: null });
 	h.signOut.mockResolvedValue({ error: null });
 	h.onAuthStateChange.mockReturnValue({
 		data: { subscription: { unsubscribe: h.unsubscribe } },
@@ -92,5 +95,17 @@ describe("AuthProvider session validation", () => {
 
 		expect(h.signOut).toHaveBeenCalledWith({ scope: "others" });
 		expect(api().user()?.id).toBe("remote");
+	});
+
+	it("starts Google OAuth with the supplied redirect URL", async () => {
+		const { api } = renderAuth();
+		await waitFor(() => expect(api().user()?.id).toBe("remote"));
+
+		await api().signInWithGoogle("http://localhost:3000/auth/signin");
+
+		expect(h.signInWithOAuth).toHaveBeenCalledWith({
+			provider: "google",
+			options: { redirectTo: "http://localhost:3000/auth/signin" },
+		});
 	});
 });

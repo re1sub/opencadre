@@ -9,6 +9,7 @@ import { setPendingDisplayName } from "#/features/workspace/hooks/useProfile";
 import { useTheme } from "#/theme/ThemeProvider";
 import { APP_VERSION } from "#/utils/appVersion";
 import { toStringOrNull } from "#/utils/misc";
+import googleLogo from "#assets/img/google-logo.svg";
 import {
 	card,
 	linkButton,
@@ -31,8 +32,15 @@ const Auth = (props: { view?: "signin" | "signup" | "forgot" | "reset" }) => {
 	const { theme, toggleTheme } = useTheme();
 	const [searchParams] = useSearchParams();
 	const navigate = useNavigate();
-	const { user, loading, login, signUp, sendPasswordReset, updatePassword } =
-		useAuth();
+	const {
+		user,
+		loading,
+		login,
+		signInWithGoogle,
+		signUp,
+		sendPasswordReset,
+		updatePassword,
+	} = useAuth();
 
 	const [view, setView] = createSignal<View>(
 		props.view === "forgot"
@@ -146,6 +154,25 @@ const Auth = (props: { view?: "signin" | "signup" | "forgot" | "reset" }) => {
 
 	const handleLocalSignIn = () => {
 		void authenticate("dev@opencadre.local", "dev-password-123", "signin");
+	};
+
+	const handleGoogleSignIn = () => {
+		setError(null);
+		setPending(true);
+
+		const t = inviteToken();
+		const redirectTo = t
+			? `${window.location.origin}/accept-invite?token=${encodeURIComponent(t)}`
+			: `${window.location.origin}/workspace`;
+		signInWithGoogle(redirectTo)
+			.catch((oauthError: unknown) => {
+				setError(
+					oauthError instanceof Error
+						? oauthError.message
+						: "An unexpected error occurred. Please try again.",
+				);
+			})
+			.finally(() => setPending(false));
 	};
 
 	const handleForgotSubmit = (event: SubmitEvent) => {
@@ -481,12 +508,23 @@ const Auth = (props: { view?: "signin" | "signup" | "forgot" | "reset" }) => {
 							<small style={{ color: "var(--wa-color-text-quiet)" }}>OR</small>
 							<wa-divider style={{ flex: 1 }}></wa-divider>
 						</div>
-						<wa-button disabled={true}>
+						<wa-button
+							type="button"
+							disabled={pending()}
+							onClick={handleGoogleSignIn}
+							appearance="outlined"
+						>
+							<wa-icon
+								slot="start"
+								library="custom"
+								src={googleLogo}
+								style={{ "font-size": "1.3rem" }}
+							></wa-icon>
 							Sign {view() === "signup" ? "up" : "in"} with Google
 						</wa-button>
-						<wa-button disabled={true}>
+						{/*<wa-button disabled={true}>
 							Sign {view() === "signup" ? "up" : "in"} with Microsoft
-						</wa-button>
+						</wa-button>*/}
 						<wa-divider style={{ "--spacing": "0.2rem" }}></wa-divider>
 						<span>
 							{view() === "signin"
