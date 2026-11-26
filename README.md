@@ -211,8 +211,16 @@ npx supabase secrets set \
 In the Supabase dashboard, go to **Authentication > Providers** and configure:
 
 - **Email**: Enable sign-ups, set redirect URLs to your app URL
-- **OAuth** (optional): Add Google, GitHub, or other providers as needed
+- **Google**: Enable the provider, add the OAuth client ID and secret, and add
+  `https://<project-ref>.supabase.co/auth/v1/callback` to the authorized redirect
+  URIs of the Google OAuth client
 - **SMTP** (optional): Configure a real SMTP server for production email delivery
+
+For local Supabase, the Google client ID is set in `supabase/config.toml`. Put the
+client secret in `supabase/.env` as `SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_SECRET`.
+Never use a `VITE_` prefix for this value. The local redirect allow list includes
+`http://localhost:3000/**` and `http://127.0.0.1:3000/**` so the sign-in page can
+receive the OAuth callback.
 
 ### 7. Start development
 
