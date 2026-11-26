@@ -1,3 +1,10 @@
+# [1.11.0](https://github.com/re1sub/opencadre/compare/v1.10.2...v1.11.0) (2026-11-26)
+
+
+### Features
+
+* **auth:** add Google sign-in with workspace redirect ([dec72f4](https://github.com/re1sub/opencadre/commit/dec72f43296ef8f44a93b4c28059b0876aee4f8a))
+
 ## [1.10.2](https://github.com/re1sub/opencadre/compare/v1.10.1...v1.10.2) (2026-11-25)
 
 
