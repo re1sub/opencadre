@@ -109,7 +109,11 @@ The app runs at http://localhost:3000. The first Supabase start pulls the Docker
 
 **Supabase stores ciphertext, not readable content.** It still sees metadata such as ids, timestamps, membership, roles, positions, and due dates. Other members' display names are not decryptable, so the UI shows their email or a short user id. Removing a member starts a full workspace key rotation and re-encryption. See [docs/api.md](docs/api.md#11-end-to-end-encryption) for the full key hierarchy and migration notes.
 
-## Full setup
+## Self-hosting
+
+For a Docker-only production deployment, see [docs/self-hosting.md](docs/self-hosting.md). Docker Engine with the Compose plugin is the only host requirement, and the whole stack is configured from the root `.env` file.
+
+## Development setup
 
 ### Prerequisites
 
@@ -150,8 +154,8 @@ cp .env.example .env
 Edit `.env`:
 
 ```
-VITE_SUPABASE_URL=https://<your-project-ref>.supabase.co
-VITE_SUPABASE_PUBLISHABLE_KEY=<your-publishable-key>
+SUPABASE_PUBLIC_URL=https://<your-project-ref>.supabase.co
+SUPABASE_PUBLISHABLE_KEY=<your-publishable-key>
 ```
 
 For local development, create `.env.development`:
@@ -163,8 +167,8 @@ cp .env.example .env.development
 Edit `.env.development` with your local Supabase values (from `pnpm supabase:status`):
 
 ```
-VITE_SUPABASE_URL=http://127.0.0.1:54321
-VITE_SUPABASE_PUBLISHABLE_KEY=<local-anon-key>
+SUPABASE_PUBLIC_URL=http://127.0.0.1:54321
+SUPABASE_PUBLISHABLE_KEY=<local-anon-key>
 ```
 
 The dev server loads `.env.development` and `pnpm build` loads `.env`, so nothing needs to be swapped between environments.
@@ -197,14 +201,13 @@ npx supabase secrets set \
 | Secret                      | Function                                                               | Required | Notes                                                       |
 | --------------------------- | ---------------------------------------------------------------------- | -------- | ----------------------------------------------------------- |
 | `OPENROUTER_API_KEY`        | ai-generate                                                            | Yes      | Get from [openrouter.ai](https://openrouter.ai)             |
-| `SUPABASE_SERVICE_ROLE_KEY` | invite-member, delete-account, cleanup-retention, revoke-user-sessions | Yes      | Platform-provided; from Supabase project settings           |
+| `SUPABASE_SERVICE_ROLE_KEY` | invite-member, delete-account, revoke-user-sessions                   | Yes      | Platform-provided; from Supabase project settings           |
 | `SMTP_HOST`                 | invite-member                                                          | No       | If missing, invite emails are skipped (token still created) |
 | `SMTP_PORT`                 | invite-member                                                          | No       |                                                             |
 | `SMTP_USER`                 | invite-member                                                          | No       |                                                             |
 | `SMTP_PASS`                 | invite-member                                                          | No       |                                                             |
 | `SMTP_FROM`                 | invite-member                                                          | No       | Defaults to SMTP_USER                                       |
 | `SMTP_FROM_NAME`            | invite-member                                                          | No       | Defaults to "OpenCadre"                                     |
-| `CRON_SECRET`               | cleanup-retention                                                      | No       | Alternative auth for cron jobs (vs service role key)        |
 
 ### 6. Configure auth settings (dashboard)
 
@@ -338,7 +341,6 @@ Android adaptive padding comes from the `scale(...)` in the group transform of `
 | `invite-member`        | Yes (JWT) | Send workspace invite emails                                                                  |
 | `delete-account`       | Yes (JWT) | Account deletion with ownership transfer when possible, anonymized comments, and data cleanup |
 | `revoke-user-sessions` | Yes (JWT) | Revoke refresh sessions for account security responses                                        |
-| `cleanup-retention`    | No (cron) | Purge expired activity, security, AI, and notification rows                                   |
 
 ## Database
 
